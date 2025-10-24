@@ -61,7 +61,6 @@ function App() {
             <div className="crack crack4"></div>
             <div className="crack crack5"></div>
           </div>
-          <div className="loader-text">Ошибка</div>
         </div>
       </div>
     )
