@@ -15,7 +15,12 @@ BOT_TOKEN=your_telegram_bot_token_here
 ## Run
 
 ```bash
-uvicorn main:app --reload
+# Вариант 1: используя start.sh
+./start.sh
+
+# Вариант 2: напрямую
+source venv/bin/activate
+uvicorn main:app --reload --host 127.0.0.1 --port 3779
 ```
 
-The server will start at http://localhost:8000
+The server will start at http://localhost:3779

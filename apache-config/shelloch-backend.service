@@ -1,0 +1,26 @@
+[Unit]
+Description=Shelloch FastAPI Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/shell
+Environment="PATH=/opt/shell/venv/bin"
+Environment="PYTHONPATH=/opt/shell"
+ExecStart=/opt/shell/venv/bin/uvicorn main:app --host 127.0.0.1 --port 3779
+Restart=always
+RestartSec=10
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=shelloch-backend
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
