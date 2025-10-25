@@ -7,11 +7,12 @@
   justify-content: space-around;
   align-items: center;
   height: 70px;
-  background: rgba(26, 26, 26, 0.95);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.8) 0%, rgba(26, 26, 26, 0.98) 100%);
+  backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   z-index: 100;
+  transition: background 0.4s ease;
 }
 
 .tab-button {

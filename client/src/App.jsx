@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Home from './components/Home'
+import Inventory from './components/Inventory'
 import Profile from './components/Profile'
 import TabBar from './components/TabBar'
 
@@ -80,8 +81,9 @@ function App() {
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container tab-${activeTab}`}>
       {activeTab === 'home' && <Home />}
+      {activeTab === 'inventory' && <Inventory />}
       {activeTab === 'profile' && <Profile />}
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>

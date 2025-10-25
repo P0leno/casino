@@ -86,6 +86,19 @@
 .app-container {
   width: 100%;
   min-height: 100vh;
-  background-color: #1a1a1a;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
   position: relative;
+  transition: background 0.6s ease;
+}
+
+.app-container.tab-home {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.app-container.tab-inventory {
+  background: linear-gradient(135deg, #2c1a1e 0%, #3e1621 100%);
+}
+
+.app-container.tab-profile {
+  background: linear-gradient(135deg, #1e1a2c 0%, #21163e 100%);
 }

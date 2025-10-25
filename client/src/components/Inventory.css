@@ -1,0 +1,176 @@
+.inventory-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding-bottom: 70px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-header {
+  padding: 20px;
+  padding-top: calc(40px + env(safe-area-inset-top));
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  border-radius: 0 0 24px 24px;
+  margin-bottom: 20px;
+}
+
+.inventory-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.inventory-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+}
+
+.inventory-grid {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.empty-inventory {
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.add-gifts-text {
+  position: fixed;
+  bottom: 90px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 50;
+}
+
+.add-gifts-text:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.add-gifts-text:active {
+  color: rgba(255, 255, 255, 1);
+}
+
+/* Bottom Sheet Overlay */
+.overlay-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.overlay-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.98) 0%, rgba(40, 40, 40, 0.98) 100%);
+  border-radius: 24px 24px 0 0;
+  z-index: 1000;
+  animation: slideUpSheet 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin: 12px auto 24px;
+}
+
+.sheet-content {
+  padding: 0 24px;
+  text-align: center;
+}
+
+.overlay-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.overlay-title {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.overlay-text {
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.overlay-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  border: none;
+  border-radius: 16px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(250, 112, 154, 0.3);
+}
+
+.overlay-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(250, 112, 154, 0.4);
+}
+
+.overlay-button:active {
+  transform: translateY(0);
+}

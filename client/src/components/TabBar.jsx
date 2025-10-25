@@ -3,6 +3,7 @@ import './TabBar.css'
 function TabBar({ activeTab, onTabChange }) {
   const tabs = [
     { id: 'home', label: 'Главная', icon: '🏠' },
+    { id: 'inventory', label: 'Инвентарь', icon: '🎁' },
     { id: 'profile', label: 'Профиль', icon: '👤' }
   ]
 
