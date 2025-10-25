@@ -43,7 +43,7 @@ def validate_init_data(init_data: str, bot_token: str) -> bool:
 
 @app.get("/")
 async def root():
-    return {"message": "Hello from Python backend!"}
+    return {"message": "Welcome to Shell Api"}
 
 @app.get("/api/health")
 async def health():

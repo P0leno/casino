@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import Home from './components/Home'
+import Profile from './components/Profile'
+import TabBar from './components/TabBar'
 
 function App() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [validated, setValidated] = useState(false)
+  const [activeTab, setActiveTab] = useState('home')
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -25,6 +29,7 @@ function App() {
     const initData = tg.initData
 
     if (!initData) {
+      // Нет initData - оставляем бесконечный лоадер
       return
     }
 
@@ -76,8 +81,9 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Приложение запущено</h1>
-      <p>Валидация прошла успешно!</p>
+      {activeTab === 'home' && <Home />}
+      {activeTab === 'profile' && <Profile />}
+      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   )
 }
