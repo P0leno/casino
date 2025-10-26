@@ -41,6 +41,13 @@ function Inventory() {
                 Чтобы подарки появились в вашем инвентаре, отправьте их боту
               </p>
 
+              <div className="warning-block">
+                <div className="warning-icon">⚠️</div>
+                <p className="warning-text">
+                  Не отправляйте не улучшенные подарки и не покупайте с ТГ маркета
+                </p>
+              </div>
+
               <button className="overlay-button" onClick={handleOpenBot}>
                 Отправить
               </button>
