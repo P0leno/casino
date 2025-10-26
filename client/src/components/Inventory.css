@@ -8,7 +8,7 @@
 
 .inventory-header {
   padding: 20px;
-  padding-top: max(70px, calc(40px + env(safe-area-inset-top)));
+  padding-top: max(75px, calc(40px + env(safe-area-inset-top)));
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
   border-radius: 0 0 24px 24px;
   margin-bottom: 20px;
