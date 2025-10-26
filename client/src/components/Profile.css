@@ -6,7 +6,7 @@
 
 .profile-header {
   padding: 20px;
-  padding-top: calc(40px + env(safe-area-inset-top));
+  padding-top: max(70px, calc(40px + env(safe-area-inset-top)));
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   border-radius: 0 0 24px 24px;
   margin-bottom: 20px;
@@ -137,4 +137,10 @@
 
 .button-text {
   font-weight: 500;
+}
+
+@media (min-width: 768px) {
+  .profile-header {
+    padding-top: 40px;
+  }
 }

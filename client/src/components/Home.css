@@ -6,7 +6,7 @@
 
 .home-header {
   padding: 20px;
-  padding-top: calc(40px + env(safe-area-inset-top));
+  padding-top: max(70px, calc(40px + env(safe-area-inset-top)));
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 0 0 24px 24px;
   margin-bottom: 20px;
@@ -83,6 +83,10 @@
 }
 
 @media (min-width: 768px) {
+  .home-header {
+    padding-top: 40px;
+  }
+
   .info-cards {
     grid-template-columns: repeat(3, 1fr);
   }
