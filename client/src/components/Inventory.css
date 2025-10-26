@@ -54,7 +54,7 @@
 
 .add-gifts-text {
   position: fixed;
-  bottom: 90px;
+  bottom: calc(70px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   text-align: center;
@@ -131,6 +131,9 @@
 .sheet-content {
   padding: 0 24px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 40px);
 }
 
 .overlay-icon {
@@ -150,6 +153,7 @@
   font-size: 16px;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.7);
+  flex: 1;
 }
 
 .overlay-button {
@@ -164,6 +168,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(250, 112, 154, 0.3);
+  margin-top: auto;
+  margin-bottom: env(safe-area-inset-bottom);
 }
 
 .overlay-button:hover {
