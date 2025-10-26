@@ -41,12 +41,15 @@
 }
 
 .tab-icon {
-  font-size: 24px;
+  width: 24px;
+  height: 24px;
   transition: transform 0.3s ease;
+  opacity: 0.5;
 }
 
 .tab-button.active .tab-icon {
   transform: scale(1.1);
+  opacity: 1;
 }
 
 .tab-label {

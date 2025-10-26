@@ -1,10 +1,13 @@
 import './TabBar.css'
+import homeIcon from '../assets/home.svg'
+import inventoryIcon from '../assets/inventory.svg'
+import profileIcon from '../assets/profile.svg'
 
 function TabBar({ activeTab, onTabChange }) {
   const tabs = [
-    { id: 'home', label: 'Главная', icon: '🏠' },
-    { id: 'inventory', label: 'Инвентарь', icon: '🎁' },
-    { id: 'profile', label: 'Профиль', icon: '👤' }
+    { id: 'home', label: 'Главная', icon: homeIcon },
+    { id: 'inventory', label: 'Инвентарь', icon: inventoryIcon },
+    { id: 'profile', label: 'Профиль', icon: profileIcon }
   ]
 
   return (
@@ -15,7 +18,7 @@ function TabBar({ activeTab, onTabChange }) {
           className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
           onClick={() => onTabChange(tab.id)}
         >
-          <span className="tab-icon">{tab.icon}</span>
+          <img src={tab.icon} alt={tab.label} className="tab-icon" />
           <span className="tab-label">{tab.label}</span>
         </button>
       ))}
