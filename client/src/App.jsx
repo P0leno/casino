@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [validated, setValidated] = useState(false)
   const [activeTab, setActiveTab] = useState('home')
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -25,6 +26,9 @@ function App() {
 
     if (tg.platform === 'android' || tg.platform === 'ios') {
       tg.requestFullscreen()
+      setIsMobile(true)
+    } else {
+      setIsMobile(false)
     }
 
     const initData = tg.initData
@@ -81,7 +85,7 @@ function App() {
   }
 
   return (
-    <div className={`app-container tab-${activeTab}`}>
+    <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
       {activeTab === 'home' && <Home />}
       {activeTab === 'inventory' && <Inventory />}
       {activeTab === 'profile' && <Profile />}

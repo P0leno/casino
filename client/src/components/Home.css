@@ -5,8 +5,11 @@
 }
 
 .home-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: max(115px, calc(80px + env(safe-area-inset-top)));
   padding: 20px;
-  padding-top: max(75px, calc(40px + env(safe-area-inset-top)));
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 0 0 24px 24px;
   margin-bottom: 20px;
@@ -82,11 +85,11 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-@media (min-width: 768px) {
-  .home-header {
-    padding-top: 40px;
-  }
+.platform-desktop .home-header {
+  min-height: 70px;
+}
 
+@media (min-width: 768px) {
   .info-cards {
     grid-template-columns: repeat(3, 1fr);
   }
