@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: max(115px, calc(80px + env(safe-area-inset-top)));
+  min-height: max(120px, calc(85px + env(safe-area-inset-top)));
   padding: 20px;
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
   border-radius: 0 0 24px 24px;
@@ -44,9 +44,11 @@
 }
 
 .empty-icon {
-  font-size: 80px;
   margin-bottom: 16px;
-  opacity: 0.3;
+  opacity: 0.4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .empty-text {
@@ -145,9 +147,11 @@
 }
 
 .overlay-icon {
-  font-size: 64px;
   margin-bottom: 16px;
   flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .overlay-title {

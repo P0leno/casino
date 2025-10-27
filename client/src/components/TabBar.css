@@ -29,11 +29,14 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border-radius: 12px;
+  position: relative;
 }
 
 .tab-button.active {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .tab-button:hover {

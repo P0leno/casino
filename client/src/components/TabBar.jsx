@@ -1,12 +1,14 @@
 import './TabBar.css'
 import homeIcon from '../assets/home.svg'
 import inventoryIcon from '../assets/inventory.svg'
+import spinIcon from '../assets/spin.svg'
 import profileIcon from '../assets/profile.svg'
 
 function TabBar({ activeTab, onTabChange }) {
   const tabs = [
     { id: 'home', label: 'Главная', icon: homeIcon },
     { id: 'inventory', label: 'Инвентарь', icon: inventoryIcon },
+    { id: 'spin', label: 'Спин', icon: spinIcon },
     { id: 'profile', label: 'Профиль', icon: profileIcon }
   ]
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import Home from './components/Home'
 import Inventory from './components/Inventory'
+import Spin from './components/Spin'
 import Profile from './components/Profile'
 import TabBar from './components/TabBar'
 
@@ -47,12 +48,18 @@ function App() {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.valid) {
+        if (data.valid && data.isBanned) {
+          // Пользователь забанен - оставляем бесконечный лоадер
+          return
+        }
+        
+        if (data.valid && !data.isBanned) {
           setValidated(true)
+          setLoading(false)
         } else {
           setError('Ошибка: данные не валидны')
+          setLoading(false)
         }
-        setLoading(false)
       })
       .catch(err => {
         setError('Ошибка соединения с сервером')
@@ -88,6 +95,7 @@ function App() {
     <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
       {activeTab === 'home' && <Home />}
       {activeTab === 'inventory' && <Inventory />}
+      {activeTab === 'spin' && <Spin />}
       {activeTab === 'profile' && <Profile />}
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>

@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: max(115px, calc(80px + env(safe-area-inset-top)));
+  min-height: max(120px, calc(85px + env(safe-area-inset-top)));
   padding: 20px;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   border-radius: 0 0 24px 24px;
@@ -140,6 +140,112 @@
 
 .button-text {
   font-weight: 500;
+}
+
+.admin-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
+}
+
+.admin-panel-sheet {
+  min-height: calc(60vh + 10px);
+  max-height: 80vh;
+}
+
+.admin-panel-title {
+  margin: 0 0 24px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+}
+
+.admin-input-group {
+  margin-bottom: 24px;
+}
+
+.admin-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-input {
+  width: 100%;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 16px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.admin-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.admin-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.admin-action-button {
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ban-button {
+  background: rgba(255, 80, 80, 0.2);
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  color: #ff5050;
+}
+
+.ban-button:hover:not(:disabled) {
+  background: rgba(255, 80, 80, 0.3);
+  transform: translateY(-2px);
+}
+
+.unban-button {
+  background: rgba(80, 255, 120, 0.2);
+  border: 1px solid rgba(80, 255, 120, 0.3);
+  color: #50ff78;
+}
+
+.unban-button:hover:not(:disabled) {
+  background: rgba(80, 255, 120, 0.3);
+  transform: translateY(-2px);
 }
 
 .platform-desktop .profile-header {

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import './Inventory.css'
+import LottieAnimation from './LottieAnimation'
+import giftAnimation from '../assets/gift.json'
 
 function Inventory() {
   const [showOverlay, setShowOverlay] = useState(false)
@@ -18,7 +20,9 @@ function Inventory() {
       <div className="inventory-content">
         <div className="inventory-grid">
           <div className="empty-inventory">
-            <div className="empty-icon">🎁</div>
+            <div className="empty-icon">
+              <LottieAnimation animationData={giftAnimation} width={100} height={100} />
+            </div>
             <p className="empty-text">Ваш инвентарь пуст</p>
           </div>
         </div>
@@ -35,18 +39,13 @@ function Inventory() {
             <div className="sheet-handle"></div>
             
             <div className="sheet-content">
-              <div className="overlay-icon">🎁</div>
+              <div className="overlay-icon">
+                <LottieAnimation animationData={giftAnimation} width={80} height={80} />
+              </div>
               <h2 className="overlay-title">Добавить подарки</h2>
               <p className="overlay-text">
                 Чтобы подарки появились в вашем инвентаре, отправьте их боту
               </p>
-
-              <div className="warning-block">
-                <div className="warning-icon">⚠️</div>
-                <p className="warning-text">
-                  Не отправляйте не улучшенные подарки и не покупайте с ТГ маркета
-                </p>
-              </div>
 
               <button className="overlay-button" onClick={handleOpenBot}>
                 Отправить

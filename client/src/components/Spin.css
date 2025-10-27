@@ -1,0 +1,41 @@
+.spin-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding-bottom: 70px;
+}
+
+.spin-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: max(120px, calc(85px + env(safe-area-inset-top)));
+  padding: 20px;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  border-radius: 0 0 24px 24px;
+  margin-bottom: 20px;
+}
+
+.spin-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.spin-content {
+  padding: 0 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.spin-placeholder {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+}
+
+.platform-desktop .spin-header {
+  min-height: 70px;
+}
