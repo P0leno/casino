@@ -224,3 +224,8 @@
 .platform-desktop .inventory-header {
   min-height: 70px;
 }
+
+.platform-mobile .inventory-page {
+  min-height: calc(100vh - 85px);
+  padding-bottom: 85px;
+}

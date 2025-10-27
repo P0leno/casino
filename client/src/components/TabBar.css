@@ -63,3 +63,26 @@
 .tab-button.active .tab-label {
   font-weight: 600;
 }
+
+.platform-mobile .tab-bar {
+  height: 85px;
+  padding: 15px 10px calc(10px + env(safe-area-inset-bottom));
+}
+
+.platform-mobile .tab-button {
+  padding: 8px 8px;
+  margin-top: 5px;
+}
+
+.platform-mobile .tab-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.platform-mobile .tab-label {
+  font-size: 13px;
+}
+
+.platform-mobile .tab-button.active .tab-label {
+  margin-top: 5px;
+}

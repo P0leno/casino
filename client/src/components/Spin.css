@@ -39,3 +39,8 @@
 .platform-desktop .spin-header {
   min-height: 70px;
 }
+
+.platform-mobile .spin-page {
+  min-height: calc(100vh - 85px);
+  padding-bottom: 85px;
+}
