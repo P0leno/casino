@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './Inventory.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
+import BonusBalanceBar from './BonusBalanceBar'
 import giftAnimation from '../assets/gift.json'
 import bearAnim from '../assets/bear.json'
 import cakeAnim from '../assets/cake.json'
@@ -26,7 +27,7 @@ const giftAnimations = {
   rose: roseAnim
 }
 
-function Inventory() {
+function Inventory({ onNavigateToTopUp }) {
   const [showOverlay, setShowOverlay] = useState(false)
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -126,7 +127,8 @@ function Inventory() {
 
   return (
     <div className="inventory-page">
-      <BalanceBar />
+      <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
+      <BonusBalanceBar />
       <div className="inventory-content">
         {loading ? (
           <div className="inventory-loading">Загрузка...</div>

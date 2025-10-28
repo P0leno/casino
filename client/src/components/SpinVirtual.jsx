@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import './Spin.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
+import BonusBalanceBar from './BonusBalanceBar'
 import bearAnim from '../assets/bear.json'
 import cakeAnim from '../assets/cake.json'
 import cupAnim from '../assets/cup.json'
@@ -29,7 +30,7 @@ const gifts = [
 const ITEM_WIDTH = 120
 const GIFTS_COUNT = 10
 
-function SpinVirtual() {
+function SpinVirtual({ onNavigateToTopUp }) {
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
   const [offset, setOffset] = useState(0)
@@ -236,7 +237,8 @@ function SpinVirtual() {
 
   return (
     <div className="spin-page">
-      <BalanceBar />
+      <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
+      <BonusBalanceBar />
       <div className="spin-content">
         <div className="roulette-container">
           <div className="roulette-viewport" ref={viewportRef}>

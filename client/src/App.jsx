@@ -4,6 +4,7 @@ import Home from './components/Home'
 import Inventory from './components/Inventory'
 import SpinVirtual from './components/SpinVirtual'
 import Profile from './components/Profile'
+import TopUp from './components/TopUp'
 import TabBar from './components/TabBar'
 
 function App() {
@@ -11,6 +12,10 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('home')
   const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem('currentTab', activeTab)
+  }, [activeTab])
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -104,11 +109,12 @@ function App() {
 
   return (
     <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
-      {activeTab === 'home' && <Home />}
-      {activeTab === 'inventory' && <Inventory />}
-      {activeTab === 'spin' && <SpinVirtual />}
+      {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'spin' && <SpinVirtual onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'profile' && <Profile />}
-      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      {activeTab === 'topup' && <TopUp onNavigateBack={setActiveTab} />}
+      {activeTab !== 'topup' && <TabBar activeTab={activeTab} onTabChange={setActiveTab} />}
     </div>
   )
 }

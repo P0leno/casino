@@ -1,0 +1,48 @@
+.bonus-balance-bar {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  left: 15px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.bonus-balance-bar:active {
+  transform: scale(0.98);
+}
+
+.bonus-balance-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bonus-balance-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 30px;
+  text-align: right;
+}
+
+.bonus-balance-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.platform-mobile .bonus-balance-bar {
+  top: max(100px, calc(env(safe-area-inset-top, 0px) + 10px));
+  left: 15px;
+}

@@ -1,10 +1,12 @@
 import './Home.css'
 import BalanceBar from './BalanceBar'
+import BonusBalanceBar from './BonusBalanceBar'
 
-function Home() {
+function Home({ onNavigateToTopUp }) {
   return (
     <div className="home-page">
-      <BalanceBar />
+      <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
+      <BonusBalanceBar />
       <div className="home-content">
         <div className="welcome-card">
           <h2>Добро пожаловать! 👋</h2>
