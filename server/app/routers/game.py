@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
 import sqlite3
+import asyncio
 from datetime import datetime, timedelta
 import random
 from app.config import BOT_TOKEN, DB_PATH
@@ -99,6 +100,9 @@ async def spin(request: ValidateRequest):
                 selected_gift = gift_name
                 break
         
+        # Задержка 3 секунды - даем время показать анимацию "Вы выиграли"
+        await asyncio.sleep(3)
+        
         cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
         inv_result = cursor.fetchone()
         inventory = json.loads(inv_result[0]) if inv_result and inv_result[0] else []
@@ -114,7 +118,8 @@ async def spin(request: ValidateRequest):
         
         return {"success": True, "gift": selected_gift}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        print(f"Error in spin: {e}")
+        return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/get-inventory")
 async def get_inventory(request: ValidateRequest):

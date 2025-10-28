@@ -13,6 +13,7 @@ import heartAnim from '../assets/heart.json'
 import ringAnim from '../assets/ring.json'
 import rocketAnim from '../assets/rocket.json'
 import roseAnim from '../assets/rose.json'
+import pawAnim from '../assets/paw.json'
 
 const gifts = [
   { name: 'bear', animation: bearAnim },
@@ -24,15 +25,17 @@ const gifts = [
   { name: 'heart', animation: heartAnim },
   { name: 'ring', animation: ringAnim },
   { name: 'rocket', animation: rocketAnim },
-  { name: 'rose', animation: roseAnim }
+  { name: 'rose', animation: roseAnim },
+  { name: 'paw', animation: pawAnim }
 ]
 
 const ITEM_WIDTH = 120
-const GIFTS_COUNT = 10
+const GIFTS_COUNT = 11
 
 function SpinVirtual({ onNavigateToTopUp }) {
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
+  const [pawAmount, setPawAmount] = useState(0)
   const [offset, setOffset] = useState(0)
   const [available, setAvailable] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -188,6 +191,7 @@ function SpinVirtual({ onNavigateToTopUp }) {
             // Анимация завершена
             setTimeout(() => {
               setResult(data.gift)
+              setPawAmount(data.pawAmount || 0)
               setSpinning(false)
               setAvailable(false)
               setTimeLeft(86400) // 24 часа

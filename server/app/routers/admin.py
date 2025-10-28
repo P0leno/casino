@@ -16,6 +16,8 @@ class UpdateChanceRequest(BaseModel):
     giftName: str
     visibleChance: float
     realChance: float
+    pawMin: int = 0
+    pawMax: int = 0
 
 @router.post("/get-chances")
 async def get_chances(request: ValidateRequest):
@@ -39,11 +41,11 @@ async def get_chances(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT gift_name, visible_chance, real_chance FROM gift_chances")
+        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max FROM gift_chances")
         results = cursor.fetchall()
         conn.close()
         
-        chances = [{"name": r[0], "visible": r[1], "real": r[2]} for r in results]
+        chances = [{"name": r[0], "visible": r[1], "real": r[2], "pawMin": r[3] or 0, "pawMax": r[4] or 0} for r in results]
         return {"valid": True, "chances": chances}
     except Exception:
         return {"valid": False, "chances": []}
@@ -68,15 +70,24 @@ async def update_chances(request: UpdateChanceRequest):
         if user_id not in ADMIN_IDS:
             return {"success": False, "message": "Not authorized"}
         
+        # Валидация pawMin и pawMax на сервере
+        paw_min = max(0, min(100, request.pawMin))
+        paw_max = max(0, min(100, request.pawMax))
+        
+        # Проверка что min <= max
+        if paw_min > paw_max and paw_max > 0:
+            paw_min, paw_max = paw_max, paw_min
+        
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE gift_chances SET visible_chance = ?, real_chance = ? WHERE gift_name = ?",
-            (request.visibleChance, request.realChance, request.giftName)
+            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ? WHERE gift_name = ?",
+            (request.visibleChance, request.realChance, paw_min, paw_max, request.giftName)
         )
         conn.commit()
         conn.close()
         
         return {"success": True}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        print(f"Error in update_chances: {e}")
+        return {"success": False, "message": "Ошибка сервера"}

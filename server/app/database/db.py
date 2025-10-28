@@ -22,7 +22,9 @@ def init_db():
             gift_name TEXT UNIQUE NOT NULL,
             visible_chance REAL NOT NULL,
             real_chance REAL NOT NULL,
-            mode TEXT DEFAULT 'free_spin'
+            mode TEXT DEFAULT 'free_spin',
+            paw_min INTEGER DEFAULT 0,
+            paw_max INTEGER DEFAULT 0
         )
     """)
     
@@ -35,22 +37,23 @@ def init_db():
     """)
     
     gifts = [
-        ('bear', 10.0, 10.0),
-        ('cake', 10.0, 10.0),
-        ('cup', 10.0, 10.0),
-        ('diamond', 10.0, 5.0),
-        ('flowers', 10.0, 10.0),
-        ('gift', 10.0, 15.0),
-        ('heart', 10.0, 10.0),
-        ('ring', 10.0, 5.0),
-        ('rocket', 10.0, 5.0),
-        ('rose', 10.0, 20.0)
+        ('bear', 10.0, 10.0, 0, 0),
+        ('cake', 10.0, 10.0, 0, 0),
+        ('cup', 10.0, 10.0, 0, 0),
+        ('diamond', 10.0, 5.0, 0, 0),
+        ('flowers', 10.0, 10.0, 0, 0),
+        ('gift', 10.0, 15.0, 0, 0),
+        ('heart', 10.0, 10.0, 0, 0),
+        ('ring', 10.0, 5.0, 0, 0),
+        ('rocket', 10.0, 5.0, 0, 0),
+        ('rose', 10.0, 20.0, 0, 0),
+        ('paw', 10.0, 10.0, 1, 5)
     ]
     
-    for gift_name, visible, real in gifts:
+    for gift_name, visible, real, paw_min, paw_max in gifts:
         cursor.execute(
-            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance) VALUES (?, ?, ?)",
-            (gift_name, visible, real)
+            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, paw_min, paw_max) VALUES (?, ?, ?, ?, ?)",
+            (gift_name, visible, real, paw_min, paw_max)
         )
     
     prices = [

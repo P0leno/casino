@@ -116,7 +116,8 @@ async def ban_user(request: BanRequest):
         
         return {"success": True}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        print(f"Error in ban_user: {e}")
+        return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/unban-user")
 async def unban_user(request: BanRequest):
@@ -157,7 +158,8 @@ async def unban_user(request: BanRequest):
         
         return {"success": True}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        print(f"Error in ban_user: {e}")
+        return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/check-ban")
 async def check_ban(request: ValidateRequest):

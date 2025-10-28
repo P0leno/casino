@@ -72,4 +72,4 @@ async def create_invoice(request: TopUpRequest):
         
     except Exception as e:
         print(f"Error creating invoice: {e}")
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "Ошибка создания платежа"}

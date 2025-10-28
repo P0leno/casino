@@ -11,6 +11,7 @@ import heartAnim from '../assets/heart.json'
 import ringAnim from '../assets/ring.json'
 import rocketAnim from '../assets/rocket.json'
 import roseAnim from '../assets/rose.json'
+import pawAnim from '../assets/paw.json'
 
 const giftAnimations = {
   bear: bearAnim,
@@ -22,7 +23,8 @@ const giftAnimations = {
   heart: heartAnim,
   ring: ringAnim,
   rocket: rocketAnim,
-  rose: roseAnim
+  rose: roseAnim,
+  paw: pawAnim
 }
 
 function Profile() {
@@ -138,7 +140,7 @@ function Profile() {
     }
   }
 
-  const handleUpdateChance = async (giftName, visibleChance, realChance) => {
+  const handleUpdateChance = async (giftName, visibleChance, realChance, pawMin = 0, pawMax = 0) => {
     setActionLoading(true)
     try {
       const tg = window.Telegram?.WebApp
@@ -148,7 +150,7 @@ function Profile() {
       const response = await fetch(`${apiUrl}/api/update-chances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftName, visibleChance, realChance })
+        body: JSON.stringify({ initData, giftName, visibleChance, realChance, pawMin, pawMax })
       })
 
       const data = await response.json()
@@ -340,6 +342,38 @@ function Profile() {
                           <span className="chance-value">{chance.real}%</span>
                         )}
                       </div>
+                      {chance.name === 'paw' && (
+                        <div className="chance-row">
+                          <span className="chance-label">Лапок (диапазон):</span>
+                          {editingGift === chance.name ? (
+                            <div className="paw-range-inputs">
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.pawMin || 1}
+                                id={`pawMin-${chance.name}`}
+                                min="0"
+                                max="100"
+                                placeholder="От"
+                                disabled={actionLoading}
+                              />
+                              <span className="range-separator">-</span>
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.pawMax || 5}
+                                id={`pawMax-${chance.name}`}
+                                min="0"
+                                max="100"
+                                placeholder="До"
+                                disabled={actionLoading}
+                              />
+                            </div>
+                          ) : (
+                            <span className="chance-value">{chance.pawMin || 0}-{chance.pawMax || 0}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="chance-actions">
                       {editingGift === chance.name ? (
@@ -349,7 +383,12 @@ function Profile() {
                             onClick={() => {
                               const visible = parseFloat(document.getElementById(`visible-${chance.name}`).value)
                               const real = parseFloat(document.getElementById(`real-${chance.name}`).value)
-                              handleUpdateChance(chance.name, visible, real)
+                              let pawMin = 0, pawMax = 0
+                              if (chance.name === 'paw') {
+                                pawMin = parseInt(document.getElementById(`pawMin-${chance.name}`).value) || 0
+                                pawMax = parseInt(document.getElementById(`pawMax-${chance.name}`).value) || 0
+                              }
+                              handleUpdateChance(chance.name, visible, real, pawMin, pawMax)
                             }}
                             disabled={actionLoading}
                           >
