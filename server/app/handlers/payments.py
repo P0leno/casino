@@ -77,15 +77,8 @@ async def process_successful_payment(message: Message):
         conn.commit()
         conn.close()
         
-        await message.answer(
-            f"✅ <b>Пополнение успешно!</b>\n\n"
-            f"💰 Зачислено: <b>{amount}</b> звезд\n"
-            f"📊 Новый баланс: <b>{new_balance}</b> звезд",
-            parse_mode="HTML"
-        )
+        # Сообщение не отправляется - баланс обновляется автоматически в WebApp
         
     except Exception as e:
         print(f"Error processing payment: {e}")
-        await message.answer(
-            "❌ Произошла ошибка при обработке платежа. Обратитесь в поддержку."
-        )
+        # Ошибку тоже не отправляем в чат
