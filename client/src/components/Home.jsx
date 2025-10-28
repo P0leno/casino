@@ -1,12 +1,10 @@
 import './Home.css'
+import BalanceBar from './BalanceBar'
 
 function Home() {
   return (
     <div className="home-page">
-      <div className="home-header">
-        <h1>Главная</h1>
-      </div>
-      
+      <BalanceBar />
       <div className="home-content">
         <div className="welcome-card">
           <h2>Добро пожаловать! 👋</h2>

@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import Home from './components/Home'
 import Inventory from './components/Inventory'
-import Spin from './components/Spin'
+import SpinVirtual from './components/SpinVirtual'
 import Profile from './components/Profile'
 import TabBar from './components/TabBar'
 
 function App() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [validated, setValidated] = useState(false)
   const [activeTab, setActiveTab] = useState('home')
   const [isMobile, setIsMobile] = useState(false)
 
@@ -46,23 +45,35 @@ function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData })
     })
-      .then(res => res.json())
+      .then(res => {
+        console.log('Validate response status:', res.status)
+        return res.json()
+      })
       .then(data => {
-        if (data.valid && data.isBanned) {
-          // Пользователь забанен - оставляем бесконечный лоадер
+        console.log('Validate response data:', data)
+        
+        // Проверяем валидность
+        if (!data.valid) {
+          console.log('Invalid initData')
+          setError('Ошибка: данные не валидны')
+          setLoading(false)
           return
         }
         
-        if (data.valid && !data.isBanned) {
-          setValidated(true)
-          setLoading(false)
-        } else {
-          setError('Ошибка: данные не валидны')
-          setLoading(false)
+        // Проверяем бан - оставляем бесконечный лоадер
+        if (data.isBanned === true) {
+          console.log('User is banned, showing infinite loader')
+          // НЕ вызываем setLoading(false) - остается лоадер навсегда
+          return
         }
+        
+        // Все ок - убираем лоадер и показываем приложение
+        console.log('User validated successfully, showing app')
+        setLoading(false)
       })
       .catch(err => {
-        setError('Ошибка соединения с сервером')
+        console.error('Validation error:', err)
+        setError('Ошибка соединения с сервером: ' + err.message)
         setLoading(false)
       })
   }, [])
@@ -95,7 +106,7 @@ function App() {
     <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
       {activeTab === 'home' && <Home />}
       {activeTab === 'inventory' && <Inventory />}
-      {activeTab === 'spin' && <Spin />}
+      {activeTab === 'spin' && <SpinVirtual />}
       {activeTab === 'profile' && <Profile />}
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>

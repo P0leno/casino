@@ -4,26 +4,9 @@
   padding-bottom: 70px;
 }
 
-.home-header {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: max(120px, calc(85px + env(safe-area-inset-top)));
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 0 0 24px 24px;
-  margin-bottom: 20px;
-}
-
-.home-header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
 .home-content {
-  padding: 0 20px;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
 }
 
 .welcome-card {
@@ -85,13 +68,14 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-.platform-desktop .home-header {
-  min-height: 70px;
-}
-
 .platform-mobile .home-page {
   min-height: calc(100vh - 85px);
   padding-bottom: 85px;
+  padding-top: 105px;
+}
+
+.home-page {
+  padding-top: 70px;
 }
 
 @media (min-width: 768px) {

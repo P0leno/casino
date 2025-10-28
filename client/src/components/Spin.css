@@ -1,46 +1,218 @@
 .spin-page {
   width: 100%;
   min-height: calc(100vh - 70px);
-  padding-bottom: 70px;
-}
-
-.spin-header {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: max(120px, calc(85px + env(safe-area-inset-top)));
-  padding: 20px;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  border-radius: 0 0 24px 24px;
-  margin-bottom: 20px;
-}
-
-.spin-header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #ffffff;
+  padding-bottom: 140px;
+  position: relative;
 }
 
 .spin-content {
-  padding: 0 20px;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.roulette-container {
+  width: 100%;
+  max-width: 600px;
+  overflow: hidden;
+  position: relative;
+}
+
+.roulette-viewport {
+  width: 100%;
+  height: 150px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.roulette-strip {
+  display: flex;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  will-change: transform;
+}
+
+.roulette-strip-virtual {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes scroll-roulette {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-960px, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roulette-strip {
+    animation: none !important;
+  }
+}
+
+.roulette-item {
+  width: 120px;
+  height: 150px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  contain: strict;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.gift-placeholder {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  contain: strict;
+}
+
+.gift-emoji {
+  font-size: 50px;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.roulette-pointer {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent 0%, #43e97b 30%, #43e97b 70%, transparent 100%);
+  transform: translateX(-50%);
+  z-index: 10;
+  box-shadow: 0 0 10px #43e97b;
+}
+
+.spin-result {
+  text-align: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  animation: fadeIn 0.5s ease;
+}
+
+.spin-result p {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.spin-button-fixed {
+  position: fixed;
+  bottom: calc(70px + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 350px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  border: none;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.spin-button-fixed:hover:not(.disabled) {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.spin-button-fixed.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.button-main-text {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.button-timer-text {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.result-gift-large {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 300px;
+  animation: bounce 1s infinite;
 }
 
-.spin-placeholder {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 18px;
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
-.platform-desktop .spin-header {
-  min-height: 70px;
+@keyframes popupShow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 .platform-mobile .spin-page {
   min-height: calc(100vh - 85px);
-  padding-bottom: 85px;
+  padding-bottom: 155px;
+  padding-top: 105px;
+}
+
+.spin-page {
+  padding-top: 70px;
+}
+
+.platform-mobile .spin-button-fixed {
+  bottom: calc(85px + 10px);
 }

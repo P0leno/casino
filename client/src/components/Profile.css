@@ -4,26 +4,9 @@
   padding-bottom: 70px;
 }
 
-.profile-header {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: max(120px, calc(85px + env(safe-area-inset-top)));
-  padding: 20px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  border-radius: 0 0 24px 24px;
-  margin-bottom: 20px;
-}
-
-.profile-header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
 .profile-content {
-  padding: 0 20px;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
 }
 
 .profile-card {
@@ -153,8 +136,47 @@
 }
 
 .admin-panel-sheet {
-  min-height: calc(60vh + 10px);
-  max-height: 80vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  padding-top: max(20px, env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-panel-sheet .sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 20px;
+}
+
+.close-panel-btn {
+  position: absolute;
+  top: max(30px, env(safe-area-inset-top) + 10px);
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.close-panel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
 .admin-panel-title {
@@ -248,11 +270,171 @@
   transform: translateY(-2px);
 }
 
-.platform-desktop .profile-header {
-  min-height: 70px;
+.chances-panel-sheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  padding-top: max(20px, env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+}
+
+.chances-panel-sheet .sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 20px;
+}
+
+.chances-mode {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin: -12px 0 20px 0;
+}
+
+.chances-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.chance-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.chance-icon {
+  flex-shrink: 0;
+}
+
+.chance-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chance-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chance-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.chance-input {
+  width: 70px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: center;
+}
+
+.chance-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.chance-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-btn {
+  background: rgba(67, 233, 123, 0.2);
+  color: #43e97b;
+}
+
+.edit-btn:hover {
+  background: rgba(67, 233, 123, 0.3);
+}
+
+.save-btn {
+  background: rgba(67, 233, 123, 0.2);
+  color: #43e97b;
+}
+
+.save-btn:hover {
+  background: rgba(67, 233, 123, 0.3);
+}
+
+.cancel-btn {
+  background: rgba(255, 80, 80, 0.2);
+  color: #ff5050;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 80, 80, 0.3);
+}
+
+.admin-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 24px 0;
+}
+
+.admin-chances-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.admin-chances-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.admin-chances-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .platform-mobile .profile-page {
   min-height: calc(100vh - 85px);
   padding-bottom: 85px;
+  padding-top: 45px;
 }
