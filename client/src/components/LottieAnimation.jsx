@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-function LottieAnimation({ animationData, width = 80, height = 80, loop = true, autoplay = true }) {
+function LottieAnimation({ animationData, width = 80, height = 80, loop = true, autoplay = true, rotation = 0 }) {
   const containerRef = useRef(null)
   const animationRef = useRef(null)
 
@@ -42,7 +42,8 @@ function LottieAnimation({ animationData, width = 80, height = 80, loop = true, 
       style={{ 
         width: `${width}px`, 
         height: `${height}px`,
-        display: 'inline-block'
+        display: 'inline-block',
+        transform: rotation !== 0 ? `rotate(${rotation}deg)` : 'none'
       }}
     />
   )

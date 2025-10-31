@@ -1,0 +1,43 @@
+<svg width="817" height="276" viewBox="0 0 817 276" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Градиентный фон -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="text-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#fee140;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fa709a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Фон с закругленными углами -->
+  <rect width="817" height="276" rx="24" fill="url(#bg-gradient)"/>
+  
+  <!-- Декоративные элементы -->
+  <circle cx="100" cy="50" r="30" fill="white" opacity="0.1"/>
+  <circle cx="700" cy="220" r="40" fill="white" opacity="0.1"/>
+  <circle cx="50" cy="200" r="20" fill="white" opacity="0.15"/>
+  <circle cx="750" cy="60" r="25" fill="white" opacity="0.12"/>
+  
+  <!-- Звездочки -->
+  <text x="150" y="80" font-size="40" fill="white" opacity="0.6">✨</text>
+  <text x="650" y="100" font-size="35" fill="white" opacity="0.5">🎁</text>
+  <text x="80" y="250" font-size="30" fill="white" opacity="0.4">🌟</text>
+  
+  <!-- Основной текст FREE SPIN -->
+  <text x="408" y="120" font-size="72" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
+    FREE SPIN
+  </text>
+  
+  <!-- Подзаголовок -->
+  <text x="408" y="170" font-size="32" fill="white" opacity="0.9" text-anchor="middle" font-family="Arial, sans-serif">
+    Крути каждые 24 часа
+  </text>
+  
+  <!-- Кнопка призыва к действию -->
+  <rect x="308" y="190" width="200" height="50" rx="25" fill="url(#text-gradient)"/>
+  <text x="408" y="223" font-size="24" font-weight="600" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
+    Играть →
+  </text>
+</svg>

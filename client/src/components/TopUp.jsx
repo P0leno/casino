@@ -13,6 +13,27 @@ function TopUp({ onNavigateBack }) {
   useEffect(() => {
     const savedTab = localStorage.getItem('previousTab') || 'home'
     setReturnTab(savedTab)
+    
+    // Показываем нативную кнопку "Назад" от Telegram
+    const tg = window.Telegram?.WebApp
+    if (tg?.BackButton) {
+      tg.BackButton.show()
+      
+      // Обработчик клика на кнопку назад
+      const handleBackClick = () => {
+        if (onNavigateBack) {
+          onNavigateBack(savedTab)
+        }
+      }
+      
+      tg.BackButton.onClick(handleBackClick)
+      
+      // Скрываем кнопку при размонтировании компонента
+      return () => {
+        tg.BackButton.hide()
+        tg.BackButton.offClick(handleBackClick)
+      }
+    }
   }, [])
 
   const handleTopUp = async () => {
@@ -64,10 +85,6 @@ function TopUp({ onNavigateBack }) {
   return (
     <div className="topup-page">
       <div className="topup-content">
-        <div className="topup-header">
-          <h2>Пополнение</h2>
-        </div>
-
         <div className="topup-body">
           <div className="amount-display" onClick={() => setIsEditing(true)}>
             {isEditing ? (

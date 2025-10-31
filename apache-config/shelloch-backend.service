@@ -3,7 +3,7 @@ Description=Shelloch FastAPI Backend + Telegram Bot
 After=network.target
 
 [Service]
-Type=simple
+Type=exec
 User=www-data
 Group=www-data
 WorkingDirectory=/opt/shell
@@ -11,7 +11,9 @@ Environment="PATH=/opt/shell/venv/bin"
 Environment="PYTHONPATH=/opt/shell"
 ExecStart=/opt/shell/venv/bin/python main.py
 Restart=always
-RestartSec=10
+RestartSec=3
+TimeoutStartSec=15
+TimeoutStopSec=10
 
 # Логирование
 StandardOutput=journal

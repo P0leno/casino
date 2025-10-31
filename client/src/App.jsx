@@ -3,6 +3,8 @@ import './App.css'
 import Home from './components/Home'
 import Inventory from './components/Inventory'
 import SpinVirtual from './components/SpinVirtual'
+import FreeSpin from './components/FreeSpin'
+import Crash from './components/Crash'
 import Profile from './components/Profile'
 import TopUp from './components/TopUp'
 import TabBar from './components/TabBar'
@@ -12,10 +14,30 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('home')
   const [isMobile, setIsMobile] = useState(false)
+  const [currentPath, setCurrentPath] = useState(window.location.pathname)
 
   useEffect(() => {
     localStorage.setItem('currentTab', activeTab)
   }, [activeTab])
+
+  useEffect(() => {
+    // Отслеживание изменений URL
+    const handlePopState = () => {
+      const path = window.location.pathname
+      setCurrentPath(path)
+      
+      // Если вернулись на главную страницу - скрываем BackButton
+      if (path === '/' || path === '') {
+        const tg = window.Telegram?.WebApp
+        if (tg) {
+          tg.BackButton.hide()
+        }
+      }
+    }
+    
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -103,6 +125,32 @@ function App() {
     return (
       <div className="error-container">
         <div className="error-message">{error}</div>
+      </div>
+    )
+  }
+
+  // Если путь /spins/free - показываем FreeSpin без TabBar
+  if (currentPath === '/spins/free') {
+    return (
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
+        <FreeSpin onNavigateToTopUp={setActiveTab} />
+      </div>
+    )
+  }
+
+  // Если путь /crash - показываем Crash с TabBar
+  if (currentPath === '/crash') {
+    const handleTabChangeFromCrash = (tab) => {
+      // Возвращаемся на главную страницу
+      window.history.back()
+      setCurrentPath('/')
+      setActiveTab(tab)
+    }
+
+    return (
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
+        <Crash onNavigateToTopUp={setActiveTab} />
+        <TabBar activeTab="home" onTabChange={handleTabChangeFromCrash} />
       </div>
     )
   }

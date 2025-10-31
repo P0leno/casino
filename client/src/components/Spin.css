@@ -240,6 +240,36 @@
   padding-top: 70px;
 }
 
+.spin-banner-container {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.platform-mobile .spin-banner-container {
+  padding-top: 40px;
+}
+
+.spin-banner {
+  width: 100%;
+  max-width: 817px;
+  height: auto;
+  cursor: pointer;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  border-radius: 16px;
+}
+
+.spin-banner:hover {
+  transform: scale(1.02);
+  opacity: 0.9;
+}
+
+.spin-banner:active {
+  transform: scale(0.98);
+}
+
 .platform-mobile .spin-button-fixed {
   bottom: calc(85px + 10px);
 }

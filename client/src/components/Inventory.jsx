@@ -5,6 +5,7 @@ import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import giftAnimation from '../assets/gift.json'
 import bearAnim from '../assets/bear.json'
+import bottleAnim from '../assets/bottle.json'
 import cakeAnim from '../assets/cake.json'
 import cupAnim from '../assets/cup.json'
 import diamondAnim from '../assets/diamond.json'
@@ -16,6 +17,7 @@ import roseAnim from '../assets/rose.json'
 
 const giftAnimations = {
   bear: bearAnim,
+  bottle: bottleAnim,
   cake: cakeAnim,
   cup: cupAnim,
   diamond: diamondAnim,
@@ -32,10 +34,16 @@ function Inventory({ onNavigateToTopUp }) {
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
   const [prices, setPrices] = useState({})
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [errorDetails, setErrorDetails] = useState('')
+  const [currentGift, setCurrentGift] = useState(null)
+  const [withdrawAvailable, setWithdrawAvailable] = useState(false)
 
   useEffect(() => {
     loadInventory()
     loadPrices()
+    checkWithdrawAvailable()
   }, [])
 
   const loadInventory = async () => {
@@ -92,8 +100,100 @@ function Inventory({ onNavigateToTopUp }) {
     }
   }
 
-  const handleWithdraw = (giftName) => {
-    alert('Функция вывода пока не реализована')
+  const checkWithdrawAvailable = async () => {
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      if (!initData) return
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const response = await fetch(`${apiUrl}/api/check-withdraw-available`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      })
+
+      const data = await response.json()
+      if (data.valid) {
+        setWithdrawAvailable(data.available)
+      }
+    } catch (error) {
+      console.error('Error checking withdraw availability:', error)
+    }
+  }
+
+  const handleWithdraw = async (giftName, index) => {
+    if (!withdrawAvailable) {
+      alert('Функция вывода временно недоступна')
+      return
+    }
+
+    const confirmed = confirm(`Вывести ${giftName} на ваш аккаунт Telegram?`)
+    if (!confirmed) return
+
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/withdraw-gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, giftName, index })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        alert('✅ Подарок успешно отправлен!')
+        loadInventory()
+      } else {
+        // Показываем модальное окно с ошибкой
+        setErrorMessage(data.message || 'Не удалось отправить подарок')
+        setErrorDetails(data.error || '')
+        setCurrentGift({ giftName, index })
+        setShowErrorModal(true)
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    }
+  }
+
+  const handleRetryWithdraw = () => {
+    setShowErrorModal(false)
+    if (currentGift) {
+      handleWithdraw(currentGift.giftName, currentGift.index)
+    }
+  }
+
+  const handleManualWithdraw = async () => {
+    if (!currentGift) return
+
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/request-manual-withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          initData, 
+          giftName: currentGift.giftName, 
+          index: currentGift.index 
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setShowErrorModal(false)
+        alert('✅ ' + data.message)
+        loadInventory()
+      } else {
+        alert('Ошибка: ' + data.message)
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    }
   }
 
   const handleSell = async (giftName, index) => {
@@ -151,7 +251,12 @@ function Inventory({ onNavigateToTopUp }) {
                   )}
                 </div>
                 <div className="gift-actions">
-                  <button className="gift-withdraw-btn" onClick={() => handleWithdraw(giftName)}>
+                  <button 
+                    className="gift-withdraw-btn" 
+                    onClick={() => handleWithdraw(giftName, index)}
+                    disabled={!withdrawAvailable}
+                    style={{ opacity: withdrawAvailable ? 1 : 0.5 }}
+                  >
                     Вывести
                   </button>
                   <button className="gift-sell-btn" onClick={() => handleSell(giftName, index)}>
@@ -186,6 +291,40 @@ function Inventory({ onNavigateToTopUp }) {
               <button className="overlay-button" onClick={handleOpenBot}>
                 Отправить
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showErrorModal && (
+        <>
+          <div className="overlay-backdrop" onClick={() => setShowErrorModal(false)} />
+          <div className="overlay-sheet error-modal">
+            <div className="sheet-handle"></div>
+            
+            <div className="sheet-content">
+              <div className="error-icon">❌</div>
+              <h2 className="overlay-title">Подарок не отправился</h2>
+              <p className="overlay-text">
+                {errorMessage}
+              </p>
+              {errorDetails && (
+                <div className="error-details">
+                  <code>{errorDetails}</code>
+                </div>
+              )}
+              <p className="overlay-text" style={{ marginTop: '16px' }}>
+                Убедитесь что вы написали <b>привет</b> боту <b>@shellrelayer</b>
+              </p>
+
+              <div className="error-actions">
+                <button className="retry-button" onClick={handleRetryWithdraw}>
+                  Повторить
+                </button>
+                <button className="manual-button" onClick={handleManualWithdraw}>
+                  Вывод администрацией
+                </button>
+              </div>
             </div>
           </div>
         </>

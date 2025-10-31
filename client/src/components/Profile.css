@@ -449,8 +449,124 @@
   transform: none;
 }
 
+.refund-panel-button {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.refund-panel-button:hover {
+  box-shadow: 0 4px 20px rgba(250, 112, 154, 0.3);
+}
+
+.refund-panel-sheet {
+  max-height: 60vh;
+}
+
+.refund-button {
+  width: 100%;
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 16px;
+}
+
+.refund-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(250, 112, 154, 0.4);
+}
+
+.refund-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.admin-toggle-group {
+  margin: 20px 0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 50px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.toggle-checkbox:checked + .toggle-slider::before {
+  transform: translateX(22px);
+}
+
+.toggle-checkbox:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-text {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.toggle-hint {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: rgba(255, 200, 100, 0.9);
+  font-style: italic;
+}
+
 .platform-mobile .profile-page {
   min-height: calc(100vh - 85px);
   padding-bottom: 85px;
   padding-top: 45px;
+}
+
+.input-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 8px 0 0 0;
+  line-height: 1.4;
+}
+
+.save-button {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.save-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049, #3d8b40);
 }

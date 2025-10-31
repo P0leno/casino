@@ -1,8 +1,20 @@
 import './Home.css'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
+import LottieAnimation from './LottieAnimation'
+import crashAnim from '../assets/crash.json'
 
 function Home({ onNavigateToTopUp }) {
+  const handleNavigateToCrash = () => {
+    window.history.pushState({}, '', '/crash')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const handleNavigateToFreeSpin = () => {
+    window.history.pushState({}, '', '/spins/free')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
   return (
     <div className="home-page">
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
@@ -13,23 +25,21 @@ function Home({ onNavigateToTopUp }) {
           <p>Это главная страница приложения</p>
         </div>
 
-        <div className="info-cards">
-          <div className="info-card">
-            <div className="card-icon">🎯</div>
-            <h3>Возможности</h3>
-            <p>Здесь будут основные функции</p>
+        <div className="crash-dynamic-banner" onClick={handleNavigateToCrash}>
+          <div className="crash-banner-line"></div>
+          <div className="crash-banner-content">
+            <div className="crash-banner-text">
+              <h2 className="crash-banner-title">Краш</h2>
+              <p className="crash-banner-subtitle">Следи за ракетой!</p>
+            </div>
           </div>
-
-          <div className="info-card">
-            <div className="card-icon">⚡</div>
-            <h3>Быстрый доступ</h3>
-            <p>Популярные действия</p>
-          </div>
-
-          <div className="info-card">
-            <div className="card-icon">📊</div>
-            <h3>Статистика</h3>
-            <p>Ваша активность</p>
+          <div className="crash-banner-rocket">
+            <LottieAnimation 
+              animationData={crashAnim} 
+              width={60} 
+              height={60}
+              rotation={2}
+            />
           </div>
         </div>
       </div>

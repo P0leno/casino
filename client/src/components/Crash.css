@@ -1,0 +1,460 @@
+.crash-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding-bottom: 70px;
+  display: flex;
+  flex-direction: column;
+}
+
+.crash-game-area {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Сеточка фона */
+.crash-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.grid-lines-horizontal,
+.grid-lines-vertical {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.grid-lines-horizontal {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.grid-lines-vertical {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.grid-lines-horizontal .grid-line {
+  width: 100%;
+  height: 1px;
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.grid-lines-vertical .grid-line {
+  width: 1px;
+  height: 100%;
+  background: rgba(59, 130, 246, 0.4);
+}
+
+/* Анимация сеточки при работе */
+.crash-grid.running {
+  animation: gridExpand 3s ease-in-out infinite;
+}
+
+@keyframes gridExpand {
+  0% {
+    transform: scale(1) translateZ(0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.08) translateZ(0);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1) translateZ(0);
+    opacity: 0.2;
+  }
+}
+
+/* Тряска при краше */
+.crash-grid.crashed {
+  animation: gridShake 0.5s ease-in-out;
+}
+
+@keyframes gridShake {
+  0%, 100% {
+    transform: translateX(0) translateY(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-3px) translateY(-3px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(3px) translateY(3px);
+  }
+}
+
+/* Линия траектории */
+.crash-trajectory-line {
+  position: absolute;
+  bottom: 20%;
+  left: 10%;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    rgba(139, 255, 101, 0) 0%, 
+    rgba(139, 255, 101, 0.5) 20%,
+    rgba(139, 255, 101, 1) 100%
+  );
+  border-radius: 2px;
+  box-shadow: 0 0 15px rgba(139, 255, 101, 0.8);
+  z-index: 2;
+  transform-origin: left center;
+  transform: rotate(-20deg);
+  transition: width 0.1s linear;
+}
+
+.crash-rocket-center {
+  position: relative;
+  z-index: 10;
+  animation: rocketFloat 2s ease-in-out infinite;
+}
+
+@keyframes rocketFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(2deg);
+  }
+}
+
+.crash-multiplier-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
+  animation: pulse 1s ease-in-out infinite;
+  transition: color 0.3s ease;
+  z-index: 5;
+  opacity: 0.3;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+.crash-crashed-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 64px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow: 0 0 20px #ff4444;
+  z-index: 15;
+  animation: crashPulse 0.5s ease-in-out;
+}
+
+@keyframes crashPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.crash-history-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: #000000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.crash-history-row::-webkit-scrollbar {
+  display: none;
+}
+
+.crash-history-item {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.crash-history-item.low {
+  background: #4a5568;
+  color: #ffffff;
+}
+
+.crash-history-item.high {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.crash-history-item.mega {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.crash-bet-button {
+  width: calc(100% - 40px);
+  margin: 20px;
+  padding: 18px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.crash-bet-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+}
+
+.crash-bet-button:active {
+  transform: translateY(0);
+}
+
+.crash-bet-button.cashout {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  animation: cashoutPulse 1s ease-in-out infinite;
+}
+
+@keyframes cashoutPulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.8);
+  }
+}
+
+.crash-bets-list {
+  flex: 1;
+  padding: 0 20px 20px 20px;
+  overflow-y: auto;
+}
+
+.crash-bet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.crash-bet-item.my-bet {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.crash-bet-item.waiting {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.bet-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.bet-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bet-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bet-username {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.bet-amount {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.bet-waiting-text {
+  font-size: 12px;
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.bet-result {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.bet-cashout {
+  color: #10b981;
+}
+
+.bet-multiplier {
+  color: #3b82f6;
+  animation: multiplierPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes multiplierPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.bet-cancel-button {
+  padding: 8px 16px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.bet-cancel-button:hover {
+  background: #dc2626;
+}
+
+/* Модалка ставки */
+.crash-bet-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.crash-bet-modal-content {
+  background: #1a1a1a;
+  border-radius: 20px;
+  padding: 24px;
+  width: calc(100% - 80px);
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.crash-bet-modal-content h3 {
+  margin: 0 0 20px 0;
+  font-size: 22px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.bet-input-group {
+  margin-bottom: 20px;
+}
+
+.bet-input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bet-input-group input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.bet-modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.bet-modal-buttons button {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.bet-modal-buttons button:first-child {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.bet-modal-buttons button.primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.bet-modal-buttons button:hover {
+  transform: translateY(-2px);
+}
+
+.platform-mobile .crash-page {
+  min-height: calc(100vh - 85px);
+  padding-bottom: 85px;
+  padding-top: 105px;
+}
+
+.crash-page {
+  padding-top: 70px;
+}
