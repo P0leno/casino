@@ -32,12 +32,28 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS gift_chances (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            gift_name TEXT UNIQUE NOT NULL,
+            gift_name TEXT NOT NULL,
             visible_chance REAL NOT NULL,
             real_chance REAL NOT NULL,
             mode TEXT DEFAULT 'free_spin',
             paw_min INTEGER DEFAULT 0,
-            paw_max INTEGER DEFAULT 0
+            paw_max INTEGER DEFAULT 0,
+            star_min INTEGER DEFAULT 1,
+            star_max INTEGER DEFAULT 5,
+            UNIQUE(gift_name, mode)
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS paid_spin_chances (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            gift_name TEXT UNIQUE NOT NULL,
+            visible_chance REAL NOT NULL,
+            real_chance REAL NOT NULL,
+            paw_min INTEGER DEFAULT 0,
+            paw_max INTEGER DEFAULT 0,
+            star_min INTEGER DEFAULT 1,
+            star_max INTEGER DEFAULT 5
         )
     """)
     
@@ -59,25 +75,45 @@ def init_db():
     
     cursor.execute("INSERT OR IGNORE INTO crash_settings (id, max_multiplier) VALUES (1, 1000.0)")
     
-    gifts = [
-        ('bear', 10.0, 10.0, 0, 0),
-        ('cake', 10.0, 10.0, 0, 0),
-        ('cup', 10.0, 10.0, 0, 0),
-        ('diamond', 10.0, 5.0, 0, 0),
-        ('flowers', 10.0, 10.0, 0, 0),
-        ('gift', 10.0, 15.0, 0, 0),
-        ('heart', 10.0, 10.0, 0, 0),
-        ('ring', 10.0, 5.0, 0, 0),
-        ('rocket', 10.0, 5.0, 0, 0),
-        ('rose', 10.0, 20.0, 0, 0),
-        ('bottle', 10.0, 10.0, 0, 0),
-        ('paw', 10.0, 10.0, 1, 5)
+    # Данные для бесплатного спина
+    # star_min/star_max - только для 'star', paw_min/paw_max - только для 'paw'
+    free_spin_gifts = [
+        ('bear', 10.0, 1.0, 0, 0, 0, 0),
+        ('cake', 10.0, 0.0, 0, 0, 0, 0),
+        ('cup', 10.0, 0.0, 0, 0, 0, 0),
+        ('diamond', 10.0, 0.0, 0, 0, 0, 0),
+        ('flowers', 10.0, 0.0, 0, 0, 0, 0),
+        ('gift', 10.0, 0.01, 0, 0, 0, 0),
+        ('heart', 10.0, 1.0, 0, 0, 0, 0),
+        ('ring', 10.0, 0.0, 0, 0, 0, 0),
+        ('rocket', 10.0, 0.0, 0, 0, 0, 0),
+        ('rose', 10.0, 0.0, 0, 0, 0, 0),
+        ('bottle', 10.0, 0.0, 0, 0, 0, 0),
+        ('paw', 10.0, 90.0, 1, 7, 0, 0),
+        ('star', 10.0, 7.0, 0, 0, 1, 5)
     ]
     
-    for gift_name, visible, real, paw_min, paw_max in gifts:
+    for gift_name, visible, real, paw_min, paw_max, star_min, star_max in free_spin_gifts:
         cursor.execute(
-            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, paw_min, paw_max) VALUES (?, ?, ?, ?, ?)",
-            (gift_name, visible, real, paw_min, paw_max)
+            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, mode, paw_min, paw_max, star_min, star_max) VALUES (?, ?, ?, 'free_spin', ?, ?, ?, ?)",
+            (gift_name, visible, real, paw_min, paw_max, star_min, star_max)
+        )
+    
+    # Данные для платного спина (бомж кейс) за 5 звезд
+    # star_min/star_max - только для 'star', paw_min/paw_max - только для 'paw'
+    bomzcase_gifts = [
+        ('bear', 10.0, 1.0, 0, 0, 0, 0),
+        ('heart', 10.0, 1.0, 0, 0, 0, 0),
+        ('rose', 10.0, 0.0, 0, 0, 0, 0),
+        ('gift', 10.0, 0.01, 0, 0, 0, 0),
+        ('paw', 10.0, 90.0, 1, 7, 0, 0),
+        ('star', 20.0, 7.0, 0, 0, 1, 4)
+    ]
+    
+    for gift_name, visible, real, paw_min, paw_max, star_min, star_max in bomzcase_gifts:
+        cursor.execute(
+            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, mode, paw_min, paw_max, star_min, star_max) VALUES (?, ?, ?, 'bomzcase', ?, ?, ?, ?)",
+            (gift_name, visible, real, paw_min, paw_max, star_min, star_max)
         )
     
     prices = [

@@ -170,6 +170,10 @@
   padding-top: 70px;
 }
 
+.platform-android .home-content {
+  padding-top: 40px !important;
+}
+
 @media (min-width: 768px) {
   .info-cards {
     grid-template-columns: repeat(3, 1fr);

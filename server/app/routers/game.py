@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime, timedelta
 import random
 from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
-from app.utils import validate_init_data
+from app.utils.validate import validate_init_data
 from app.pyrogram_client import get_pyrogram
 from app.utils.gift_sender import send_gift_async
 from aiogram import Bot
@@ -139,7 +139,7 @@ async def spin(request: ValidateRequest):
                 conn.close()
                 return {"success": False, "message": "Spin not available yet"}
         
-        cursor.execute("SELECT gift_name, real_chance FROM gift_chances")
+        cursor.execute("SELECT gift_name, real_chance FROM gift_chances WHERE mode = 'free_spin'")
         chances = cursor.fetchall()
         
         total = sum(chance[1] for chance in chances)
@@ -159,7 +159,7 @@ async def spin(request: ValidateRequest):
         # Проверяем является ли это лапкой
         if selected_gift == "paw":
             # Получаем диапазон лапок для этого подарка
-            cursor.execute("SELECT paw_min, paw_max FROM gift_chances WHERE gift_name = ?", (selected_gift,))
+            cursor.execute("SELECT paw_min, paw_max FROM gift_chances WHERE gift_name = ? AND mode = 'free_spin'", (selected_gift,))
             paw_range = cursor.fetchone()
             paw_min = paw_range[0] if paw_range and paw_range[0] else 1
             paw_max = paw_range[1] if paw_range and paw_range[1] else 10
@@ -167,10 +167,34 @@ async def spin(request: ValidateRequest):
             # Генерируем случайное количество лапок
             paw_count = random.randint(paw_min, paw_max)
             
-            # Добавляем лапки к балансу
+            # Добавляем лапки к bonus_balance (бонусные лапки)
+            cursor.execute("SELECT bonus_balance FROM users WHERE id = ?", (user_id,))
+            current_bonus = cursor.fetchone()[0] or 0
+            new_bonus = current_bonus + paw_count
+            
+            cursor.execute(
+                "UPDATE users SET last_spin_date = ?, bonus_balance = ? WHERE id = ?",
+                (datetime.now().isoformat(), new_bonus, user_id)
+            )
+            conn.commit()
+            conn.close()
+            
+            return {"success": True, "gift": selected_gift, "paw_count": paw_count}
+        # Проверяем является ли это звездой
+        elif selected_gift == "star":
+            # Получаем диапазон звезд для этого подарка
+            cursor.execute("SELECT star_min, star_max FROM gift_chances WHERE gift_name = ? AND mode = 'free_spin'", (selected_gift,))
+            star_range = cursor.fetchone()
+            star_min = star_range[0] if star_range and star_range[0] else 1
+            star_max = star_range[1] if star_range and star_range[1] else 5
+            
+            # Генерируем случайное количество звезд
+            star_count = random.randint(star_min, star_max)
+            
+            # Добавляем звезды к balance
             cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
-            current_balance = cursor.fetchone()[0]
-            new_balance = current_balance + paw_count
+            current_balance = cursor.fetchone()[0] or 0
+            new_balance = current_balance + star_count
             
             cursor.execute(
                 "UPDATE users SET last_spin_date = ?, balance = ? WHERE id = ?",
@@ -179,7 +203,7 @@ async def spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
-            return {"success": True, "gift": selected_gift, "paw_count": paw_count}
+            return {"success": True, "gift": selected_gift, "star_count": star_count}
         else:
             # Для остальных подарков - добавляем в инвентарь
             cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
@@ -198,6 +222,127 @@ async def spin(request: ValidateRequest):
             return {"success": True, "gift": selected_gift}
     except Exception as e:
         print(f"Error in spin: {e}")
+        return {"success": False, "message": "Ошибка сервера"}
+
+@router.post("/paid-spin")
+async def paid_spin(request: ValidateRequest):
+    print(f"[PAID-SPIN] Request received")
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    print(f"[PAID-SPIN] Validation result: {is_valid}")
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        print(f"[PAID-SPIN] User ID: {user_id}")
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Проверяем баланс звезд - колонка balance
+        cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            conn.close()
+            print(f"[PAID-SPIN] User {user_id} not found in database")
+            return {"success": False, "message": "User not found"}
+        
+        balance = result[0] or 0
+        print(f"[PAID-SPIN] User {user_id} balance: {balance}")
+        
+        # Проверяем хватает ли звезд
+        if balance < 5:
+            conn.close()
+            print(f"[PAID-SPIN] Insufficient balance: {balance} < 5")
+            return {"success": False, "message": "Недостаточно звезд", "needTopUp": True}
+        
+        # Списываем 5 звезд сразу
+        new_balance = balance - 5
+        print(f"[PAID-SPIN] Deducting 5 stars, new balance: {new_balance}")
+        cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
+        conn.commit()
+        
+        # Получаем шансы из таблицы gift_chances для режима bomzcase
+        cursor.execute("SELECT gift_name, real_chance FROM gift_chances WHERE mode = 'bomzcase'")
+        chances = cursor.fetchall()
+        print(f"[PAID-SPIN] Found {len(chances)} gifts for bomzcase")
+        
+        total = sum(chance[1] for chance in chances)
+        rand = random.uniform(0, total)
+        current = 0
+        selected_gift = chances[0][0]
+        
+        for gift_name, chance in chances:
+            current += chance
+            if rand <= current:
+                selected_gift = gift_name
+                break
+        
+        # Проверяем является ли это лапкой
+        if selected_gift == "paw":
+            cursor.execute("SELECT paw_min, paw_max FROM gift_chances WHERE gift_name = ? AND mode = 'bomzcase'", (selected_gift,))
+            paw_range = cursor.fetchone()
+            paw_min = paw_range[0] if paw_range and paw_range[0] else 1
+            paw_max = paw_range[1] if paw_range and paw_range[1] else 10
+            
+            paw_count = random.randint(paw_min, paw_max)
+            
+            # Добавляем лапки в bonus_balance (а не в balance который для звезд)
+            cursor.execute("SELECT bonus_balance FROM users WHERE id = ?", (user_id,))
+            current_bonus = cursor.fetchone()[0] or 0
+            new_bonus = current_bonus + paw_count
+            
+            cursor.execute("UPDATE users SET bonus_balance = ? WHERE id = ?", (new_bonus, user_id))
+            conn.commit()
+            conn.close()
+            
+            print(f"[PAID-SPIN] User {user_id} won {paw_count} paws, new bonus_balance: {new_bonus}")
+            return {"success": True, "gift": selected_gift, "paw_count": paw_count}
+        
+        # Проверяем является ли это звездой
+        elif selected_gift == "star":
+            cursor.execute("SELECT star_min, star_max FROM gift_chances WHERE gift_name = ? AND mode = 'bomzcase'", (selected_gift,))
+            star_range = cursor.fetchone()
+            star_min = star_range[0] if star_range and star_range[0] else 1
+            star_max = star_range[1] if star_range and star_range[1] else 5
+            
+            star_count = random.randint(star_min, star_max)
+            
+            # Добавляем звезды к уже списанному балансу (возврат звезд)
+            final_balance = new_balance + star_count
+            
+            cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (final_balance, user_id))
+            conn.commit()
+            conn.close()
+            
+            print(f"[PAID-SPIN] User {user_id} won {star_count} stars, new balance: {final_balance}")
+            return {"success": True, "gift": selected_gift, "star_count": star_count}
+        
+        else:
+            # Для остальных подарков - добавляем в инвентарь
+            cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
+            inv_result = cursor.fetchone()
+            inventory = json.loads(inv_result[0]) if inv_result and inv_result[0] else []
+            
+            inventory.append(selected_gift)
+            
+            cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory), user_id))
+            conn.commit()
+            conn.close()
+            
+            return {"success": True, "gift": selected_gift}
+    except Exception as e:
+        print(f"Error in paid-spin: {e}")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/get-inventory")

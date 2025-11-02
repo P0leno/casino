@@ -5,7 +5,7 @@ import json
 import sqlite3
 from datetime import datetime
 from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH
-from app.utils import validate_init_data
+from app.utils.validate import validate_init_data
 
 router = APIRouter(prefix="/api", tags=["auth"])
 

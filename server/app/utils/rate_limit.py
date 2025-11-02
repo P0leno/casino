@@ -38,3 +38,6 @@ class RateLimiter:
 
 # Создаем глобальный rate limiter: 5 запросов за 3 минуты (180 секунд)
 invoice_rate_limiter = RateLimiter(max_requests=5, time_window=180)
+
+# Rate limiter для команды /start: 6 запросов за 3 минуты (180 секунд)
+start_command_rate_limiter = RateLimiter(max_requests=6, time_window=180)

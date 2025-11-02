@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 import json
 import asyncio
 from app.config import BOT_TOKEN
-from app.utils import validate_init_data
+from app.utils.validate import validate_init_data
 from app.utils.rate_limit import invoice_rate_limiter
 from app.bot import bot
 

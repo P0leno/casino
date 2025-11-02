@@ -87,15 +87,19 @@ function Crash({ onNavigateToTopUp }) {
     if (!user || betAmount < 25) return
 
     try {
+      const initData = tg?.initData
+      if (!initData) {
+        if (tg) tg.showAlert('Ошибка авторизации')
+        return
+      }
+
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
       const response = await fetch(`${apiUrl}/api/crash/bet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: user.id,
-          amount: betAmount,
-          username: user.username || user.first_name,
-          avatar: user.photo_url
+          initData,
+          amount: betAmount
         })
       })
 
@@ -120,11 +124,17 @@ function Crash({ onNavigateToTopUp }) {
     if (!user || !userBet) return
 
     try {
+      const initData = tg?.initData
+      if (!initData) {
+        if (tg) tg.showAlert('Ошибка авторизации')
+        return
+      }
+
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
       const response = await fetch(`${apiUrl}/api/crash/cashout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id })
+        body: JSON.stringify({ initData })
       })
 
       const data = await response.json()
@@ -143,11 +153,17 @@ function Crash({ onNavigateToTopUp }) {
     if (!user) return
 
     try {
+      const initData = tg?.initData
+      if (!initData) {
+        if (tg) tg.showAlert('Ошибка авторизации')
+        return
+      }
+
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
       const response = await fetch(`${apiUrl}/api/crash/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id })
+        body: JSON.stringify({ initData })
       })
 
       const data = await response.json()
@@ -237,7 +253,7 @@ function Crash({ onNavigateToTopUp }) {
       </div>
 
       <div className="crash-history-row">
-        {history.map((mult, idx) => (
+        {[...history].reverse().map((mult, idx) => (
           <div 
             key={idx} 
             className={`crash-history-item ${mult >= 10 ? 'mega' : mult >= 2 ? 'high' : 'low'}`}

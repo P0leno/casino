@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 import json
 import sqlite3
 from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH
-from app.utils import validate_init_data
+from app.utils.validate import validate_init_data
 from aiogram import Bot
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -19,6 +19,18 @@ class UpdateChanceRequest(BaseModel):
     realChance: float
     pawMin: int = 0
     pawMax: int = 0
+    starMin: int = 1
+    starMax: int = 5
+
+class UpdatePaidChanceRequest(BaseModel):
+    initData: str
+    giftName: str
+    visibleChance: float
+    realChance: float
+    pawMin: int = 0
+    pawMax: int = 0
+    starMin: int = 1
+    starMax: int = 5
 
 class RefundPaymentRequest(BaseModel):
     initData: str
@@ -52,11 +64,11 @@ async def get_chances(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max FROM gift_chances")
+        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'free_spin'")
         results = cursor.fetchall()
         conn.close()
         
-        chances = [{"name": r[0], "visible": r[1], "real": r[2], "pawMin": r[3] or 0, "pawMax": r[4] or 0} for r in results]
+        chances = [{"name": r[0], "visible": r[1], "real": r[2], "pawMin": r[3] or 0, "pawMax": r[4] or 0, "starMin": r[5] or 1, "starMax": r[6] or 5} for r in results]
         return {"valid": True, "chances": chances}
     except Exception:
         return {"valid": False, "chances": []}
@@ -89,11 +101,18 @@ async def update_chances(request: UpdateChanceRequest):
         if paw_min > paw_max and paw_max > 0:
             paw_min, paw_max = paw_max, paw_min
         
+        # Валидация starMin и starMax
+        star_min = max(1, min(100, request.starMin))
+        star_max = max(1, min(100, request.starMax))
+        
+        if star_min > star_max:
+            star_min, star_max = star_max, star_min
+        
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ? WHERE gift_name = ?",
-            (request.visibleChance, request.realChance, paw_min, paw_max, request.giftName)
+            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = 'free_spin'",
+            (request.visibleChance, request.realChance, paw_min, paw_max, star_min, star_max, request.giftName)
         )
         conn.commit()
         conn.close()
@@ -101,6 +120,86 @@ async def update_chances(request: UpdateChanceRequest):
         return {"success": True}
     except Exception as e:
         print(f"Error in update_chances: {e}")
+        return {"success": False, "message": "Ошибка сервера"}
+
+@router.post("/get-paid-chances")
+async def get_paid_chances(request: ValidateRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"valid": False, "chances": []}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"valid": False, "chances": []}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        if user_id not in ADMIN_IDS:
+            return {"valid": False, "chances": []}
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'bomzcase'")
+        results = cursor.fetchall()
+        conn.close()
+        
+        chances = [{"name": r[0], "visible": r[1], "real": r[2], "pawMin": r[3] or 0, "pawMax": r[4] or 0, "starMin": r[5] or 1, "starMax": r[6] or 5} for r in results]
+        return {"valid": True, "chances": chances}
+    except Exception:
+        return {"valid": False, "chances": []}
+
+@router.post("/update-paid-chances")
+async def update_paid_chances(request: UpdatePaidChanceRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        if user_id not in ADMIN_IDS:
+            return {"success": False, "message": "Not authorized"}
+        
+        # Валидация pawMin и pawMax на сервере
+        paw_min = max(0, min(100, request.pawMin))
+        paw_max = max(0, min(100, request.pawMax))
+        
+        # Проверка что min <= max
+        if paw_min > paw_max and paw_max > 0:
+            paw_min, paw_max = paw_max, paw_min
+        
+        # Валидация starMin и starMax
+        star_min = max(1, min(100, request.starMin))
+        star_max = max(1, min(100, request.starMax))
+        
+        if star_min > star_max:
+            star_min, star_max = star_max, star_min
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = 'bomzcase'",
+            (request.visibleChance, request.realChance, paw_min, paw_max, star_min, star_max, request.giftName)
+        )
+        conn.commit()
+        conn.close()
+        
+        return {"success": True}
+    except Exception as e:
+        print(f"Error in update_paid_chances: {e}")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/admin/refund-payment")

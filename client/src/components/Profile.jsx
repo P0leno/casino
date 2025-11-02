@@ -13,6 +13,7 @@ import ringAnim from '../assets/ring.json'
 import rocketAnim from '../assets/rocket.json'
 import roseAnim from '../assets/rose.json'
 import pawAnim from '../assets/paw.json'
+import starAnim from '../assets/star.json'
 
 const giftAnimations = {
   bear: bearAnim,
@@ -26,7 +27,8 @@ const giftAnimations = {
   ring: ringAnim,
   rocket: rocketAnim,
   rose: roseAnim,
-  paw: pawAnim
+  paw: pawAnim,
+  star: starAnim
 }
 
 function Profile() {
@@ -39,6 +41,9 @@ function Profile() {
   const [showChancesPanel, setShowChancesPanel] = useState(false)
   const [chances, setChances] = useState([])
   const [editingGift, setEditingGift] = useState(null)
+  const [showPaidChancesPanel, setShowPaidChancesPanel] = useState(false)
+  const [paidChances, setPaidChances] = useState([])
+  const [editingPaidGift, setEditingPaidGift] = useState(null)
   const [refundUserId, setRefundUserId] = useState('')
   const [refundTransactionId, setRefundTransactionId] = useState('')
   const [refundLoading, setRefundLoading] = useState(false)
@@ -149,7 +154,28 @@ function Profile() {
     }
   }
 
-  const handleUpdateChance = async (giftName, visibleChance, realChance, pawMin = 0, pawMax = 0) => {
+  const loadPaidChances = async () => {
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      
+      const response = await fetch(`${apiUrl}/api/get-paid-chances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      })
+
+      const data = await response.json()
+      if (data.valid) {
+        setPaidChances(data.chances)
+      }
+    } catch (error) {
+      console.error('Error loading paid chances:', error)
+    }
+  }
+
+  const handleUpdateChance = async (giftName, visibleChance, realChance, pawMin = 0, pawMax = 0, starMin = 1, starMax = 5) => {
     setActionLoading(true)
     try {
       const tg = window.Telegram?.WebApp
@@ -159,7 +185,7 @@ function Profile() {
       const response = await fetch(`${apiUrl}/api/update-chances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftName, visibleChance, realChance, pawMin, pawMax })
+        body: JSON.stringify({ initData, giftName, visibleChance, realChance, pawMin, pawMax, starMin, starMax })
       })
 
       const data = await response.json()
@@ -167,6 +193,34 @@ function Profile() {
         alert('Шансы обновлены')
         loadChances()
         setEditingGift(null)
+      } else {
+        alert('Ошибка: ' + data.message)
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleUpdatePaidChance = async (giftName, visibleChance, realChance, pawMin = 0, pawMax = 0, starMin = 1, starMax = 5) => {
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      
+      const response = await fetch(`${apiUrl}/api/update-paid-chances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, giftName, visibleChance, realChance, pawMin, pawMax, starMin, starMax })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        alert('Шансы обновлены')
+        loadPaidChances()
+        setEditingPaidGift(null)
       } else {
         alert('Ошибка: ' + data.message)
       }
@@ -356,7 +410,7 @@ function Profile() {
         )}
       </div>
 
-      {showAdminPanel && (
+      {showAdminPanel && isAdmin && (
         <>
           <div className="overlay-backdrop" onClick={() => setShowAdminPanel(false)} />
           <div className="overlay-sheet admin-panel-sheet">
@@ -405,7 +459,21 @@ function Profile() {
                 disabled={actionLoading}
               >
                 <span className="button-icon">🎲</span>
-                <span className="button-text">Управление шансами</span>
+                <span className="button-text">Фри спин - Шансы</span>
+              </button>
+
+              <div className="admin-divider"></div>
+
+              <button 
+                className="admin-chances-button" 
+                onClick={() => { 
+                  loadPaidChances(); 
+                  setShowPaidChancesPanel(true); 
+                }}
+                disabled={actionLoading}
+              >
+                <span className="button-icon">⭐</span>
+                <span className="button-text">Платный спин - Шансы</span>
               </button>
 
               <div className="admin-divider"></div>
@@ -437,7 +505,7 @@ function Profile() {
         </>
       )}
 
-      {showChancesPanel && (
+      {showChancesPanel && isAdmin && (
         <>
           <div className="overlay-backdrop" onClick={() => setShowChancesPanel(false)} />
           <div className="overlay-sheet chances-panel-sheet">
@@ -514,6 +582,38 @@ function Profile() {
                           )}
                         </div>
                       )}
+                      {chance.name === 'star' && (
+                        <div className="chance-row">
+                          <span className="chance-label">Звезд (диапазон):</span>
+                          {editingGift === chance.name ? (
+                            <div className="paw-range-inputs">
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.starMin || 1}
+                                id={`starMin-${chance.name}`}
+                                min="1"
+                                max="100"
+                                placeholder="От"
+                                disabled={actionLoading}
+                              />
+                              <span className="range-separator">-</span>
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.starMax || 5}
+                                id={`starMax-${chance.name}`}
+                                min="1"
+                                max="100"
+                                placeholder="До"
+                                disabled={actionLoading}
+                              />
+                            </div>
+                          ) : (
+                            <span className="chance-value">{chance.starMin || 1}-{chance.starMax || 5}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="chance-actions">
                       {editingGift === chance.name ? (
@@ -523,12 +623,16 @@ function Profile() {
                             onClick={() => {
                               const visible = parseFloat(document.getElementById(`visible-${chance.name}`).value)
                               const real = parseFloat(document.getElementById(`real-${chance.name}`).value)
-                              let pawMin = 0, pawMax = 0
+                              let pawMin = 0, pawMax = 0, starMin = 1, starMax = 5
                               if (chance.name === 'paw') {
                                 pawMin = parseInt(document.getElementById(`pawMin-${chance.name}`).value) || 0
                                 pawMax = parseInt(document.getElementById(`pawMax-${chance.name}`).value) || 0
                               }
-                              handleUpdateChance(chance.name, visible, real, pawMin, pawMax)
+                              if (chance.name === 'star') {
+                                starMin = parseInt(document.getElementById(`starMin-${chance.name}`).value) || 1
+                                starMax = parseInt(document.getElementById(`starMax-${chance.name}`).value) || 5
+                              }
+                              handleUpdateChance(chance.name, visible, real, pawMin, pawMax, starMin, starMax)
                             }}
                             disabled={actionLoading}
                           >
@@ -559,7 +663,165 @@ function Profile() {
         </>
       )}
 
-      {showRefundPanel && (
+      {showPaidChancesPanel && isAdmin && (
+        <>
+          <div className="overlay-backdrop" onClick={() => setShowPaidChancesPanel(false)} />
+          <div className="overlay-sheet chances-panel-sheet">
+            <button className="close-panel-btn" onClick={() => setShowPaidChancesPanel(false)}>✕</button>
+            
+            <div className="sheet-content">
+              <h2 className="admin-panel-title">Управление шансами</h2>
+              <p className="chances-mode">Режим: Бомж кейс (платный спин)</p>
+              
+              <div className="chances-list">
+                {paidChances.map((chance) => (
+                  <div key={chance.name} className="chance-item">
+                    <div className="chance-icon">
+                      <LottieAnimation animationData={giftAnimations[chance.name]} width={50} height={50} />
+                    </div>
+                    <div className="chance-details">
+                      <div className="chance-row">
+                        <span className="chance-label">Видимый шанс:</span>
+                        {editingPaidGift === chance.name ? (
+                          <input
+                            type="number"
+                            className="chance-input"
+                            defaultValue={chance.visible}
+                            id={`paid-visible-${chance.name}`}
+                            disabled={actionLoading}
+                          />
+                        ) : (
+                          <span className="chance-value">{chance.visible}%</span>
+                        )}
+                      </div>
+                      <div className="chance-row">
+                        <span className="chance-label">Реальный шанс:</span>
+                        {editingPaidGift === chance.name ? (
+                          <input
+                            type="number"
+                            className="chance-input"
+                            defaultValue={chance.real}
+                            id={`paid-real-${chance.name}`}
+                            disabled={actionLoading}
+                          />
+                        ) : (
+                          <span className="chance-value">{chance.real}%</span>
+                        )}
+                      </div>
+                      {chance.name === 'paw' && (
+                        <div className="chance-row">
+                          <span className="chance-label">Лапок (диапазон):</span>
+                          {editingPaidGift === chance.name ? (
+                            <div className="paw-range-inputs">
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.pawMin || 1}
+                                id={`paid-pawMin-${chance.name}`}
+                                min="0"
+                                max="100"
+                                placeholder="От"
+                                disabled={actionLoading}
+                              />
+                              <span className="range-separator">-</span>
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.pawMax || 10}
+                                id={`paid-pawMax-${chance.name}`}
+                                min="0"
+                                max="100"
+                                placeholder="До"
+                                disabled={actionLoading}
+                              />
+                            </div>
+                          ) : (
+                            <span className="chance-value">{chance.pawMin || 0}-{chance.pawMax || 0}</span>
+                          )}
+                        </div>
+                      )}
+                      {chance.name === 'star' && (
+                        <div className="chance-row">
+                          <span className="chance-label">Звезд (диапазон):</span>
+                          {editingPaidGift === chance.name ? (
+                            <div className="paw-range-inputs">
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.starMin || 1}
+                                id={`paid-starMin-${chance.name}`}
+                                min="1"
+                                max="100"
+                                placeholder="От"
+                                disabled={actionLoading}
+                              />
+                              <span className="range-separator">-</span>
+                              <input
+                                type="number"
+                                className="chance-input paw-range-input"
+                                defaultValue={chance.starMax || 5}
+                                id={`paid-starMax-${chance.name}`}
+                                min="1"
+                                max="100"
+                                placeholder="До"
+                                disabled={actionLoading}
+                              />
+                            </div>
+                          ) : (
+                            <span className="chance-value">{chance.starMin || 1}-{chance.starMax || 5}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="chance-actions">
+                      {editingPaidGift === chance.name ? (
+                        <>
+                          <button 
+                            className="chance-btn save-btn"
+                            onClick={() => {
+                              const visible = parseFloat(document.getElementById(`paid-visible-${chance.name}`).value)
+                              const real = parseFloat(document.getElementById(`paid-real-${chance.name}`).value)
+                              let pawMin = 0, pawMax = 0, starMin = 1, starMax = 5
+                              if (chance.name === 'paw') {
+                                pawMin = parseInt(document.getElementById(`paid-pawMin-${chance.name}`).value) || 0
+                                pawMax = parseInt(document.getElementById(`paid-pawMax-${chance.name}`).value) || 0
+                              }
+                              if (chance.name === 'star') {
+                                starMin = parseInt(document.getElementById(`paid-starMin-${chance.name}`).value) || 1
+                                starMax = parseInt(document.getElementById(`paid-starMax-${chance.name}`).value) || 5
+                              }
+                              handleUpdatePaidChance(chance.name, visible, real, pawMin, pawMax, starMin, starMax)
+                            }}
+                            disabled={actionLoading}
+                          >
+                            ✓
+                          </button>
+                          <button 
+                            className="chance-btn cancel-btn"
+                            onClick={() => setEditingPaidGift(null)}
+                            disabled={actionLoading}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          className="chance-btn edit-btn"
+                          onClick={() => setEditingPaidGift(chance.name)}
+                        >
+                          ✎
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showRefundPanel && isAdmin && (
         <>
           <div className="overlay-backdrop" onClick={() => setShowRefundPanel(false)} />
           <div className="overlay-sheet refund-panel-sheet">
@@ -621,7 +883,7 @@ function Profile() {
         </>
       )}
 
-      {showCrashPanel && (
+      {showCrashPanel && isAdmin && (
         <>
           <div className="overlay-backdrop" onClick={() => setShowCrashPanel(false)} />
           <div className="overlay-sheet crash-settings-panel">

@@ -4,6 +4,7 @@ import Home from './components/Home'
 import Inventory from './components/Inventory'
 import SpinVirtual from './components/SpinVirtual'
 import FreeSpin from './components/FreeSpin'
+import PaidSpin from './components/PaidSpin'
 import Crash from './components/Crash'
 import Profile from './components/Profile'
 import TopUp from './components/TopUp'
@@ -14,6 +15,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('home')
   const [isMobile, setIsMobile] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
 
   useEffect(() => {
@@ -54,8 +56,12 @@ function App() {
     if (tg.platform === 'android' || tg.platform === 'ios') {
       tg.requestFullscreen()
       setIsMobile(true)
+      if (tg.platform === 'android') {
+        setIsAndroid(true)
+      }
     } else {
       setIsMobile(false)
+      setIsAndroid(false)
     }
 
     const initData = tg.initData
@@ -132,31 +138,32 @@ function App() {
   // Если путь /spins/free - показываем FreeSpin без TabBar
   if (currentPath === '/spins/free') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
         <FreeSpin onNavigateToTopUp={setActiveTab} />
       </div>
     )
   }
 
-  // Если путь /crash - показываем Crash с TabBar
-  if (currentPath === '/crash') {
-    const handleTabChangeFromCrash = (tab) => {
-      // Возвращаемся на главную страницу
-      window.history.back()
-      setCurrentPath('/')
-      setActiveTab(tab)
-    }
-
+  // Если путь /spins/paid - показываем PaidSpin без TabBar
+  if (currentPath === '/spins/paid') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
+        <PaidSpin onNavigateToTopUp={setActiveTab} />
+      </div>
+    )
+  }
+
+  // Если путь /crash - показываем Crash без TabBar
+  if (currentPath === '/crash') {
+    return (
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
         <Crash onNavigateToTopUp={setActiveTab} />
-        <TabBar activeTab="home" onTabChange={handleTabChangeFromCrash} />
       </div>
     )
   }
 
   return (
-    <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'}`}>
+    <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
       {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'spin' && <SpinVirtual onNavigateToTopUp={setActiveTab} />}
