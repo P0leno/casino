@@ -16,6 +16,7 @@ from app.tasks.gift_parser import gift_parser_loop
 from app.tasks.price_updater import price_update_loop
 from app.tasks.ton_price_updater import ton_price_loop
 from app.crash_game import start_crash_game_loop
+from app.support_bot import start_support_bot
 
 bot_task = None
 pyrogram_task = None
@@ -25,10 +26,11 @@ ton_checker_task = None
 gift_parser_task = None
 price_updater_task = None
 ton_price_task = None
+support_bot_task = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, price_updater_task, ton_price_task
+    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, price_updater_task, ton_price_task, support_bot_task
     
     # Инициализация БД
     init_db()
@@ -107,6 +109,10 @@ async def lifespan(app: FastAPI):
     # Обновление цен с Tonnel (каждый час)
     price_updater_task = asyncio.create_task(price_update_loop())
     print("✅ Запущено обновление цен с Tonnel (каждый час)")
+    
+    # Бот поддержки (polling mode)
+    support_bot_task = asyncio.create_task(start_support_bot())
+    print("✅ Запущен бот поддержки (polling mode)")
     
     yield
     
@@ -187,6 +193,16 @@ async def lifespan(app: FastAPI):
         print("⚠️  Bot не остановился за 3 секунды")
     except Exception as e:
         print(f"⚠️  Ошибка остановки бота: {e}")
+    
+    # Останавливаем бота поддержки
+    if support_bot_task:
+        support_bot_task.cancel()
+        try:
+            await asyncio.wait_for(support_bot_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  Support bot task не завершился")
+        except asyncio.CancelledError:
+            pass
     
     print("✅ Все сервисы остановлены")
 
