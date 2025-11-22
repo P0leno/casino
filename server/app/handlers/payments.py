@@ -75,6 +75,46 @@ async def process_successful_payment(message: Message):
             new_balance = amount
         
         conn.commit()
+        
+        # Начисляем 10% владельцу реферального промокода (если есть)
+        try:
+            # Получаем список активированных промокодов
+            cursor.execute("SELECT activated_promocodes FROM users WHERE id = ?", (user_id,))
+            promo_result = cursor.fetchone()
+            
+            if promo_result and promo_result[0]:
+                activated_promocodes = json.loads(promo_result[0] or '[]')
+                
+                if activated_promocodes:
+                    # Проверяем какие из промокодов являются реферальными
+                    placeholders = ','.join('?' * len(activated_promocodes))
+                    cursor.execute(
+                        f"SELECT id, owner, type FROM promocodes WHERE id IN ({placeholders}) AND (type = 'ref' OR type = 'refCustom')",
+                        activated_promocodes
+                    )
+                    ref_promo = cursor.fetchone()
+                    
+                    if ref_promo:
+                        promo_id, owner_id, promo_type = ref_promo
+                        
+                        # Начисляем 10% владельцу на refbalance
+                        ref_bonus = int(amount * 0.1)
+                        cursor.execute(
+                            "UPDATE users SET refbalance = refbalance + ? WHERE id = ?",
+                            (ref_bonus, owner_id)
+                        )
+                        
+                        # Логируем в историю промокода
+                        cursor.execute(
+                            "INSERT INTO promo_history (promo_id, user_id, action_type, amount) VALUES (?, ?, 'topup', ?)",
+                            (promo_id, user_id, ref_bonus)
+                        )
+                        
+                        conn.commit()
+                        print(f"✅ Начислено {ref_bonus}⭐ рефбонуса владельцу {owner_id} от пополнения {user_id}")
+        except Exception as e:
+            print(f"Error processing ref bonus: {e}")
+        
         conn.close()
         
         # Сообщение не отправляется - баланс обновляется автоматически в WebApp

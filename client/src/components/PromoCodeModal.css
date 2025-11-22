@@ -366,8 +366,13 @@
 }
 
 /* История промокода */
+.promo-history-backdrop {
+  z-index: 1001 !important;
+}
+
 .promo-history-sheet {
   height: 80vh;
+  z-index: 1002 !important;
 }
 
 .promo-history-empty {

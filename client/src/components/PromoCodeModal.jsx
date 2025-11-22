@@ -394,7 +394,7 @@ function PromoCodeModal({ isOpen, onClose }) {
 
       {/* Модалка истории */}
       {showHistory && (
-        <div className="promo-modal-backdrop" onClick={() => setShowHistory(false)}>
+        <div className="promo-modal-backdrop promo-history-backdrop" onClick={() => setShowHistory(false)}>
           <div className="promo-modal-sheet promo-history-sheet" onClick={(e) => e.stopPropagation()}>
             <button className="promo-close-btn" onClick={() => setShowHistory(false)}>×</button>
             
@@ -425,7 +425,7 @@ function PromoCodeModal({ isOpen, onClose }) {
                       <div className="promo-history-action">
                         {item.actionType === 'activated' ? 
                           'Активировал промокод' : 
-                          `Пополнил баланс +${item.amount}`
+                          `Пополнил +${item.amount}⭐`
                         }
                       </div>
                     </div>
