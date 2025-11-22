@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Home from './components/Home'
+import Shop from './components/Shop'
 import Inventory from './components/Inventory'
 import SpinVirtual from './components/SpinVirtual'
+import Spin from './components/Spin'
+import SpinSelection from './components/SpinSelection'
 import FreeSpin from './components/FreeSpin'
 import PaidSpin from './components/PaidSpin'
 import Crash from './components/Crash'
 import Profile from './components/Profile'
 import TopUp from './components/TopUp'
+import Tasks from './components/Tasks'
 import TabBar from './components/TabBar'
 
 function App() {
@@ -17,6 +21,7 @@ function App() {
   const [isMobile, setIsMobile] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
+  const [safeAreaTop, setSafeAreaTop] = useState(0)
 
   useEffect(() => {
     localStorage.setItem('currentTab', activeTab)
@@ -51,7 +56,8 @@ function App() {
     }
 
     tg.ready()
-    tg.headerColor = '#000000'
+    tg.setHeaderColor('#1a1a1a')
+    tg.setBackgroundColor('#1a1a1a')
 
     if (tg.platform === 'android' || tg.platform === 'ios') {
       tg.requestFullscreen()
@@ -59,9 +65,14 @@ function App() {
       if (tg.platform === 'android') {
         setIsAndroid(true)
       }
+      
+      // Получаем safe area и добавляем 20px для баланс баров на мобиле
+      const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0
+      setSafeAreaTop(topInset + 20)
     } else {
       setIsMobile(false)
       setIsAndroid(false)
+      setSafeAreaTop(5) // На ПК просто 5px
     }
 
     const initData = tg.initData
@@ -135,10 +146,19 @@ function App() {
     )
   }
 
+  // Если путь /spins - показываем SpinSelection без TabBar
+  if (currentPath === '/spins') {
+    return (
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+        <SpinSelection onNavigateToTopUp={setActiveTab} />
+      </div>
+    )
+  }
+
   // Если путь /spins/free - показываем FreeSpin без TabBar
   if (currentPath === '/spins/free') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
         <FreeSpin onNavigateToTopUp={setActiveTab} />
       </div>
     )
@@ -147,7 +167,7 @@ function App() {
   // Если путь /spins/paid - показываем PaidSpin без TabBar
   if (currentPath === '/spins/paid') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
         <PaidSpin onNavigateToTopUp={setActiveTab} />
       </div>
     )
@@ -156,17 +176,30 @@ function App() {
   // Если путь /crash - показываем Crash без TabBar
   if (currentPath === '/crash') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
         <Crash onNavigateToTopUp={setActiveTab} />
       </div>
     )
   }
 
+  // Если путь /spin - показываем Spin без TabBar
+  if (currentPath === '/spin') {
+    return (
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+        <Spin onNavigateToTopUp={setActiveTab} />
+      </div>
+    )
+  }
+
   return (
-    <div className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}>
+    <div 
+      className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
+      style={{ '--safe-area-top': `${safeAreaTop}px` }}
+    >
       {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'shop' && <Shop onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
-      {activeTab === 'spin' && <SpinVirtual onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'tasks' && <Tasks onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'profile' && <Profile />}
       {activeTab === 'topup' && <TopUp onNavigateBack={setActiveTab} />}
       {activeTab !== 'topup' && <TabBar activeTab={activeTab} onTabChange={setActiveTab} />}

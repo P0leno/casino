@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
 import asyncio
-from app.config import BOT_TOKEN
+import sqlite3
+from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import invoice_rate_limiter
 from app.bot import bot
@@ -20,6 +21,20 @@ async def create_invoice(request: TopUpRequest):
     
     if not is_valid:
         return {"success": False, "message": "Invalid initData"}
+    
+    # Проверяем настройку "Пополнение звездами"
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'stars_topup_enabled'")
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result and result[0] == 'false':
+            return {"success": False, "message": "Данный способ пополнения временно отключен"}
+    except Exception as e:
+        print(f"Error checking settings: {e}")
+        # Если ошибка - разрешаем (fail-open)
     
     try:
         parsed = parse_qs(request.initData)

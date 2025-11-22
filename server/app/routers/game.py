@@ -21,7 +21,6 @@ class ValidateRequest(BaseModel):
 class SellGiftRequest(BaseModel):
     initData: str
     giftName: str
-    index: int
 
 class WithdrawGiftRequest(BaseModel):
     initData: str
@@ -403,14 +402,14 @@ async def sell_gift(request: SellGiftRequest):
         inventory = json.loads(result[0]) if result[0] else []
         balance = result[1] or 0
         
-        if request.index < 0 or request.index >= len(inventory):
+        # Находим первый экземпляр подарка в инвентаре
+        try:
+            gift_index = inventory.index(request.giftName)
+        except ValueError:
             conn.close()
-            return {"success": False, "message": "Invalid index"}
+            return {"success": False, "message": "Gift not found in inventory"}
         
-        if inventory[request.index] != request.giftName:
-            conn.close()
-            return {"success": False, "message": "Gift mismatch"}
-        
+        # Получаем цену из базы данных
         cursor.execute("SELECT price, gift_id FROM gift_prices WHERE gift_name = ?", (request.giftName,))
         price_result = cursor.fetchone()
         
@@ -421,8 +420,10 @@ async def sell_gift(request: SellGiftRequest):
         price = price_result[0]
         gift_id = price_result[1] if len(price_result) > 1 else None
         
-        inventory.pop(request.index)
+        # Удаляем подарок из инвентаря
+        inventory.pop(gift_index)
         
+        # Обновляем баланс
         new_balance = balance + price
         
         cursor.execute(
@@ -551,11 +552,28 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         
         gift_id = gift_result[0]
         
-        # Отправляем подарок через Pyrogram
+        # СНАЧАЛА удаляем подарок из инвентаря (защита от двойного вывода)
+        removed_gift = inventory.pop(request.index)
+        
+        cursor.execute(
+            "UPDATE users SET inventory = ? WHERE id = ?",
+            (json.dumps(inventory), user_id)
+        )
+        conn.commit()
+        
+        # ПОТОМ отправляем подарок через Pyrogram
         send_success, error_msg = await send_gift_async(user_id, gift_id, pyrogram_app)
         
         if not send_success:
+            # Если не удалось отправить - ВОЗВРАЩАЕМ подарок обратно
+            inventory.insert(request.index, removed_gift)
+            cursor.execute(
+                "UPDATE users SET inventory = ? WHERE id = ?",
+                (json.dumps(inventory), user_id)
+            )
+            conn.commit()
             conn.close()
+            
             return {
                 "success": False, 
                 "message": "Подарок не отправился из-за ошибки",
@@ -563,19 +581,15 @@ async def withdraw_gift(request: WithdrawGiftRequest):
                 "needsManual": True
             }
         
-        # Удаляем подарок из инвентаря
-        inventory.pop(request.index)
-        
-        cursor.execute(
-            "UPDATE users SET inventory = ? WHERE id = ?",
-            (json.dumps(inventory), user_id)
-        )
-        conn.commit()
         conn.close()
-        
         return {"success": True, "message": "Подарок успешно отправлен!"}
     except Exception as e:
         print(f"Error in withdraw_gift: {e}")
+        # При любой ошибке соединение может быть уже закрыто
+        try:
+            conn.close()
+        except:
+            pass
         return {"success": False, "message": "Ошибка сервера", "error": str(e)}
 
 @router.post("/request-manual-withdraw")
@@ -679,3 +693,119 @@ async def request_manual_withdraw(request: ManualWithdrawRequest):
     except Exception as e:
         print(f"Error in request_manual_withdraw: {e}")
         return {"success": False, "message": "Ошибка сервера", "error": str(e)}
+
+@router.post("/get-nft-gifts")
+async def get_nft_gifts(request: ValidateRequest):
+    """Получение NFT подарков из Telegram"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"valid": False, "gifts": []}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"valid": True, "gifts": []}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        # Получаем подарки через Pyrogram
+        app = get_pyrogram()
+        gifts_list = []
+        
+        try:
+            async for gift in app.get_chat_gifts(
+                chat_id=user_id,
+                exclude_unlimited=True,
+                limit=50
+            ):
+                # Извлекаем данные о владельце и отправителе
+                owner = None
+                from_user = None
+                
+                if hasattr(gift, 'owner') and gift.owner:
+                    owner = {
+                        'id': gift.owner.id,
+                        'username': getattr(gift.owner, 'username', None),
+                        'first_name': getattr(gift.owner, 'first_name', ''),
+                        'last_name': getattr(gift.owner, 'last_name', ''),
+                        'photo_url': None
+                    }
+                    # Получаем URL аватарки
+                    if hasattr(gift.owner, 'photo') and gift.owner.photo:
+                        try:
+                            photo = await app.download_media(gift.owner.photo.big_file_id, in_memory=True)
+                            # В реальности нужно сохранить фото и отдать URL, пока просто оставим None
+                        except:
+                            pass
+                
+                if hasattr(gift, 'from_user') and gift.from_user:
+                    from_user = {
+                        'id': gift.from_user.id,
+                        'username': getattr(gift.from_user, 'username', None),
+                        'first_name': getattr(gift.from_user, 'first_name', ''),
+                        'last_name': getattr(gift.from_user, 'last_name', ''),
+                        'photo_url': None
+                    }
+                    if hasattr(gift.from_user, 'photo') and gift.from_user.photo:
+                        try:
+                            photo = await app.download_media(gift.from_user.photo.big_file_id, in_memory=True)
+                        except:
+                            pass
+                
+                # Извлекаем атрибуты
+                model_name = None
+                symbol_name = None
+                backdrop_name = None
+                rarity_model = None
+                rarity_symbol = None
+                rarity_backdrop = None
+                
+                if hasattr(gift, 'attributes') and gift.attributes:
+                    for attr in gift.attributes:
+                        attr_type = str(getattr(attr, 'type', ''))
+                        attr_name = getattr(attr, 'name', '')
+                        
+                        if 'MODEL' in attr_type:
+                            model_name = attr_name
+                            rarity_model = getattr(attr, 'rarity', 0)
+                        elif 'SYMBOL' in attr_type:
+                            symbol_name = attr_name
+                            rarity_symbol = getattr(attr, 'rarity', 0)
+                        elif 'BACKDROP' in attr_type:
+                            backdrop_name = attr_name
+                            rarity_backdrop = getattr(attr, 'rarity', 0)
+                
+                gift_data = {
+                    'id': str(gift.id),
+                    'title': getattr(gift, 'title', ''),
+                    'name': getattr(gift, 'name', ''),
+                    'collectible_id': getattr(gift, 'collectible_id', 0),
+                    'model_name': model_name,
+                    'symbol_name': symbol_name,
+                    'backdrop_name': backdrop_name,
+                    'rarity_model': rarity_model,
+                    'rarity_symbol': rarity_symbol,
+                    'rarity_backdrop': rarity_backdrop,
+                    'owner': owner,
+                    'from_user': from_user,
+                    'transfer_price': getattr(gift, 'transfer_price', 0),
+                    'can_export_at': str(getattr(gift, 'can_export_at', ''))
+                }
+                
+                gifts_list.append(gift_data)
+        except Exception as e:
+            print(f"Error getting gifts from Telegram: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        return {"valid": True, "gifts": gifts_list}
+        
+    except Exception as e:
+        print(f"Error in get_nft_gifts: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"valid": True, "gifts": []}

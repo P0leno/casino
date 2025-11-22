@@ -2,28 +2,18 @@ import { useState, useEffect, useRef } from 'react'
 import './Spin.css'
 import LottieAnimation from './LottieAnimation'
 import { preloadGiftAnimations } from '../utils/giftLoader'
-import bearAnim from '../assets/bear.json'
-import cakeAnim from '../assets/cake.json'
-import cupAnim from '../assets/cup.json'
-import diamondAnim from '../assets/diamond.json'
-import flowersAnim from '../assets/flowers.json'
-import giftAnim from '../assets/gift.json'
-import heartAnim from '../assets/heart.json'
-import ringAnim from '../assets/ring.json'
-import rocketAnim from '../assets/rocket.json'
-import roseAnim from '../assets/rose.json'
 
 const gifts = [
-  { name: 'bear', animation: bearAnim },
-  { name: 'cake', animation: cakeAnim },
-  { name: 'cup', animation: cupAnim },
-  { name: 'diamond', animation: diamondAnim },
-  { name: 'flowers', animation: flowersAnim },
-  { name: 'gift', animation: giftAnim },
-  { name: 'heart', animation: heartAnim },
-  { name: 'ring', animation: ringAnim },
-  { name: 'rocket', animation: rocketAnim },
-  { name: 'rose', animation: roseAnim }
+  { name: 'bear', animation: '/gifts/bear.json' },
+  { name: 'cake', animation: '/gifts/cake.json' },
+  { name: 'cup', animation: '/gifts/cup.json' },
+  { name: 'diamond', animation: '/gifts/diamond.json' },
+  { name: 'flowers', animation: '/gifts/flowers.json' },
+  { name: 'gift', animation: '/gifts/gift.json' },
+  { name: 'heart', animation: '/gifts/heart.json' },
+  { name: 'ring', animation: '/gifts/ring.json' },
+  { name: 'rocket', animation: '/gifts/rocket.json' },
+  { name: 'rose', animation: '/gifts/rose.json' }
 ]
 
 function Spin() {
@@ -33,6 +23,24 @@ function Spin() {
   const [rotation, setRotation] = useState(0)
   const [result, setResult] = useState(null)
   const wheelRef = useRef(null)
+
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp
+    if (tg) {
+      tg.BackButton.show()
+      
+      const handleBack = () => {
+        window.history.back()
+      }
+      
+      tg.BackButton.onClick(handleBack)
+      
+      return () => {
+        tg.BackButton.hide()
+        tg.BackButton.offClick(handleBack)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     checkAvailability()
@@ -146,13 +154,7 @@ function Spin() {
                     key={`${repeatIndex}-${gift.name}`}
                     className="roulette-item"
                   >
-                    {!spinning ? (
-                      <div className="gift-placeholder" data-gift={gift.name}>
-                        <span className="gift-emoji">{getGiftEmoji(gift.name)}</span>
-                      </div>
-                    ) : (
-                      <LottieAnimation animationData={gift.animation} width={80} height={80} />
-                    )}
+                    <LottieAnimation animationData={gift.animation} width={80} height={80} />
                   </div>
                 ))
               ))}

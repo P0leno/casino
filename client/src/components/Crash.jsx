@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './Crash.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
@@ -14,6 +14,9 @@ function Crash({ onNavigateToTopUp }) {
   const [userBet, setUserBet] = useState(null)
   const [showBetModal, setShowBetModal] = useState(false)
   const [betAmount, setBetAmount] = useState(25)
+  
+  const previousIsRunning = useRef(false)
+  const crashedTimeoutRef = useRef(null)
 
   const tg = window.Telegram?.WebApp
   const user = tg?.initDataUnsafe?.user
@@ -48,7 +51,6 @@ function Crash({ onNavigateToTopUp }) {
       const data = await response.json()
       
       setMultiplier(data.currentMultiplier)
-      setIsRunning(data.isRunning)
       setHistory(data.history)
       setBets(data.bets || [])
       
@@ -58,7 +60,9 @@ function Crash({ onNavigateToTopUp }) {
         setUserBet(myBet || null)
       }
       
-      if (!data.isRunning && data.crashPoint) {
+      // Определяем краш: переход из running в stopped
+      if (previousIsRunning.current && !data.isRunning) {
+        console.log('КРАШ ОБНАРУЖЕН! Multiplier:', data.currentMultiplier)
         setCrashed(true)
         
         // Вибрация при краше (3 раза)
@@ -68,7 +72,22 @@ function Crash({ onNavigateToTopUp }) {
           setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 200)
         }
         
-        setTimeout(() => setCrashed(false), 3000)
+        // Сбрасываем crashed через 3 секунды (только один раз)
+        if (crashedTimeoutRef.current) {
+          clearTimeout(crashedTimeoutRef.current)
+        }
+        crashedTimeoutRef.current = setTimeout(() => {
+          setCrashed(false)
+        }, 3000)
+      }
+      
+      // Обновляем состояние isRunning и сохраняем предыдущее
+      previousIsRunning.current = data.isRunning
+      setIsRunning(data.isRunning)
+      
+      // Если начался новый раунд - сбрасываем crashed
+      if (data.isRunning && crashed) {
+        setCrashed(false)
       }
     } catch (error) {
       console.error('Error fetching game state:', error)
@@ -243,12 +262,12 @@ function Crash({ onNavigateToTopUp }) {
           />
         </div>
 
-        <div className="crash-multiplier-display" style={{ color: getMultiplierColor() }}>
-          x{multiplier.toFixed(2)}
-        </div>
-
-        {crashed && (
-          <div className="crash-crashed-text">КРАШ!</div>
+        {crashed ? (
+          <div className="crash-crashed-text">КРАШ</div>
+        ) : (
+          <div className="crash-multiplier-display" style={{ color: getMultiplierColor() }}>
+            x{multiplier.toFixed(2)}
+          </div>
         )}
       </div>
 

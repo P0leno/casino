@@ -1,18 +1,62 @@
+:root {
+  --tab-bar-height: 60px;
+  --avatar-size: 60px;
+}
+
 .tab-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 20px;
+  width: calc(100% - 40px - var(--avatar-size) - 10px);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 70px;
-  background: linear-gradient(180deg, rgba(26, 26, 26, 0.8) 0%, rgba(26, 26, 26, 0.98) 100%);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  height: var(--tab-bar-height);
+  background: transparent;
+  backdrop-filter: blur(1.25rem);
+  border-radius: 3rem;
+  padding: 0rem 0.2rem;
+  gap: 0.15rem;
+  box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
+  isolation: isolate;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0, 1);
+  transform-origin: center bottom;
   z-index: 100;
-  transition: background 0.4s ease;
+  overflow: hidden;
+}
+
+.tab-indicator {
+  position: absolute;
+  height: calc(100% - 4px);
+  background: #1C3F48;
+  border-radius: 3rem;
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
+  top: 2px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.tab-indicator::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3rem;
+  animation: indicatorPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes indicatorPulse {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .tab-button {
@@ -23,36 +67,36 @@
   gap: 4px;
   flex: 1;
   padding: 8px;
+  margin: 2px;
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 12px;
+  transition: color 0.3s ease;
+  border-radius: 3rem;
   position: relative;
+  z-index: 1;
 }
 
 .tab-button.active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+  color: #0FBCE0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.tab-button:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
+
 
 .tab-icon {
   width: 24px;
   height: 24px;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
   opacity: 0.5;
+  filter: brightness(1);
 }
 
 .tab-button.active .tab-icon {
-  transform: scale(1.1);
   opacity: 1;
+  filter: brightness(0) saturate(100%) invert(66%) sepia(68%) saturate(3155%) hue-rotate(157deg) brightness(99%) contrast(91%);
 }
 
 .tab-label {
@@ -62,27 +106,101 @@
 
 .tab-button.active .tab-label {
   font-weight: 600;
+  color: #0FBCE0;
 }
 
-.platform-mobile .tab-bar {
-  height: 85px;
-  padding: 15px 10px calc(10px + env(safe-area-inset-bottom));
+@media (max-width: 768px) {
+  :root {
+    --tab-bar-height: 50px;
+    --avatar-size: 50px;
+  }
+
+  .tab-bar {
+    left: 10px;
+    width: calc(100% - 20px - var(--avatar-size) - 10px);
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    gap: 0.05rem;
+    padding: 0rem 0.1rem;
+  }
+
+  .tab-button {
+    flex-direction: column;
+    padding: 6px 8px;
+    margin: 2px;
+    gap: 2px;
+  }
+
+  .tab-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-label {
+    font-size: 10px;
+  }
+
+  .profile-avatar-button {
+    right: 10px;
+  }
+
+  .profile-avatar-button .avatar-placeholder {
+    font-size: 1rem;
+  }
 }
 
-.platform-mobile .tab-button {
-  padding: 8px 8px;
-  margin-top: 5px;
+/* Profile Avatar Button */
+.profile-avatar-button {
+  position: fixed;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right: 15px;
+  width: var(--avatar-size) !important;
+  height: var(--avatar-size) !important;
+  min-width: var(--avatar-size) !important;
+  min-height: var(--avatar-size) !important;
+  max-width: var(--avatar-size) !important;
+  max-height: var(--avatar-size) !important;
+  background: transparent;
+  backdrop-filter: blur(1.25rem);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
+  border: none;
+  flex-shrink: 0;
+  z-index: 101;
+  transform: scale(1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  padding: 0;
 }
 
-.platform-mobile .tab-icon {
-  width: 28px;
-  height: 28px;
+.profile-avatar-button:hover {
+  transform: scale(1.02);
 }
 
-.platform-mobile .tab-label {
-  font-size: 13px;
+.profile-avatar-button.active {
+  box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
+  transform: scale(1);
 }
 
-.platform-mobile .tab-button.active .tab-label {
-  margin-top: 5px;
+.profile-avatar-button .avatar-img {
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-avatar-button .avatar-placeholder {
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-radius: 50%;
 }

@@ -7,20 +7,28 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
-from app.routers import auth, game, admin, payments, crash
+from app.routers import auth, game, admin, payments, crash, ton_payments, tasks, shop, inventory, promocode
 from app.bot import start_bot, stop_bot
 from app.pyrogram_client import start_pyrogram, stop_pyrogram
 from app.tasks.spin_notifications import spin_notification_loop
+from app.tasks.ton_transaction_checker import ton_transaction_loop
+from app.tasks.gift_parser import gift_parser_loop
+from app.tasks.price_updater import price_update_loop
+from app.tasks.ton_price_updater import ton_price_loop
 from app.crash_game import start_crash_game_loop
 
 bot_task = None
 pyrogram_task = None
 notification_task = None
 crash_task = None
+ton_checker_task = None
+gift_parser_task = None
+price_updater_task = None
+ton_price_task = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global bot_task, pyrogram_task, notification_task, crash_task
+    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, price_updater_task, ton_price_task
     
     # Инициализация БД
     init_db()
@@ -42,6 +50,64 @@ async def lifespan(app: FastAPI):
     crash_task = asyncio.create_task(start_crash_game_loop())
     print("✅ Запущена краш-игра")
     
+    # Запуск проверки TON транзакций
+    ton_checker_task = asyncio.create_task(ton_transaction_loop())
+    print("✅ Запущен мониторинг TON транзакций")
+    
+    # ========================================
+    # ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА ДАННЫХ (при старте)
+    # ========================================
+    
+    # 1. Парсинг подарков через Pyrogram (получаем LIMITED NFT)
+    from app.tasks.gift_parser import parse_gifts
+    from app.tasks.ton_price_updater import update_ton_price, recalculate_gift_prices
+    from app.tasks.price_updater import update_all_prices
+    
+    print("=" * 80)
+    print("🚀 ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА ДАННЫХ")
+    print("=" * 80)
+    print()
+    
+    print("1️⃣  Парсинг подарков через Pyrogram...")
+    try:
+        await parse_gifts()
+    except Exception as e:
+        print(f"⚠️  Ошибка парсинга подарков: {e}")
+    
+    print()
+    print("2️⃣  Обновление цены TON с CoinMarketCap...")
+    await update_ton_price()
+    
+    print()
+    print("3️⃣  Обновление цен LIMITED NFT с Tonnel...")
+    await update_all_prices()
+    
+    print()
+    print("4️⃣  Пересчет цен подарков в звезды...")
+    await recalculate_gift_prices()
+    
+    print()
+    print("=" * 80)
+    print("✅ ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА ЗАВЕРШЕНА")
+    print("=" * 80)
+    print()
+    
+    # ========================================
+    # ЗАПУСК ЦИКЛИЧЕСКИХ ЗАДАЧ
+    # ========================================
+    
+    # Парсер подарков (каждые 5 минут)
+    gift_parser_task = asyncio.create_task(gift_parser_loop())
+    print("✅ Запущен парсер подарков (каждые 5 минут)")
+    
+    # Обновление цены TON + пересчет (каждые 5 минут)
+    ton_price_task = asyncio.create_task(ton_price_loop())
+    print("✅ Запущено обновление цены TON + пересчет (каждые 5 минут)")
+    
+    # Обновление цен с Tonnel (каждый час)
+    price_updater_task = asyncio.create_task(price_update_loop())
+    print("✅ Запущено обновление цен с Tonnel (каждый час)")
+    
     yield
     
     # Graceful shutdown
@@ -54,6 +120,46 @@ async def lifespan(app: FastAPI):
             await asyncio.wait_for(notification_task, timeout=2.0)
         except asyncio.TimeoutError:
             print("⚠️  Notification task не завершился")
+        except asyncio.CancelledError:
+            pass
+    
+    # Останавливаем TON checker
+    if ton_checker_task:
+        ton_checker_task.cancel()
+        try:
+            await asyncio.wait_for(ton_checker_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  TON checker task не завершился")
+        except asyncio.CancelledError:
+            pass
+    
+    # Останавливаем gift parser
+    if gift_parser_task:
+        gift_parser_task.cancel()
+        try:
+            await asyncio.wait_for(gift_parser_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  Gift parser task не завершился")
+        except asyncio.CancelledError:
+            pass
+    
+    # Останавливаем price updater
+    if price_updater_task:
+        price_updater_task.cancel()
+        try:
+            await asyncio.wait_for(price_updater_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  Price updater task не завершился")
+        except asyncio.CancelledError:
+            pass
+    
+    # Останавливаем TON price updater
+    if ton_price_task:
+        ton_price_task.cancel()
+        try:
+            await asyncio.wait_for(ton_price_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  TON price task не завершился")
         except asyncio.CancelledError:
             pass
     
@@ -100,6 +206,11 @@ def create_app():
     app.include_router(admin.router)
     app.include_router(payments.router)
     app.include_router(crash.router)
+    app.include_router(ton_payments.router)
+    app.include_router(tasks.router)
+    app.include_router(shop.router)
+    app.include_router(inventory.router)
+    app.include_router(promocode.router)
 
     @app.get("/")
     async def root():

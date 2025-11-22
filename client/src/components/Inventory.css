@@ -1,60 +1,186 @@
 .inventory-page {
   width: 100%;
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
   padding-bottom: 70px;
   display: flex;
   flex-direction: column;
 }
 
+
+
 .inventory-content {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  padding-top: max(20px, env(safe-area-inset-top));
+  padding: 0;
+  width: 100%;
 }
 
 .inventory-loading {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 300px;
+  margin-top: 20px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 18px;
 }
 
 .inventory-grid {
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  padding-top: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  align-content: start;
+  justify-items: center;
+}
+
+.platform-mobile .inventory-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 8px;
+  padding-top: 0;
+  max-width: 100%;
+  justify-items: stretch;
+}
+
+/* NFT подарки - с фоном */
+.gift-card-inventory {
+  width: 100%;
+  max-width: 170px;
+  aspect-ratio: 1;
+  border-radius: 20px;
+  padding: 12px;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.platform-mobile .gift-card-inventory {
+  max-width: none;
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.platform-mobile .gift-card-inventory {
+  max-width: none;
+  /* Убрали scale, карточки в нормальном размере */
+}
+
+.gift-card-inventory:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Обычные подарки - серый фон */
+.gift-card-inventory-regular {
+  width: 100%;
+  max-width: 170px;
+  aspect-ratio: 1;
+  border-radius: 20px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  background: rgba(40, 40, 40, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.platform-mobile .gift-card-inventory-regular {
+  max-width: none;
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.platform-mobile .gift-card-inventory-regular {
+  max-width: none;
+  /* Убрали scale, карточки в нормальном размере */
+}
+
+.gift-card-inventory-regular:hover {
+  background: rgba(50, 50, 50, 0.7);
+  transform: translateY(-2px);
+}
+
+.lottie-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lottie-container.visible {
+  opacity: 1;
+}
+
+/* Обычные подарки - Lottie больше */
+.lottie-container-regular {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lottie-container-regular.visible {
+  opacity: 1;
+}
+
+/* Кнопка просмотра на карточке */
+.gift-view-btn {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.gift-view-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.02);
+}
+
+.gift-view-btn:active {
+  transform: scale(0.98);
+}
+
+.empty-inventory-container {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 300px;
-}
-
-.inventory-grid-filled {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  padding: 20px;
-}
-
-.platform-mobile .inventory-grid-filled {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 15px;
-}
-
-.empty-inventory {
   text-align: center;
+  margin-top: 20px;
 }
 
 .empty-icon {
+  font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .empty-text {
@@ -227,172 +353,10 @@
   transform: translateY(0);
 }
 
-.gift-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.3s ease;
-}
-
-.gift-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-2px);
-}
-
-.gift-card-animation {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gift-price {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffd700;
-  margin: 4px 0;
-}
-
-.gift-actions {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.gift-withdraw-btn {
-  width: 100%;
-  padding: 10px;
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  border: none;
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.gift-withdraw-btn:hover {
-  transform: scale(1.05);
-}
-
-.gift-sell-btn {
-  width: 100%;
-  padding: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.gift-sell-btn:hover {
-  transform: scale(1.05);
-}
+/* Старые стили удалены - используются новые стили выше */
 
 .platform-mobile .inventory-page {
-  min-height: calc(100vh - 85px);
   padding-bottom: 85px;
-  padding-top: 105px;
 }
 
-.inventory-page {
-  padding-top: 70px;
-}
-
-/* Error Modal Styles */
-.error-modal {
-  border-top: 2px solid rgba(255, 100, 100, 0.5);
-}
-
-.error-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  animation: shake 0.5s;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
-}
-
-.error-details {
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px solid rgba(255, 100, 100, 0.3);
-  border-radius: 8px;
-  padding: 12px;
-  margin: 12px 0;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-.error-details code {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-  word-break: break-word;
-}
-
-.error-actions {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: auto;
-  margin-bottom: 5px;
-}
-
-.retry-button {
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 16px;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-}
-
-.retry-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
-}
-
-.retry-button:active {
-  transform: translateY(0);
-}
-
-.manual-button {
-  width: 100%;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.manual-button:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
-}
-
-.manual-button:active {
-  transform: translateY(0);
-}
+/* Старые error modal стили удалены */

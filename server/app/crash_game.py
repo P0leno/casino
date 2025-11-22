@@ -25,10 +25,10 @@ class CrashGame:
         try:
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            cursor.execute("SELECT max_multiplier FROM crash_settings WHERE id = 1")
+            cursor.execute("SELECT value FROM settings WHERE key = 'max_crash_multiplier'")
             result = cursor.fetchone()
             conn.close()
-            return result[0] if result else 1000.0
+            return float(result[0]) if result else 10.0
         except Exception as e:
             print(f"Ошибка получения max_multiplier: {e}")
             return 1000.0
@@ -125,7 +125,9 @@ class CrashGame:
         if not self.is_running:
             return
         
+        # Сначала останавливаем игру
         self.is_running = False
+        self.current_multiplier = self.crash_point
         
         # Добавляем в историю
         self.history.append(self.crash_point)
@@ -138,11 +140,14 @@ class CrashGame:
         
         print(f"💥 Раунд #{self.game_id} завершен! Crashed at {self.crash_point}x | Выиграли: {winners}, Проиграли: {losers}")
         
+        # Пауза 3 секунды чтобы показать результат
+        await asyncio.sleep(3)
+        
         # Очищаем ставки текущего раунда
         self.bets = {}
         
-        # Пауза 5 секунд перед следующим раундом
-        await asyncio.sleep(5)
+        # Пауза 2 секунды перед следующим раундом
+        await asyncio.sleep(2)
         
         # Запускаем новый раунд
         asyncio.create_task(self.start_round())
@@ -201,13 +206,12 @@ class CrashGame:
     
     def get_state(self) -> Dict:
         """Возвращает текущее состояние игры"""
-        return {
+        # Если игра идет - отправляем время начала для клиентского расчета
+        # Если взорвалась - отправляем финальный множитель
+        state = {
             "gameId": self.game_id,
             "isRunning": self.is_running,
-            "currentMultiplier": round(self.current_multiplier, 2),
-            "crashPoint": self.crash_point if not self.is_running else None,
             "history": self.history[-10:],
-            "timeElapsed": time.time() - self.start_time if self.start_time else 0,
             "bets": [
                 {
                     "userId": uid,
@@ -220,6 +224,24 @@ class CrashGame:
                 for uid, bet in {**self.bets, **self.next_round_bets}.items()
             ]
         }
+        
+        if self.is_running:
+            # Игра идет - отправляем время начала
+            state["startTime"] = self.start_time
+            state["currentMultiplier"] = round(self.current_multiplier, 2)
+        else:
+            # Игра не идет
+            state["startTime"] = None
+            if self.start_time and (time.time() - self.start_time) < 3.5:
+                # Только что взорвалась - показываем результат
+                state["crashed"] = True
+                state["crashedAt"] = self.crash_point
+            else:
+                # Ожидание нового раунда
+                state["crashed"] = False
+            state["currentMultiplier"] = round(self.current_multiplier, 2)
+        
+        return state
 
 # Глобальный экземпляр игры
 crash_game = CrashGame()

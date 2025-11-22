@@ -3,31 +3,21 @@ import './Spin.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
-import bearAnim from '../assets/bear.json'
-import bottleAnim from '../assets/bottle.json'
-import cakeAnim from '../assets/cake.json'
-import cupAnim from '../assets/cup.json'
-import diamondAnim from '../assets/diamond.json'
-import flowersAnim from '../assets/flowers.json'
-import giftAnim from '../assets/gift.json'
-import heartAnim from '../assets/heart.json'
-import ringAnim from '../assets/ring.json'
-import rocketAnim from '../assets/rocket.json'
-import roseAnim from '../assets/rose.json'
 import pawAnim from '../assets/paw.json'
+import starAnim from '../assets/star.json'
 
 const gifts = [
-  { name: 'bear', animation: bearAnim },
-  { name: 'bottle', animation: bottleAnim },
-  { name: 'cake', animation: cakeAnim },
-  { name: 'cup', animation: cupAnim },
-  { name: 'diamond', animation: diamondAnim },
-  { name: 'flowers', animation: flowersAnim },
-  { name: 'gift', animation: giftAnim },
-  { name: 'heart', animation: heartAnim },
-  { name: 'ring', animation: ringAnim },
-  { name: 'rocket', animation: rocketAnim },
-  { name: 'rose', animation: roseAnim },
+  { name: 'bear', animation: '/gifts/bear.json' },
+  { name: 'bottle', animation: '/gifts/bottle.json' },
+  { name: 'cake', animation: '/gifts/cake.json' },
+  { name: 'cup', animation: '/gifts/cup.json' },
+  { name: 'diamond', animation: '/gifts/diamond.json' },
+  { name: 'flowers', animation: '/gifts/flowers.json' },
+  { name: 'gift', animation: '/gifts/gift.json' },
+  { name: 'heart', animation: '/gifts/heart.json' },
+  { name: 'ring', animation: '/gifts/ring.json' },
+  { name: 'rocket', animation: '/gifts/rocket.json' },
+  { name: 'rose', animation: '/gifts/rose.json' },
   { name: 'paw', animation: pawAnim }
 ]
 
@@ -42,12 +32,16 @@ function FreeSpin({ onNavigateToTopUp }) {
   const [available, setAvailable] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
   const [visibleCount, setVisibleCount] = useState(5)
+  const [lastClickTime, setLastClickTime] = useState(0)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [fastSpin, setFastSpin] = useState(false) // Быстрый запуск
   
   const viewportRef = useRef(null)
   const animationFrameRef = useRef(null)
   const targetOffsetRef = useRef(0)
   const startTimeRef = useRef(0)
   const durationRef = useRef(5000)
+  const fastSpinRef = useRef(false)
 
   // Настройка кнопки "Назад" в Telegram
   useEffect(() => {
@@ -145,10 +139,16 @@ function FreeSpin({ onNavigateToTopUp }) {
   }
 
   const handleSpin = async () => {
-    if (!available || spinning) return
-
-    setSpinning(true)
+    if (!available || isProcessing) return
+    
+    // Если включен быстрый запуск, ставим флаг сразу
+    if (fastSpin) {
+      fastSpinRef.current = true
+    }
+    
+    setIsProcessing(true)
     setResult(null)
+    setSpinning(true)
 
     try {
       const tg = window.Telegram?.WebApp
@@ -168,6 +168,20 @@ function FreeSpin({ onNavigateToTopUp }) {
         if (winIndex === -1) {
           alert('Ошибка: подарок не найден')
           setSpinning(false)
+          setIsProcessing(false)
+          return
+        }
+        
+        // Если был двойной клик - показываем результат сразу
+        if (fastSpinRef.current) {
+          setResult(data.gift)
+          setPawAmount(data.paw_count || 0)
+          setSpinning(false)
+          setIsProcessing(false)
+          setAvailable(false)
+          setTimeLeft(86400)
+          setOffset(0)
+          fastSpinRef.current = false
           return
         }
         
@@ -184,6 +198,22 @@ function FreeSpin({ onNavigateToTopUp }) {
         durationRef.current = 5000
         
         const animate = () => {
+          // Проверяем, нужно ли прервать анимацию (двойной клик)
+          if (fastSpinRef.current) {
+            if (animationFrameRef.current) {
+              cancelAnimationFrame(animationFrameRef.current)
+            }
+            setResult(data.gift)
+            setPawAmount(data.paw_count || 0)
+            setSpinning(false)
+            setIsProcessing(false)
+            setAvailable(false)
+            setTimeLeft(86400)
+            setOffset(0)
+            fastSpinRef.current = false
+            return
+          }
+          
           const now = Date.now()
           const elapsed = now - startTimeRef.current
           const progress = Math.min(elapsed / durationRef.current, 1)
@@ -201,6 +231,7 @@ function FreeSpin({ onNavigateToTopUp }) {
               setResult(data.gift)
               setPawAmount(data.paw_count || 0)
               setSpinning(false)
+              setIsProcessing(false)
               setAvailable(false)
               setTimeLeft(86400)
               setOffset(0)
@@ -213,10 +244,12 @@ function FreeSpin({ onNavigateToTopUp }) {
       } else {
         alert(data.message)
         setSpinning(false)
+        setIsProcessing(false)
       }
     } catch (error) {
       alert('Ошибка соединения с сервером')
       setSpinning(false)
+      setIsProcessing(false)
     }
   }
 
@@ -289,25 +322,42 @@ function FreeSpin({ onNavigateToTopUp }) {
         )}
       </div>
 
-      <button
-        className={`spin-button-fixed ${!available || spinning ? 'disabled' : ''}`}
-        onClick={handleSpin}
-        disabled={!available || spinning}
-      >
-        {spinning ? (
-          'Вращение...'
-        ) : available ? (
-          <>
-            <span className="button-main-text">Крутить</span>
-            <span className="button-sub-text">Фри спин</span>
-          </>
-        ) : (
-          <>
-            <span className="button-main-text">Недоступно</span>
-            <span className="button-sub-text">{formatTime(timeLeft)}</span>
-          </>
+      <div className="spin-controls">
+        <button
+          className={`spin-button-fixed ${!available || spinning ? 'disabled' : ''}`}
+          onClick={handleSpin}
+          disabled={!available || spinning}
+        >
+          {spinning ? (
+            'Вращение...'
+          ) : available ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="button-main-text">Крутить за 0</span>
+              <LottieAnimation animationData={starAnim} width={24} height={24} />
+            </div>
+          ) : (
+            <>
+              <span className="button-main-text">Недоступно</span>
+              <span className="button-sub-text">{formatTime(timeLeft)}</span>
+            </>
+          )}
+        </button>
+        
+        {available && !spinning && (
+          <div className="fast-spin-toggle">
+            <span className="toggle-label">Быстрый запуск</span>
+            <label className="switch">
+              <input 
+                type="checkbox" 
+                className="toggle" 
+                checked={fastSpin}
+                onChange={(e) => setFastSpin(e.target.checked)}
+              />
+              <span className="slider"></span>
+            </label>
+          </div>
         )}
-      </button>
+      </div>
     </div>
   )
 }

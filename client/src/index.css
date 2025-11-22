@@ -11,7 +11,7 @@ html, body {
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: Gilroy, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
   background-color: #1a1a1a;
   color: #ffffff;
   -webkit-font-smoothing: antialiased;
@@ -20,4 +20,21 @@ body {
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* Скрыть полосу прокрутки */
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Для Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* Для IE и Edge */
+body {
+  -ms-overflow-style: none;
 }

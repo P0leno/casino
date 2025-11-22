@@ -1,6 +1,6 @@
 .balance-bar {
   position: fixed;
-  top: max(10px, env(safe-area-inset-top, 0px));
+  top: calc(var(--safe-area-top, 10px) + 0px);
   right: 15px;
   z-index: 100;
   background: rgba(255, 255, 255, 0.1);
@@ -16,6 +16,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
+
 
 .balance-bar:hover {
   background: rgba(255, 255, 255, 0.15);

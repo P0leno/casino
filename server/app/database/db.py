@@ -8,13 +8,17 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            username TEXT,
             creation_date TEXT NOT NULL,
             is_banned INTEGER DEFAULT 0,
             last_spin_date TEXT,
             inventory TEXT DEFAULT '[]',
             balance INTEGER DEFAULT 0,
             bonus_balance INTEGER DEFAULT 0,
-            last_spin_notification TEXT
+            last_spin_notification TEXT,
+            ton_wallet_address TEXT,
+            completed_tasks TEXT DEFAULT '[]'
         )
     """)
     
@@ -27,8 +31,50 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN last_spin_notification TEXT")
             conn.commit()
             print("✅ Миграция завершена: last_spin_notification добавлен")
+        
+        if 'ton_wallet_address' not in columns:
+            print("⚙️  Миграция: добавление поля ton_wallet_address...")
+            cursor.execute("ALTER TABLE users ADD COLUMN ton_wallet_address TEXT")
+            conn.commit()
+            print("✅ Миграция завершена: ton_wallet_address добавлен")
+        
+        if 'completed_tasks' not in columns:
+            print("⚙️  Миграция: добавление поля completed_tasks...")
+            cursor.execute("ALTER TABLE users ADD COLUMN completed_tasks TEXT DEFAULT '[]'")
+            conn.commit()
+            print("✅ Миграция завершена: completed_tasks добавлен")
+        
+        if 'username' not in columns:
+            print("⚙️  Миграция: добавление поля username...")
+            cursor.execute("ALTER TABLE users ADD COLUMN username TEXT")
+            conn.commit()
+            print("✅ Миграция завершена: username добавлен")
+        
+        if 'user_id' not in columns:
+            print("⚙️  Миграция: добавление поля user_id...")
+            cursor.execute("ALTER TABLE users ADD COLUMN user_id INTEGER")
+            conn.commit()
+            print("✅ Миграция завершена: user_id добавлен")
+        
+        if 'activated_promocodes' not in columns:
+            print("⚙️  Миграция: добавление поля activated_promocodes...")
+            cursor.execute("ALTER TABLE users ADD COLUMN activated_promocodes TEXT DEFAULT '[]'")
+            conn.commit()
+            print("✅ Миграция завершена: activated_promocodes добавлен")
+        
+        if 'refbalance' not in columns:
+            print("⚙️  Миграция: добавление поля refbalance...")
+            cursor.execute("ALTER TABLE users ADD COLUMN refbalance INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ Миграция завершена: refbalance добавлен")
+        
+        if 'avatar_url' not in columns:
+            print("⚙️  Миграция: добавление поля avatar_url...")
+            cursor.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+            conn.commit()
+            print("✅ Миграция завершена: avatar_url добавлен")
     except Exception as e:
-        print(f"⚠️  Ошибка миграции last_spin_notification: {e}")
+        print(f"⚠️  Ошибка миграции: {e}")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS gift_chances (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,14 +112,141 @@ def init_db():
         )
     """)
     
+    # Таблица настроек системы
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS crash_settings (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            max_multiplier REAL DEFAULT 1000.0
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            description TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
-    cursor.execute("INSERT OR IGNORE INTO crash_settings (id, max_multiplier) VALUES (1, 1000.0)")
+    # Дефолтные настройки
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('stars_topup_enabled', 'true', 'Пополнение звездами')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('max_crash_multiplier', '10.0', 'Максимальный коэффициент краша')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('ton_price_usd', '5.5', 'Цена TON в USD (CoinMarketCap)')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('shop_commission', '10', 'Наценка на подарки (%)')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('sell_commission', '10', 'Комиссия на продажу подарков (%)')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('custom_promo_refs_required', '10', 'Рефералов для именного промокода')")
+    
+    print("✅ Таблица settings создана/проверена")
+    
+    # УДАЛЯЕМ старую таблицу crash_settings (переносим в settings)
+    try:
+        cursor.execute("DROP TABLE IF EXISTS crash_settings")
+        print("✅ Старая таблица crash_settings удалена (перенесено в settings)")
+    except Exception as e:
+        print(f"⚠️  Не удалось удалить crash_settings: {e}")
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            target TEXT NOT NULL,
+            type TEXT NOT NULL,
+            award INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            custom_invite TEXT
+        )
+    """)
+    
+    # Таблица промокодов
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS promocodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            promo TEXT NOT NULL UNIQUE,
+            type TEXT NOT NULL DEFAULT 'ref',
+            xp INTEGER NOT NULL DEFAULT 0,
+            owner INTEGER NOT NULL,
+            reward INTEGER NOT NULL DEFAULT 25,
+            invited_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    print("✅ Таблица promocodes создана/проверена")
+    
+    # Таблица истории промокодов (активации и пополнения от рефералов)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS promo_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            promo_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            action_type TEXT NOT NULL,
+            amount INTEGER DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (promo_id) REFERENCES promocodes(id)
+        )
+    """)
+    print("✅ Таблица promo_history создана/проверена")
+    
+    # Миграция: добавление invited_count если его нет
+    try:
+        cursor.execute("PRAGMA table_info(promocodes)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'invited_count' not in columns:
+            print("⚙️  Миграция: добавление поля invited_count в promocodes...")
+            cursor.execute("ALTER TABLE promocodes ADD COLUMN invited_count INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ Миграция завершена: invited_count добавлен")
+    except Exception as e:
+        print(f"⚠️  Ошибка миграции promocodes: {e}")
+    
+    # Миграция: добавление поля custom_invite если его нет
+    try:
+        cursor.execute("PRAGMA table_info(tasks)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'custom_invite' not in columns:
+            print("⚙️  Миграция: добавление поля custom_invite в tasks...")
+            cursor.execute("ALTER TABLE tasks ADD COLUMN custom_invite TEXT")
+            conn.commit()
+            print("✅ Миграция завершена: custom_invite добавлен")
+    except Exception as e:
+        print(f"⚠️  Ошибка миграции tasks: {e}")
+    
+    # Таблица для подарков из магазина
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS shop_gifts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            gift_id TEXT UNIQUE NOT NULL,
+            slug TEXT DEFAULT NULL,
+            title TEXT NOT NULL,
+            model_name TEXT,
+            model_path TEXT,
+            symbol_name TEXT,
+            backdrop_name TEXT,
+            center_color TEXT,
+            edge_color TEXT,
+            pattern_color TEXT,
+            text_color TEXT,
+            available_amount INTEGER DEFAULT 0,
+            total_amount INTEGER DEFAULT 0,
+            price INTEGER DEFAULT 0,
+            ton_price REAL DEFAULT NULL,
+            rarity_model INTEGER DEFAULT NULL,
+            rarity_symbol INTEGER DEFAULT NULL,
+            rarity_backdrop INTEGER DEFAULT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            price_update TIMESTAMP DEFAULT NULL
+        )
+    """)
+    print("✅ Таблица shop_gifts создана/проверена")
+    
+    # Миграция: добавление price_update если его нет
+    try:
+        cursor.execute("PRAGMA table_info(shop_gifts)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'price_update' not in columns:
+            print("⚙️  Миграция: добавление поля price_update в shop_gifts...")
+            cursor.execute("ALTER TABLE shop_gifts ADD COLUMN price_update TIMESTAMP DEFAULT NULL")
+            conn.commit()
+            print("✅ Миграция завершена: price_update добавлен")
+        if 'ton_price' not in columns:
+            print("⚙️  Миграция: добавление поля ton_price в shop_gifts...")
+            cursor.execute("ALTER TABLE shop_gifts ADD COLUMN ton_price REAL DEFAULT NULL")
+            conn.commit()
+            print("✅ Миграция завершена: ton_price добавлен")
+    except Exception as e:
+        print(f"⚠️  Ошибка миграции shop_gifts: {e}")
     
     # Данные для бесплатного спина
     # star_min/star_max - только для 'star', paw_min/paw_max - только для 'paw'

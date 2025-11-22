@@ -15,13 +15,24 @@ function LottieAnimation({ animationData, width = 80, height = 80, loop = true, 
           animationRef.current.destroy()
         }
 
-        animationRef.current = lottie.default.loadAnimation({
+        // Если animationData это строка (URL), то загружаем по path
+        // Если объект - используем напрямую как animationData
+        const config = {
           container: containerRef.current,
           renderer: 'svg',
           loop: loop,
-          autoplay: autoplay,
-          animationData: animationData
-        })
+          autoplay: autoplay
+        }
+
+        if (typeof animationData === 'string') {
+          // Это путь к файлу
+          config.path = animationData
+        } else {
+          // Это уже загруженный JSON объект
+          config.animationData = animationData
+        }
+
+        animationRef.current = lottie.default.loadAnimation(config)
       } catch (error) {
         console.error('Failed to load lottie:', error)
       }

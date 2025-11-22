@@ -1,50 +1,64 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './Inventory.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
-import giftAnimation from '../assets/gift.json'
-import bearAnim from '../assets/bear.json'
-import bottleAnim from '../assets/bottle.json'
-import cakeAnim from '../assets/cake.json'
-import cupAnim from '../assets/cup.json'
-import diamondAnim from '../assets/diamond.json'
-import flowersAnim from '../assets/flowers.json'
-import heartAnim from '../assets/heart.json'
-import ringAnim from '../assets/ring.json'
-import rocketAnim from '../assets/rocket.json'
-import roseAnim from '../assets/rose.json'
-
-const giftAnimations = {
-  bear: bearAnim,
-  bottle: bottleAnim,
-  cake: cakeAnim,
-  cup: cupAnim,
-  diamond: diamondAnim,
-  flowers: flowersAnim,
-  gift: giftAnimation,
-  heart: heartAnim,
-  ring: ringAnim,
-  rocket: rocketAnim,
-  rose: roseAnim
-}
+import GiftDetailsModal from './GiftDetailsModal'
+import starStaticIcon from '../assets/star_static.svg'
 
 function Inventory({ onNavigateToTopUp }) {
-  const [showOverlay, setShowOverlay] = useState(false)
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
-  const [prices, setPrices] = useState({})
-  const [showErrorModal, setShowErrorModal] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [errorDetails, setErrorDetails] = useState('')
-  const [currentGift, setCurrentGift] = useState(null)
-  const [withdrawAvailable, setWithdrawAvailable] = useState(false)
+  const [selectedGift, setSelectedGift] = useState(null)
+  const [showGiftDetails, setShowGiftDetails] = useState(false)
+  const [sellingGift, setSellingGift] = useState(null)
+  const gridRef = useRef(null)
+  const observerRef = useRef(null)
+
+  // Проверяем мобильную платформу и рассчитываем отступ
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
+                   window.Telegram?.WebApp?.platform === 'ios'
+  
+  const tg = window.Telegram?.WebApp
+  const safeAreaTop = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
+  // Отступ = safe area + 20px (отступ баланс баров) + 50px (высота баланс бара) + 20px (gap)
+  const topPadding = isMobile ? (safeAreaTop + 90) : 50
+  
+  console.log('Inventory - safeAreaTop:', safeAreaTop, 'topPadding:', topPadding, 'isMobile:', isMobile)
 
   useEffect(() => {
     loadInventory()
-    loadPrices()
-    checkWithdrawAvailable()
   }, [])
+
+  useEffect(() => {
+    // Intersection Observer для оптимизации Lottie анимаций
+    if (!gridRef.current) return
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const lottieElement = entry.target.querySelector('.lottie-container, .lottie-container-regular')
+          if (lottieElement) {
+            if (entry.isIntersecting) {
+              lottieElement.classList.add('visible')
+            } else {
+              lottieElement.classList.remove('visible')
+            }
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    )
+
+    const cards = gridRef.current.querySelectorAll('.gift-card-inventory, .gift-card-inventory-regular')
+    cards.forEach((card) => observerRef.current.observe(card))
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [inventory])
 
   const loadInventory = async () => {
     try {
@@ -56,14 +70,14 @@ function Inventory({ onNavigateToTopUp }) {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/get-inventory`, {
+      const response = await fetch(`${apiUrl}/api/inventory/get`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
       })
 
       const data = await response.json()
-      if (data.valid) {
+      if (data.inventory) {
         setInventory(data.inventory)
       }
     } catch (error) {
@@ -73,261 +87,232 @@ function Inventory({ onNavigateToTopUp }) {
     }
   }
 
-  const handleOpenBot = () => {
-    window.open('https://t.me/shellrelayer', '_blank')
-    setShowOverlay(false)
+  const handleViewGift = (gift) => {
+    setSelectedGift(gift)
+    setShowGiftDetails(true)
   }
 
-  const loadPrices = async () => {
-    try {
-      const tg = window.Telegram?.WebApp
-      const initData = tg?.initData
-      if (!initData) return
-
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/get-prices`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      })
-
-      const data = await response.json()
-      if (data.valid) {
-        setPrices(data.prices)
-      }
-    } catch (error) {
-      console.error('Error loading prices:', error)
-    }
-  }
-
-  const checkWithdrawAvailable = async () => {
-    try {
-      const tg = window.Telegram?.WebApp
-      const initData = tg?.initData
-      if (!initData) return
-
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/check-withdraw-available`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      })
-
-      const data = await response.json()
-      if (data.valid) {
-        setWithdrawAvailable(data.available)
-      }
-    } catch (error) {
-      console.error('Error checking withdraw availability:', error)
-    }
-  }
-
-  const handleWithdraw = async (giftName, index) => {
-    if (!withdrawAvailable) {
-      alert('Функция вывода временно недоступна')
-      return
-    }
-
-    const confirmed = confirm(`Вывести ${giftName} на ваш аккаунт Telegram?`)
-    if (!confirmed) return
-
-    try {
-      const tg = window.Telegram?.WebApp
-      const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-
-      const response = await fetch(`${apiUrl}/api/withdraw-gift`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftName, index })
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        alert('✅ Подарок успешно отправлен!')
-        loadInventory()
-      } else {
-        // Показываем модальное окно с ошибкой
-        setErrorMessage(data.message || 'Не удалось отправить подарок')
-        setErrorDetails(data.error || '')
-        setCurrentGift({ giftName, index })
-        setShowErrorModal(true)
-      }
-    } catch (error) {
-      alert('Ошибка соединения с сервером')
-    }
-  }
-
-  const handleRetryWithdraw = () => {
-    setShowErrorModal(false)
-    if (currentGift) {
-      handleWithdraw(currentGift.giftName, currentGift.index)
-    }
-  }
-
-  const handleManualWithdraw = async () => {
-    if (!currentGift) return
-
-    try {
-      const tg = window.Telegram?.WebApp
-      const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-
-      const response = await fetch(`${apiUrl}/api/request-manual-withdraw`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          initData, 
-          giftName: currentGift.giftName, 
-          index: currentGift.index 
-        })
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setShowErrorModal(false)
-        alert('✅ ' + data.message)
-        loadInventory()
-      } else {
-        alert('Ошибка: ' + data.message)
-      }
-    } catch (error) {
-      alert('Ошибка соединения с сервером')
-    }
-  }
-
-  const handleSell = async (giftName, index) => {
-    const price = prices[giftName] || 0
-    const confirmed = confirm(`Продать ${giftName} за ${price} ⭐?`)
+  // Вывод обычных подарков (через существующую механику)
+  const handleWithdrawRegular = async (gift) => {
+    const tg = window.Telegram?.WebApp
+    const initData = tg?.initData
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    
+    // Подтверждение
+    const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
+    const confirmed = tg?.showConfirm 
+      ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
+      : window.confirm(confirmMessage)
     
     if (!confirmed) return
 
     try {
-      const tg = window.Telegram?.WebApp
-      const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-
-      const response = await fetch(`${apiUrl}/api/sell-gift`, {
+      const response = await fetch(`${apiUrl}/api/withdraw-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftName, index })
+        body: JSON.stringify({ initData, giftName: gift.slug, index: 0 })
       })
 
       const data = await response.json()
+      
       if (data.success) {
-        alert(`Продано! +${data.price} ⭐ к балансу`)
+        if (tg?.showAlert) {
+          tg.showAlert('✅ Подарок успешно отправлен!')
+        } else {
+          alert('✅ Подарок успешно отправлен!')
+        }
         loadInventory()
+        setShowGiftDetails(false)
       } else {
-        alert('Ошибка: ' + data.message)
+        const errorMsg = data.message || 'Не удалось отправить подарок'
+        if (tg?.showAlert) {
+          tg.showAlert(errorMsg)
+        } else {
+          alert(errorMsg)
+        }
       }
     } catch (error) {
-      alert('Ошибка соединения с сервером')
+      console.error('Withdraw error:', error)
+      if (tg?.showAlert) {
+        tg.showAlert('Ошибка соединения с сервером')
+      } else {
+        alert('Ошибка соединения с сервером')
+      }
+    }
+  }
+
+  // Продажа обычных подарков
+  const handleSellRegular = async (gift) => {
+    const tg = window.Telegram?.WebApp
+    const initData = tg?.initData
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+    try {
+      // Для обычных подарков используем существующий API sell-gift
+      const response = await fetch(`${apiUrl}/api/sell-gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, giftName: gift.slug })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        if (tg?.showAlert) {
+          tg.showAlert(`Продано! +${data.price} ⭐ к балансу`)
+        } else {
+          alert(`Продано! +${data.price} ⭐ к балансу`)
+        }
+        loadInventory()
+        setShowGiftDetails(false)
+      } else {
+        const errorMsg = data.message || 'Ошибка продажи'
+        if (tg?.showAlert) {
+          tg.showAlert(errorMsg)
+        } else {
+          alert(errorMsg)
+        }
+      }
+    } catch (error) {
+      console.error('Sell error:', error)
+      if (tg?.showAlert) {
+        tg.showAlert('Ошибка соединения с сервером')
+      } else {
+        alert('Ошибка соединения с сервером')
+      }
+    }
+  }
+
+  // Продажа NFT подарков
+  const handleSellNFT = async (gift) => {
+    if (sellingGift) return
+    
+    setSellingGift(gift.slug)
+    
+    const tg = window.Telegram?.WebApp
+    const initData = tg?.initData
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    
+    try {
+      // Получаем цену продажи
+      const priceResponse = await fetch(`${apiUrl}/api/inventory/get-sell-price`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, slug: gift.slug })
+      })
+
+      const priceData = await priceResponse.json()
+
+      if (!priceResponse.ok) {
+        throw new Error(priceData.detail || 'Не удалось определить цену')
+      }
+
+      // Диалоговое окно подтверждения
+      const confirmMessage = `Продать "${gift.title}"?\n\nЦена на Tonnel: ${priceData.ton_price} TON\nКомиссия: ${priceData.commission_percent}%\nВы получите: ${priceData.stars_price}⭐`
+      
+      const confirmed = tg?.showConfirm 
+        ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
+        : window.confirm(confirmMessage)
+
+      if (!confirmed) {
+        setSellingGift(null)
+        return
+      }
+
+      // Продаем подарок
+      const sellResponse = await fetch(`${apiUrl}/api/inventory/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, slug: gift.slug })
+      })
+
+      const sellData = await sellResponse.json()
+
+      if (!sellResponse.ok) {
+        throw new Error(sellData.detail || 'Ошибка продажи')
+      }
+
+      if (tg?.showAlert) {
+        tg.showAlert(`${sellData.message}\n+${sellData.stars_earned}⭐`)
+      } else {
+        alert(`${sellData.message}\n+${sellData.stars_earned}⭐`)
+      }
+
+      // Обновляем инвентарь
+      loadInventory()
+      setShowGiftDetails(false)
+
+    } catch (error) {
+      console.error('Sell error:', error)
+      const errorMsg = error.message || 'Ошибка продажи'
+      if (tg?.showAlert) {
+        tg.showAlert(errorMsg)
+      } else {
+        alert(errorMsg)
+      }
+    } finally {
+      setSellingGift(null)
     }
   }
 
   return (
     <div className="inventory-page">
-      <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
       <BonusBalanceBar />
-      <div className="inventory-content">
+      <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
+
+      <div className="inventory-content" style={{ paddingTop: `${topPadding}px` }}>
         {loading ? (
           <div className="inventory-loading">Загрузка...</div>
         ) : inventory.length === 0 ? (
-          <div className="inventory-grid">
-            <div className="empty-inventory">
-              <div className="empty-icon">
-                <LottieAnimation animationData={giftAnimation} width={100} height={100} />
-              </div>
-              <p className="empty-text">Ваш инвентарь пуст</p>
-            </div>
+          <div className="empty-inventory-container">
+            <div className="empty-icon">📦</div>
+            <p className="empty-text">Ваш инвентарь пуст</p>
           </div>
         ) : (
-          <div className="inventory-grid-filled">
-            {inventory.map((giftName, index) => (
-              <div key={`${giftName}-${index}`} className="gift-card">
-                <div className="gift-card-animation">
-                  {giftAnimations[giftName] && (
-                    <LottieAnimation animationData={giftAnimations[giftName]} width={100} height={100} loop={false} autoplay={false} />
-                  )}
-                </div>
-                <div className="gift-actions">
-                  <button 
-                    className="gift-withdraw-btn" 
-                    onClick={() => handleWithdraw(giftName, index)}
-                    disabled={!withdrawAvailable}
-                    style={{ opacity: withdrawAvailable ? 1 : 0.5 }}
-                  >
-                    Вывести
-                  </button>
-                  <button className="gift-sell-btn" onClick={() => handleSell(giftName, index)}>
-                    Продать
-                  </button>
-                </div>
+          <div className="inventory-grid" ref={gridRef}>
+            {inventory.map((gift, index) => (
+              <div 
+                key={`${gift.slug}-${index}`} 
+                className={gift.is_regular_gift ? "gift-card-inventory-regular" : "gift-card-inventory"}
+                style={!gift.is_regular_gift && gift.center_color && gift.edge_color ? {
+                  background: `linear-gradient(135deg, ${gift.center_color} 0%, ${gift.edge_color} 100%)`
+                } : {}}
+              >
+                {gift.model_path && (
+                  <div className={gift.is_regular_gift ? "lottie-container-regular" : "lottie-container"}>
+                    <LottieAnimation 
+                      animationData={gift.model_path}
+                      width={gift.is_regular_gift ? 100 : 80}
+                      height={gift.is_regular_gift ? 100 : 80}
+                      loop={true}
+                      autoplay={true}
+                    />
+                  </div>
+                )}
+                
+                <button 
+                  className="gift-view-btn"
+                  onClick={() => handleViewGift(gift)}
+                >
+                  Просмотр
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="add-gifts-text" onClick={() => setShowOverlay(true)}>
-        Добавить подарки
-      </div>
-
-      {showOverlay && (
-        <>
-          <div className="overlay-backdrop" onClick={() => setShowOverlay(false)} />
-          <div className="overlay-sheet">
-            <div className="sheet-handle"></div>
-            
-            <div className="sheet-content">
-              <div className="overlay-icon">
-                <LottieAnimation animationData={giftAnimation} width={80} height={80} />
-              </div>
-              <h2 className="overlay-title">Добавить подарки</h2>
-              <p className="overlay-text">
-                Чтобы подарки появились в вашем инвентаре, отправьте их боту
-              </p>
-
-              <button className="overlay-button" onClick={handleOpenBot}>
-                Отправить
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {showErrorModal && (
-        <>
-          <div className="overlay-backdrop" onClick={() => setShowErrorModal(false)} />
-          <div className="overlay-sheet error-modal">
-            <div className="sheet-handle"></div>
-            
-            <div className="sheet-content">
-              <div className="error-icon">❌</div>
-              <h2 className="overlay-title">Подарок не отправился</h2>
-              <p className="overlay-text">
-                {errorMessage}
-              </p>
-              {errorDetails && (
-                <div className="error-details">
-                  <code>{errorDetails}</code>
-                </div>
-              )}
-              <p className="overlay-text" style={{ marginTop: '16px' }}>
-                Убедитесь что вы написали <b>привет</b> боту <b>@shellrelayer</b>
-              </p>
-
-              <div className="error-actions">
-                <button className="retry-button" onClick={handleRetryWithdraw}>
-                  Повторить
-                </button>
-                <button className="manual-button" onClick={handleManualWithdraw}>
-                  Вывод администрацией
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+      {showGiftDetails && selectedGift && (
+        <GiftDetailsModal 
+          gift={selectedGift}
+          isInventory={true}
+          onClose={() => {
+            setShowGiftDetails(false)
+            setSelectedGift(null)
+          }}
+          onSell={selectedGift.is_regular_gift ? handleSellRegular : handleSellNFT}
+          onWithdraw={selectedGift.is_regular_gift ? handleWithdrawRegular : null}
+        />
       )}
     </div>
   )

@@ -1,43 +1,96 @@
-<svg width="817" height="276" viewBox="0 0 817 276" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Градиентный фон -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg-gradient-paid" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    <!-- Градиенты для стекла -->
+    <linearGradient id="glassGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.2);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.05);stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="text-gradient-paid" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+    
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:1" />
     </linearGradient>
+    
+    <linearGradient id="accentGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0FBCE0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a8aa8;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Фильтр для blur эффекта -->
+    <filter id="blur2">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+    </filter>
   </defs>
   
-  <!-- Фон с закругленными углами -->
-  <rect width="817" height="276" rx="24" fill="url(#bg-gradient-paid)"/>
+  <!-- Основной круг со стеклянным эффектом -->
+  <circle cx="100" cy="100" r="85" 
+          fill="url(#glassGradient2)" 
+          stroke="rgba(255,255,255,0.2)" 
+          stroke-width="2"
+          filter="url(#blur2)"
+          opacity="0.8"/>
   
-  <!-- Декоративные элементы -->
-  <circle cx="100" cy="50" r="30" fill="white" opacity="0.15"/>
-  <circle cx="700" cy="220" r="40" fill="white" opacity="0.15"/>
-  <circle cx="50" cy="200" r="20" fill="white" opacity="0.2"/>
-  <circle cx="750" cy="60" r="25" fill="white" opacity="0.18"/>
+  <!-- Внутренний круг с золотым акцентом -->
+  <circle cx="100" cy="100" r="70" 
+          fill="none" 
+          stroke="url(#goldGradient)" 
+          stroke-width="3"
+          opacity="0.7"/>
   
-  <!-- Звездочки и эмодзи -->
-  <text x="150" y="80" font-size="40" fill="white" opacity="0.7">⭐</text>
-  <text x="650" y="100" font-size="35" fill="white" opacity="0.6">💰</text>
-  <text x="80" y="250" font-size="30" fill="white" opacity="0.5">✨</text>
+  <!-- Четыре лопасти спина (премиум версия) -->
+  <g transform="translate(100,100)">
+    <!-- Лопасть 1 -->
+    <path d="M 0,-55 Q 25,-35 5,-10 Q -5,-35 0,-55 Z" 
+          fill="url(#goldGradient)" 
+          opacity="0.9"
+          transform="rotate(0)"/>
+    
+    <!-- Лопасть 2 -->
+    <path d="M 0,-55 Q 25,-35 5,-10 Q -5,-35 0,-55 Z" 
+          fill="url(#goldGradient)" 
+          opacity="0.9"
+          transform="rotate(90)"/>
+    
+    <!-- Лопасть 3 -->
+    <path d="M 0,-55 Q 25,-35 5,-10 Q -5,-35 0,-55 Z" 
+          fill="url(#goldGradient)" 
+          opacity="0.9"
+          transform="rotate(180)"/>
+    
+    <!-- Лопасть 4 -->
+    <path d="M 0,-55 Q 25,-35 5,-10 Q -5,-35 0,-55 Z" 
+          fill="url(#goldGradient)" 
+          opacity="0.9"
+          transform="rotate(270)"/>
+  </g>
   
-  <!-- Основной текст БОМЖ КЕЙС -->
-  <text x="408" y="120" font-size="72" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
-    БОМЖ КЕЙС
-  </text>
+  <!-- Центральный круг с монетой -->
+  <circle cx="100" cy="100" r="20" 
+          fill="url(#glassGradient2)" 
+          stroke="url(#goldGradient)" 
+          stroke-width="3"/>
   
-  <!-- Подзаголовок -->
-  <text x="408" y="170" font-size="32" fill="white" opacity="0.95" text-anchor="middle" font-family="Arial, sans-serif">
-    Стоимость: 5 звезд ⭐
-  </text>
+  <!-- Символ звезды в центре -->
+  <path d="M 100,85 L 105,95 L 115,95 L 107,102 L 110,112 L 100,105 L 90,112 L 93,102 L 85,95 L 95,95 Z"
+        fill="url(#goldGradient)"/>
   
-  <!-- Кнопка призыва к действию -->
-  <rect x="308" y="190" width="200" height="50" rx="25" fill="url(#text-gradient-paid)"/>
-  <text x="408" y="223" font-size="24" font-weight="600" fill="#92400e" text-anchor="middle" font-family="Arial, sans-serif">
-    Открыть →
-  </text>
+  <!-- Блики -->
+  <ellipse cx="80" cy="80" rx="25" ry="35" 
+           fill="rgba(255,255,255,0.2)" 
+           transform="rotate(-30 80 80)"/>
+  
+  <!-- Декоративные звездочки вокруг -->
+  <circle cx="65" cy="50" r="3" fill="url(#goldGradient)" opacity="0.8"/>
+  <circle cx="135" cy="50" r="3" fill="url(#goldGradient)" opacity="0.8"/>
+  <circle cx="65" cy="150" r="3" fill="url(#goldGradient)" opacity="0.8"/>
+  <circle cx="135" cy="150" r="3" fill="url(#goldGradient)" opacity="0.8"/>
+  
+  <!-- Текст "PAID" -->
+  <text x="100" y="170" 
+        font-family="Arial, sans-serif" 
+        font-size="18" 
+        font-weight="bold" 
+        fill="url(#goldGradient)" 
+        text-anchor="middle">PREMIUM</text>
 </svg>

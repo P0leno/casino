@@ -16,6 +16,27 @@ class BanRequest(BaseModel):
     initData: str
     targetUserId: int
 
+# Вспомогательная функция для получения user_data из initData
+def verify_init_data(init_data: str):
+    """
+    Проверяет initData и возвращает user_data
+    Возвращает None если невалидно
+    """
+    if not validate_init_data(init_data, BOT_TOKEN):
+        return None
+    
+    try:
+        parsed = parse_qs(init_data)
+        user_data_str = parsed.get('user', [''])[0]
+        
+        if not user_data_str:
+            return None
+        
+        user_data = json.loads(user_data_str)
+        return user_data
+    except:
+        return None
+
 @router.post("/validate")
 async def validate(request: ValidateRequest):
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
@@ -32,6 +53,9 @@ async def validate(request: ValidateRequest):
         
         user = json.loads(user_data)
         user_id = user.get('id')
+        username = user.get('username', '')
+        # Получаем URL аватарки из фото (если есть)
+        photo_url = user.get('photo_url', '')
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -41,10 +65,16 @@ async def validate(request: ValidateRequest):
         
         if result:
             is_banned = bool(result[0])
+            # Обновляем username и avatar_url при каждом логине
+            cursor.execute(
+                "UPDATE users SET username = ?, avatar_url = ? WHERE id = ?",
+                (username, photo_url, user_id)
+            )
+            conn.commit()
         else:
             cursor.execute(
-                "INSERT INTO users (id, creation_date, is_banned) VALUES (?, ?, 0)",
-                (user_id, datetime.now().isoformat())
+                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned) VALUES (?, ?, ?, ?, 0)",
+                (user_id, username, photo_url, datetime.now().isoformat())
             )
             conn.commit()
             is_banned = False
@@ -57,12 +87,13 @@ async def validate(request: ValidateRequest):
 
 @router.post("/check-admin")
 async def check_admin(request: ValidateRequest):
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
-    
-    if not is_valid:
-        return {"valid": False, "isAdmin": False}
-    
     try:
+        is_valid = validate_init_data(request.initData, BOT_TOKEN)
+        
+        if not is_valid:
+            print("check-admin: Invalid init data")
+            return {"valid": False, "isAdmin": False}
+        
         parsed = parse_qs(request.initData)
         user_data = parsed.get('user', [''])[0]
         
@@ -71,10 +102,13 @@ async def check_admin(request: ValidateRequest):
             user_id = user.get('id')
             
             is_admin = user_id in ADMIN_IDS
+            print(f"check-admin: user_id={user_id}, is_admin={is_admin}")
             return {"valid": True, "isAdmin": is_admin}
         
+        print("check-admin: No user data")
         return {"valid": True, "isAdmin": False}
-    except Exception:
+    except Exception as e:
+        print(f"check-admin ERROR: {e}")
         return {"valid": False, "isAdmin": False}
 
 @router.post("/ban-user")

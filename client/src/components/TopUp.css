@@ -27,6 +27,37 @@
   animation: slideUp 0.3s ease;
 }
 
+.payment-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top, 16px));
+  background: #1c1c1e;
+}
+
+.payment-tab {
+  flex: 1;
+  padding: 12px;
+  background: #2c2c2e;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  color: #8e8e93;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-tab.active {
+  background: #3a3a3c;
+  border-color: #ffd60a;
+  color: #ffffff;
+}
+
+.payment-tab:active {
+  transform: scale(0.97);
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(50px);
@@ -156,4 +187,121 @@
 .topup-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* TON Wallet Styles */
+.wallet-connect-section {
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.wallet-info {
+  color: #8e8e93;
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.connect-wallet-btn {
+  width: 100%;
+  padding: 16px;
+  background: #0098ea;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.connect-wallet-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  opacity: 0.8;
+}
+
+.connect-wallet-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wallet-connected {
+  padding: 16px;
+  background: #2c2c2e;
+  margin: 16px;
+  border-radius: 12px;
+}
+
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.wallet-label {
+  color: #8e8e93;
+  font-size: 13px;
+  margin: 0 0 8px 0;
+}
+
+.wallet-address {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  margin: 0;
+}
+
+.disconnect-wallet-btn {
+  padding: 8px 16px;
+  background: #3a3a3c;
+  color: #ff453a;
+  border: 1px solid #ff453a;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.disconnect-wallet-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.disconnect-wallet-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.payment-code-label {
+  color: #8e8e93;
+  font-size: 13px;
+  margin: 16px 0 8px 0;
+  border-top: 1px solid #3a3a3c;
+  padding-top: 16px;
+}
+
+.payment-code {
+  color: #ffd60a;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.ton-info-section {
+  padding: 0 16px;
+}
+
+.ton-hint {
+  color: #8e8e93;
+  font-size: 13px;
+  margin: 16px 0 0 0;
+  padding-top: 16px;
+  border-top: 1px solid #3a3a3c;
+  line-height: 1.4;
 }

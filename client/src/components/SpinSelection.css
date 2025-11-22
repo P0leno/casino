@@ -1,0 +1,22 @@
+.spin-banner-item {
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.spin-banner-item:hover {
+  transform: translateY(-4px);
+}
+
+.spin-banner-item:active {
+  transform: translateY(-2px);
+}
+
+.spin-banner-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 24px;
+}

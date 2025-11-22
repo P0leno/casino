@@ -161,25 +161,23 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 64px;
+  font-size: 72px;
   font-weight: 900;
   color: #ff4444;
-  text-shadow: 0 0 20px #ff4444;
-  z-index: 15;
-  animation: crashPulse 0.5s ease-in-out;
+  text-shadow: 0 0 20px #ff4444, 0 0 40px #ff4444;
+  z-index: 100;
+  animation: crashAppear 0.3s ease-out forwards;
+  white-space: nowrap;
 }
 
-@keyframes crashPulse {
+@keyframes crashAppear {
   0% {
-    transform: translate(-50%, -50%) scale(0.5);
     opacity: 0;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.2);
+    filter: blur(10px);
   }
   100% {
-    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
+    filter: blur(0px);
   }
 }
 

@@ -6,6 +6,7 @@ import sqlite3
 from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH
 from app.utils.validate import validate_init_data
 from aiogram import Bot
+from app.crash_game import crash_game
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
@@ -41,6 +42,11 @@ class RefundPaymentRequest(BaseModel):
 class UpdateCrashSettingsRequest(BaseModel):
     initData: str
     maxMultiplier: float
+
+class UpdateSettingRequest(BaseModel):
+    initData: str
+    key: str
+    value: str
 
 @router.post("/get-chances")
 async def get_chances(request: ValidateRequest):
@@ -323,15 +329,15 @@ async def get_crash_settings(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT max_multiplier FROM crash_settings WHERE id = 1")
+        cursor.execute("SELECT value FROM settings WHERE key = 'max_crash_multiplier'")
         result = cursor.fetchone()
         conn.close()
         
-        max_mult = result[0] if result else 1000.0
+        max_mult = float(result[0]) if result else 10.0
         return {"valid": True, "maxMultiplier": max_mult}
     except Exception as e:
         print(f"Error in get_crash_settings: {e}")
-        return {"valid": False, "maxMultiplier": 1000.0}
+        return {"valid": False, "maxMultiplier": 10.0}
 
 @router.post("/crash/update-settings")
 async def update_crash_settings(request: UpdateCrashSettingsRequest):
@@ -359,8 +365,8 @@ async def update_crash_settings(request: UpdateCrashSettingsRequest):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE crash_settings SET max_multiplier = ? WHERE id = 1",
-            (request.maxMultiplier,)
+            "UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = 'max_crash_multiplier'",
+            (str(request.maxMultiplier),)
         )
         conn.commit()
         conn.close()
@@ -370,3 +376,209 @@ async def update_crash_settings(request: UpdateCrashSettingsRequest):
     except Exception as e:
         print(f"Error in update_crash_settings: {e}")
         return {"success": False, "message": "Ошибка сервера"}
+
+class CrashStateRequest(BaseModel):
+    initData: str
+
+@router.post("/admin/crash/state")
+async def get_crash_state(request: CrashStateRequest):
+    """Получить текущее состояние краш-игры (только для админов)"""
+    try:
+        is_valid = validate_init_data(request.initData, BOT_TOKEN)
+        if not is_valid:
+            return {"success": False, "message": "Invalid init data"}
+        
+        parsed = parse_qs(request.initData)
+        user_data = json.loads(parsed['user'][0])
+        user_id = int(user_data['id'])
+        
+        if user_id not in ADMIN_IDS:
+            return {"success": False, "message": "Forbidden"}
+        
+        game_state = crash_game.get_state()
+        
+        # Получаем данные о ставках из базы
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        bets_info = []
+        for bet in game_state["bets"]:
+            # Используем username из bet если есть, иначе ищем в БД
+            username = bet.get("username", None)
+            if not username:
+                cursor.execute("SELECT username FROM users WHERE id = ?", (bet["userId"],))
+                user = cursor.fetchone()
+                username = user[0] if user and user[0] else f"User {bet['userId']}"
+            
+            bets_info.append({
+                "user_id": bet["userId"],
+                "username": username,
+                "amount": bet["amount"],
+                "currency": "star",
+                "cashout_multiplier": bet.get("cashoutAt")
+            })
+        
+        conn.close()
+        
+        # Определяем статус
+        if game_state["isRunning"]:
+            status = "running"
+        else:
+            status = "waiting"
+        
+        return {
+            "success": True,
+            "state": {
+                "status": status,
+                "currentMultiplier": game_state.get("currentMultiplier", 1.0),
+                "gameId": game_state["gameId"],
+                "startTime": game_state.get("startTime"),
+                "crashed": game_state.get("crashed", False),
+                "crashedAt": game_state.get("crashedAt")
+            },
+            "bets": bets_info
+        }
+    except Exception as e:
+        print(f"Error getting crash state: {e}")
+        return {"success": False, "message": str(e)}
+
+class ExplodeRequest(BaseModel):
+    initData: str
+
+@router.post("/admin/crash/explode")
+async def explode_crash(request: ExplodeRequest):
+    """Принудительно взорвать ракету (только для админов)"""
+    try:
+        is_valid = validate_init_data(request.initData, BOT_TOKEN)
+        if not is_valid:
+            return {"success": False, "message": "Invalid init data"}
+        
+        parsed = parse_qs(request.initData)
+        user_data = json.loads(parsed['user'][0])
+        user_id = int(user_data['id'])
+        
+        if user_id not in ADMIN_IDS:
+            return {"success": False, "message": "Forbidden"}
+        
+        if not crash_game.is_running:
+            return {"success": False, "message": "Игра не запущена"}
+        
+        # Останавливаем игру и завершаем раунд
+        await crash_game.end_round()
+        
+        return {"success": True, "message": "Ракета взорвана"}
+    except Exception as e:
+        print(f"Error exploding crash: {e}")
+        return {"success": False, "message": str(e)}
+
+@router.post("/get-settings")
+async def get_settings(request: ValidateRequest):
+    """Получение всех настроек (только для админов)"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"valid": False, "settings": {}}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"valid": False, "settings": {}}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        # Проверяем что пользователь админ
+        if user_id not in ADMIN_IDS:
+            return {"valid": False, "settings": {}, "error": "Not admin"}
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT key, value, description FROM settings")
+        results = cursor.fetchall()
+        conn.close()
+        
+        settings = {
+            row[0]: {
+                "value": row[1],
+                "description": row[2]
+            } for row in results
+        }
+        
+        return {"valid": True, "settings": settings}
+    except Exception as e:
+        print(f"Error getting settings: {e}")
+        return {"valid": False, "settings": {}, "error": str(e)}
+
+@router.post("/update-setting")
+async def update_setting(request: UpdateSettingRequest):
+    """Обновление настройки (только для админов)"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        # Проверяем что пользователь админ
+        if user_id not in ADMIN_IDS:
+            return {"success": False, "message": "Access denied"}
+        
+        # Серверная валидация значения
+        sanitized_value = request.value
+        
+        # Для числовых настроек - только цифры и точка
+        if request.key in ['shop_commission', 'sell_commission', 'max_crash_multiplier', 'ton_price_usd', 'custom_promo_refs_required']:
+            import re
+            # Удаляем всё кроме цифр и точки
+            sanitized_value = re.sub(r'[^0-9.]', '', request.value)
+            
+            # Для custom_promo_refs_required - только целые числа
+            if request.key == 'custom_promo_refs_required':
+                sanitized_value = re.sub(r'[^0-9]', '', request.value)
+                try:
+                    int_val = int(sanitized_value)
+                    if int_val < 1 or int_val > 1000:
+                        return {"success": False, "message": "Значение должно быть от 1 до 1000"}
+                    sanitized_value = str(int_val)
+                except ValueError:
+                    return {"success": False, "message": "Некорректное числовое значение"}
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Обновляем настройку
+        cursor.execute("""
+            UPDATE settings 
+            SET value = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE key = ?
+        """, (sanitized_value, request.key))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return {"success": False, "message": "Setting not found"}
+        
+        conn.commit()
+        conn.close()
+        
+        # Если изменили комиссию магазина - запускаем пересчет цен
+        if request.key == 'shop_commission':
+            import asyncio
+            from app.tasks.ton_price_updater import recalculate_gift_prices
+            asyncio.create_task(recalculate_gift_prices())
+            print(f"🔄 Запущен пересчет цен с новой комиссией: {request.value}%")
+        
+        return {"success": True, "message": f"Настройка {request.key} обновлена"}
+    except Exception as e:
+        print(f"Error updating setting: {e}")
+        return {"success": False, "message": str(e)}

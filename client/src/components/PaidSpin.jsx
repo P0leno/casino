@@ -3,18 +3,14 @@ import './Spin.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
-import bearAnim from '../assets/bear.json'
-import giftAnim from '../assets/gift.json'
-import heartAnim from '../assets/heart.json'
-import roseAnim from '../assets/rose.json'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
 
 const gifts = [
-  { name: 'bear', animation: bearAnim },
-  { name: 'gift', animation: giftAnim },
-  { name: 'heart', animation: heartAnim },
-  { name: 'rose', animation: roseAnim },
+  { name: 'bear', animation: '/gifts/bear.json' },
+  { name: 'gift', animation: '/gifts/gift.json' },
+  { name: 'heart', animation: '/gifts/heart.json' },
+  { name: 'rose', animation: '/gifts/rose.json' },
   { name: 'paw', animation: pawAnim },
   { name: 'star', animation: starAnim }
 ]
@@ -29,14 +25,16 @@ function PaidSpin({ onNavigateToTopUp }) {
   const [starAmount, setStarAmount] = useState(0)
   const [offset, setOffset] = useState(0)
   const [visibleCount, setVisibleCount] = useState(5)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [lastClickTime, setLastClickTime] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [fastSpin, setFastSpin] = useState(false) // Быстрый запуск
   
   const viewportRef = useRef(null)
   const animationFrameRef = useRef(null)
   const targetOffsetRef = useRef(0)
   const startTimeRef = useRef(0)
   const durationRef = useRef(5000)
+  const fastSpinRef = useRef(false)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -96,18 +94,32 @@ function PaidSpin({ onNavigateToTopUp }) {
     }
   }, [spinning])
 
-  const handleOpenModal = () => {
-    setShowConfirmModal(true)
-  }
-
-  const handleCloseModal = () => {
-    setShowConfirmModal(false)
-  }
-
   const handleSpin = async () => {
+    if (isProcessing) return
+    
+    // Если включен быстрый запуск, ставим флаг сразу
+    if (fastSpin) {
+      fastSpinRef.current = true
+    }
+    
     setIsProcessing(true)
     
-    // Сначала делаем запрос к серверу
+    // Отменяем текущую анимацию если есть
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+    
+    setResult(null)
+    setPawAmount(0)
+    setStarAmount(0)
+    
+    // Ждем 50ms для возможности второго клика (кнопка остается активной)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    // Теперь блокируем кнопку визуально
+    setSpinning(true)
+    
+    // Делаем запрос к серверу
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
@@ -125,45 +137,57 @@ function PaidSpin({ onNavigateToTopUp }) {
       const data = await response.json()
       console.log('Response data:', data)
       
-      setIsProcessing(false)
-      
       if (data.success) {
-        // Закрываем модалку
-        setShowConfirmModal(false)
-        
         const winIndex = gifts.findIndex(g => g.name === data.gift)
         
         if (winIndex === -1) {
           alert('Ошибка: подарок не найден')
+          setSpinning(false)
+          setIsProcessing(false)
           return
         }
         
-        // Отменяем текущую анимацию если есть
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current)
+        // Если был двойной клик - показываем результат сразу
+        if (fastSpinRef.current) {
+          setResult(data.gift)
+          setPawAmount(data.paw_count || 0)
+          setStarAmount(data.star_count || 0)
+          setSpinning(false)
+          setIsProcessing(false)
+          setOffset(0)
+          fastSpinRef.current = false
+          return
         }
         
-        // Устанавливаем состояние spinning и сбрасываем результаты
-        setSpinning(true)
-        setResult(null)
-        setPawAmount(0)
-        setStarAmount(0)
+        // Запуск анимации
+        const viewportWidth = viewportRef.current?.offsetWidth || 600
+        const centerOffset = viewportWidth / 2 - ITEM_WIDTH / 2
         
-        // Небольшая задержка перед запуском анимации
-        setTimeout(() => {
-          const viewportWidth = viewportRef.current?.offsetWidth || 600
-          const centerOffset = viewportWidth / 2 - ITEM_WIDTH / 2
-          
-          const fullRotations = 5
-          const targetPosition = fullRotations * (ITEM_WIDTH * GIFTS_COUNT) + winIndex * ITEM_WIDTH - centerOffset
-          
-          const randomOffset = Math.random() * 40 - 20
-          targetOffsetRef.current = targetPosition + randomOffset
-          
-          startTimeRef.current = Date.now()
-          durationRef.current = 5000
-          
-          const animate = () => {
+        const fullRotations = 5
+        const targetPosition = fullRotations * (ITEM_WIDTH * GIFTS_COUNT) + winIndex * ITEM_WIDTH - centerOffset
+        
+        const randomOffset = Math.random() * 40 - 20
+        targetOffsetRef.current = targetPosition + randomOffset
+        
+        startTimeRef.current = Date.now()
+        durationRef.current = 5000
+        
+        const animate = () => {
+            // Проверяем, нужно ли прервать анимацию (двойной клик)
+            if (fastSpinRef.current) {
+              if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current)
+              }
+              setResult(data.gift)
+              setPawAmount(data.paw_count || 0)
+              setStarAmount(data.star_count || 0)
+              setSpinning(false)
+              setIsProcessing(false)
+              setOffset(0)
+              fastSpinRef.current = false
+              return
+            }
+            
             const now = Date.now()
             const elapsed = now - startTimeRef.current
             const progress = Math.min(elapsed / durationRef.current, 1)
@@ -182,15 +206,17 @@ function PaidSpin({ onNavigateToTopUp }) {
                 setPawAmount(data.paw_count || 0)
                 setStarAmount(data.star_count || 0)
                 setSpinning(false)
+                setIsProcessing(false)
                 setOffset(0)
               }, 500)
             }
-          }
-          
-          animationFrameRef.current = requestAnimationFrame(animate)
-        }, 100)
+        }
+        
+        animationFrameRef.current = requestAnimationFrame(animate)
         
       } else {
+        setSpinning(false)
+        setIsProcessing(false)
         if (data.needTopUp) {
           const tg = window.Telegram?.WebApp
           if (tg && tg.showAlert) {
@@ -208,7 +234,7 @@ function PaidSpin({ onNavigateToTopUp }) {
         }
       }
     } catch (error) {
-      setShowConfirmModal(false)
+      setSpinning(false)
       setIsProcessing(false)
       const tg = window.Telegram?.WebApp
       if (tg && tg.showAlert) {
@@ -287,45 +313,37 @@ function PaidSpin({ onNavigateToTopUp }) {
         )}
       </div>
 
-      <button
-        className={`spin-button-fixed ${spinning ? 'disabled' : ''}`}
-        onClick={handleOpenModal}
-        disabled={spinning}
-      >
-        {spinning ? (
-          'Вращение...'
-        ) : (
-          <>
-            <span className="button-main-text">Крутить</span>
-            <span className="button-sub-text">Бомж кейс</span>
-          </>
-        )}
-      </button>
-
-      {showConfirmModal && (
-        <div className="modal-overlay" onClick={isProcessing ? undefined : handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Бомж кейс</h3>
-            <p>Стоимость: 5 ⭐</p>
-            <div className="modal-buttons">
-              <button 
-                className="modal-button modal-button-confirm" 
-                onClick={handleSpin}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Обработка...' : 'Крутить за 5 ⭐'}
-              </button>
-              <button 
-                className="modal-button modal-button-cancel" 
-                onClick={handleCloseModal}
-                disabled={isProcessing}
-              >
-                Отмена
-              </button>
+      <div className="spin-controls">
+        <button
+          className={`spin-button-fixed ${spinning ? 'disabled' : ''}`}
+          onClick={handleSpin}
+          disabled={spinning}
+        >
+          {spinning ? (
+            'Вращение...'
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="button-main-text">Крутить за 5</span>
+              <LottieAnimation animationData={starAnim} width={24} height={24} />
             </div>
+          )}
+        </button>
+        
+        {!spinning && (
+          <div className="fast-spin-toggle">
+            <span className="toggle-label">Быстрый запуск</span>
+            <label className="switch">
+              <input 
+                type="checkbox" 
+                className="toggle" 
+                checked={fastSpin}
+                onChange={(e) => setFastSpin(e.target.checked)}
+              />
+              <span className="slider"></span>
+            </label>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
