@@ -245,9 +245,8 @@ async def handle_admin_reply(message: Message):
             await message.reply("❌ Диалог уже закрыт")
             return
         
-        # Формируем имя админа
-        admin_name = message.from_user.username or message.from_user.first_name or "Админ"
-        admin_prefix = f"👤 <b>{admin_name}:</b>\n\n"
+        # Просто "Поддержка" без имени админа
+        admin_prefix = "👤 <b>Поддержка:</b>\n\n"
         
         # Отправляем ответ пользователю
         try:
