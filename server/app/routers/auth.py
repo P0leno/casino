@@ -19,7 +19,7 @@ class BanRequest(BaseModel):
 # Вспомогательная функция для получения user_data из initData
 def verify_init_data(init_data: str):
     """
-    Проверяет initData и возвращает user_data
+    Проверяет initData и возвращает user_data с telegram_id
     Возвращает None если невалидно
     """
     if not validate_init_data(init_data, BOT_TOKEN):
@@ -33,6 +33,8 @@ def verify_init_data(init_data: str):
             return None
         
         user_data = json.loads(user_data_str)
+        # Добавляем telegram_id для совместимости
+        user_data['telegram_id'] = user_data.get('id')
         return user_data
     except:
         return None
