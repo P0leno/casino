@@ -425,14 +425,23 @@ async def notify_ban_expired():
 
 async def start_support_bot():
     """Запуск бота поддержки"""
-    if not SUPPORT_BOT_TOKEN or not SUPPORT_GROUP_ID:
-        print("⚠️  SUPPORT_BOT_TOKEN или SUPPORT_GROUP_ID не настроены")
+    if not SUPPORT_BOT_TOKEN:
+        print("⚠️  SUPPORT_BOT_TOKEN не настроен - бот поддержки отключен")
         return
     
-    print("✅ Бот поддержки запущен (polling mode)")
+    if not SUPPORT_GROUP_ID:
+        print("⚠️  SUPPORT_GROUP_ID не настроен - бот поддержки отключен")
+        return
     
-    # Запускаем фоновую задачу для уведомлений
-    asyncio.create_task(notify_ban_expired())
-    
-    # Запускаем polling
-    await dp.start_polling(bot)
+    try:
+        print("✅ Бот поддержки запущен (polling mode)")
+        
+        # Запускаем фоновую задачу для уведомлений
+        asyncio.create_task(notify_ban_expired())
+        
+        # Запускаем polling (он блокирует, поэтому должен быть в отдельной задаче)
+        await dp.start_polling(bot, skip_updates=True)
+    except Exception as e:
+        print(f"❌ Ошибка бота поддержки: {e}")
+    finally:
+        print("🛑 Бот поддержки остановлен")
