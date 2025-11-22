@@ -44,11 +44,14 @@ async def ban_check_middleware(request: Request, call_next):
                     conn.close()
                     
                     # Если забанен - возвращаем 403
-                    if result and result[0]:
+                    if result and result[0] == 1:
+                        print(f"[BAN MIDDLEWARE] User {user_id} is BANNED, blocking {request.url.path}")
                         return JSONResponse(
                             status_code=403,
                             content={"detail": "User is banned"}
                         )
+                    else:
+                        print(f"[BAN MIDDLEWARE] User {user_id} is NOT banned, allowing {request.url.path}")
         except Exception as e:
             print(f"Ban check middleware error: {e}")
             pass

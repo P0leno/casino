@@ -132,6 +132,14 @@ function App() {
           return
         }
         
+        // ВАЖНО: Проверяем бан из validate
+        if (data.isBanned === true) {
+          console.log('User is banned from validate response')
+          setIsBanned(true)
+          // НЕ вызываем setLoading(false) - оставляем лоадер
+          return
+        }
+        
         // Все ок - убираем лоадер и показываем приложение
         console.log('User validated successfully, showing app')
         setLoading(false)
