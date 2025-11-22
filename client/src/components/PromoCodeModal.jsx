@@ -466,19 +466,29 @@ function PromoCodeModal({ isOpen, onClose }) {
             </div>
             
             <div className="promo-withdrawal-content">
-              <p className="promo-withdrawal-balance">
-                Доступно: {refBalance} ⭐
-              </p>
+              <div>
+                <p className="promo-withdrawal-balance">
+                  Доступно для вывода
+                </p>
+                <div className="promo-withdrawal-amount-display">
+                  {refBalance} ⭐
+                </div>
+              </div>
               
-              <input
-                type="number"
-                className="promo-withdrawal-input"
-                placeholder="Введите сумму"
-                value={withdrawalAmount}
-                onChange={(e) => setWithdrawalAmount(e.target.value)}
-                min="1"
-                max={refBalance}
-              />
+              <div className="promo-withdrawal-input-wrapper">
+                <label className="promo-withdrawal-input-label">
+                  Сумма вывода
+                </label>
+                <input
+                  type="number"
+                  className="promo-withdrawal-input"
+                  placeholder="0"
+                  value={withdrawalAmount}
+                  onChange={(e) => setWithdrawalAmount(e.target.value)}
+                  min="1"
+                  max={refBalance}
+                />
+              </div>
               
               <button
                 className="promo-withdrawal-submit"
