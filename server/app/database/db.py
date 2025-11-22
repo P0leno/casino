@@ -203,6 +203,35 @@ def init_db():
     except Exception as e:
         print(f"⚠️  Ошибка миграции tasks: {e}")
     
+    # Таблица диалогов поддержки
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS support_dialogs (
+            dialog_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT,
+            category TEXT NOT NULL,
+            status TEXT DEFAULT 'open',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            closed_at TIMESTAMP,
+            last_response_at TIMESTAMP
+        )
+    """)
+    print("✅ Таблица support_dialogs создана/проверена")
+    
+    # Таблица сообщений поддержки
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS support_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dialog_id INTEGER NOT NULL,
+            from_user INTEGER NOT NULL,
+            message_text TEXT,
+            photo_id TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (dialog_id) REFERENCES support_dialogs(dialog_id)
+        )
+    """)
+    print("✅ Таблица support_messages создана/проверена")
+    
     # Таблица для подарков из магазина
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS shop_gifts (

@@ -13,9 +13,6 @@ from aiogram.filters import Command
 from aiogram.enums import ParseMode
 from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID
 
-# База данных для диалогов поддержки
-SUPPORT_DB = "support.db"
-
 # Антиспам: счётчики сообщений
 spam_counters = defaultdict(list)  # user_id -> [timestamps]
 spam_bans = {}  # user_id -> (ban_until, ban_count)
@@ -26,42 +23,9 @@ close_rate_limit = {}  # user_id -> last_close_time
 bot = Bot(token=SUPPORT_BOT_TOKEN)
 dp = Dispatcher()
 
-def init_support_db():
-    """Инициализация БД для поддержки"""
-    conn = sqlite3.connect(SUPPORT_DB)
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS support_dialogs (
-            dialog_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            username TEXT,
-            category TEXT NOT NULL,
-            status TEXT DEFAULT 'open',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            closed_at TIMESTAMP,
-            last_response_at TIMESTAMP
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS support_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            dialog_id INTEGER NOT NULL,
-            from_user INTEGER NOT NULL,
-            message_text TEXT,
-            photo_id TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (dialog_id) REFERENCES support_dialogs(dialog_id)
-        )
-    """)
-    
-    conn.commit()
-    conn.close()
-
 def get_active_dialog(user_id: int):
     """Получить активный диалог пользователя"""
-    conn = sqlite3.connect(SUPPORT_DB)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "SELECT dialog_id, category, last_response_at FROM support_dialogs WHERE user_id = ? AND status = 'open'",
@@ -73,7 +37,7 @@ def get_active_dialog(user_id: int):
 
 def create_dialog(user_id: int, username: str, category: str):
     """Создать новый диалог"""
-    conn = sqlite3.connect(SUPPORT_DB)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO support_dialogs (user_id, username, category) VALUES (?, ?, ?)",
@@ -86,7 +50,7 @@ def create_dialog(user_id: int, username: str, category: str):
 
 def close_dialog(dialog_id: int):
     """Закрыть диалог"""
-    conn = sqlite3.connect(SUPPORT_DB)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE support_dialogs SET status = 'closed', closed_at = ? WHERE dialog_id = ?",
@@ -97,7 +61,7 @@ def close_dialog(dialog_id: int):
 
 def update_last_response(dialog_id: int):
     """Обновить время последнего ответа"""
-    conn = sqlite3.connect(SUPPORT_DB)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE support_dialogs SET last_response_at = ? WHERE dialog_id = ?",
@@ -306,7 +270,7 @@ async def handle_admin_reply(message: Message):
         dialog_id = int(dialog_id_str)
         
         # Получаем информацию о диалоге
-        conn = sqlite3.connect(SUPPORT_DB)
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
@@ -378,7 +342,7 @@ async def handle_close_dialog(callback: CallbackQuery):
         dialog_id = int(callback.data.split("_")[1])
         
         # Проверяем что диалог принадлежит пользователю
-        conn = sqlite3.connect(SUPPORT_DB)
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
@@ -465,7 +429,6 @@ async def start_support_bot():
         print("⚠️  SUPPORT_BOT_TOKEN или SUPPORT_GROUP_ID не настроены")
         return
     
-    init_support_db()
     print("✅ Бот поддержки запущен (polling mode)")
     
     # Запускаем фоновую задачу для уведомлений
