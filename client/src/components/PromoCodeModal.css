@@ -489,3 +489,81 @@
     max-height: 300px;
   }
 }
+
+/* Кликабельный баланс */
+.promo-balance-clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.promo-balance-clickable:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.promo-balance-clickable:active {
+  transform: scale(0.95);
+}
+
+/* Диалог вывода средств */
+.promo-withdrawal-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.promo-withdrawal-balance {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.promo-withdrawal-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.promo-withdrawal-input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.promo-withdrawal-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.promo-withdrawal-submit {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.promo-withdrawal-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.promo-withdrawal-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.promo-withdrawal-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

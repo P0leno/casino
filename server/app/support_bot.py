@@ -11,7 +11,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
-from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID
+from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS
 
 # Антиспам: счётчики сообщений
 spam_counters = defaultdict(list)  # user_id -> [timestamps]
@@ -19,6 +19,12 @@ spam_bans = {}  # user_id -> (ban_until, ban_count)
 
 # Рейт лимит на закрытие диалога
 close_rate_limit = {}  # user_id -> last_close_time
+
+# Перманентная блокировка пользователей
+blocked_users = set()  # user_id
+
+# Состояние для вывода средств
+withdrawal_states = {}  # user_id -> {"amount": int, "step": "amount"|"method"}
 
 bot = Bot(token=SUPPORT_BOT_TOKEN)
 dp = Dispatcher()
@@ -110,8 +116,6 @@ def get_main_keyboard():
     """Главное меню с категориями"""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="❗ Проблема", callback_data="cat_problem")],
-        [InlineKeyboardButton(text="💰 Вывод", callback_data="cat_withdraw")],
-        [InlineKeyboardButton(text="👥 Рефка", callback_data="cat_referral")],
         [InlineKeyboardButton(text="💡 Предложение", callback_data="cat_suggestion")]
     ])
     return keyboard
@@ -123,14 +127,55 @@ def get_close_keyboard(dialog_id: int):
     ])
     return keyboard
 
+def get_admin_keyboard(dialog_id: int, user_id: int, category: str):
+    """Клавиатура для админов под сообщениями в группе"""
+    buttons = [
+        [InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_{dialog_id}_{user_id}")]
+    ]
+    
+    # Для категории "Вывод" добавляем кнопку "Вывод выполнен"
+    if category == "Вывод":
+        buttons.append([InlineKeyboardButton(text="✅ Вывод выполнен", callback_data=f"withdraw_done_{dialog_id}")])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def get_withdrawal_confirm_keyboard():
+    """Кнопка для подтверждения вывода"""
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📝 Открыть обращение", callback_data="confirm_withdrawal")]
+    ])
+    return keyboard
+
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
     user_id = message.from_user.id
+    
+    # Проверка на перманентную блокировку
+    if user_id in blocked_users:
+        await message.answer("⛔ Вы заблокированы")
+        return
     
     # Проверка на бан
     is_spam, ban_seconds = check_spam(user_id)
     if is_spam:
         return  # Игнорируем
+    
+    # Проверяем параметр start для вывода средств
+    args = message.text.split()
+    if len(args) > 1 and args[1].startswith("withdraw_"):
+        try:
+            amount = int(args[1].replace("withdraw_", ""))
+            withdrawal_states[user_id] = {"amount": amount, "step": "method"}
+            
+            await message.answer(
+                f"💰 <b>Обналичивание реф программы</b>\n\n"
+                f"Сумма: {amount} ⭐\n\n"
+                f"Напишите предпочитаемый способ вывода:",
+                parse_mode=ParseMode.HTML
+            )
+            return
+        except:
+            pass
     
     # Проверяем последний ответ
     dialog = get_active_dialog(user_id)
@@ -232,7 +277,7 @@ async def handle_admin_reply(message: Message):
             update_last_response(dialog_id)
             
             print(f"✅ Ответ доставлен пользователю {user_id}")
-            await message.reply("✅ Сообщение доставлено пользователю")
+            # Не отправляем подтверждение в группу
         except Exception as e:
             print(f"❌ Ошибка отправки пользователю {user_id}: {e}")
             await message.reply(f"❌ Не удалось доставить сообщение: {e}")
@@ -258,8 +303,6 @@ async def handle_category(callback: CallbackQuery):
     
     category_map = {
         "cat_problem": "Проблема",
-        "cat_withdraw": "Вывод",
-        "cat_referral": "Рефка",
         "cat_suggestion": "Предложение"
     }
     
@@ -283,6 +326,34 @@ async def handle_user_message(message: Message):
     # Игнорируем все сообщения из группы (только личные сообщения)
     if message.chat.type != "private":
         return
+    
+    # Проверка на перманентную блокировку
+    if user_id in blocked_users:
+        await message.answer("⛔ Вы заблокированы")
+        return
+    
+    # Обработка вывода средств
+    if user_id in withdrawal_states:
+        state = withdrawal_states[user_id]
+        
+        if state["step"] == "method":
+            method = message.text or "(фото)"
+            amount = state["amount"]
+            
+            await message.answer(
+                f"📋 <b>Ваше обращение:</b>\n\n"
+                f"Тема: Обналичивание реф программы\n"
+                f"Сумма: {amount} ⭐\n"
+                f"Способ: {method}\n\n"
+                f"Нажмите кнопку ниже для отправки:",
+                parse_mode=ParseMode.HTML,
+                reply_markup=get_withdrawal_confirm_keyboard()
+            )
+            
+            # Сохраняем способ
+            withdrawal_states[user_id]["method"] = method
+            withdrawal_states[user_id]["step"] = "confirm"
+            return
     
     # Проверка на бан (сохраняем предыдущий статус)
     was_banned = user_id in spam_bans and datetime.now() < spam_bans[user_id][0]
@@ -329,14 +400,16 @@ async def handle_user_message(message: Message):
                 SUPPORT_GROUP_ID,
                 photo=photo.file_id,
                 caption=caption,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                reply_markup=get_admin_keyboard(dialog_id, user_id, category)
             )
         else:
             # Только текст
             await bot.send_message(
                 SUPPORT_GROUP_ID,
                 header + text,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                reply_markup=get_admin_keyboard(dialog_id, user_id, category)
             )
         
         await message.answer(
@@ -348,6 +421,136 @@ async def handle_user_message(message: Message):
     except Exception as e:
         print(f"Error sending to support group: {e}")
         await message.answer("❌ Ошибка отправки сообщения")
+
+@dp.callback_query(F.data == "confirm_withdrawal")
+async def handle_confirm_withdrawal(callback: CallbackQuery):
+    """Подтверждение вывода средств"""
+    user_id = callback.from_user.id
+    
+    if user_id not in withdrawal_states or withdrawal_states[user_id]["step"] != "confirm":
+        await callback.answer("Ошибка: состояние вывода не найдено", show_alert=True)
+        return
+    
+    state = withdrawal_states[user_id]
+    amount = state["amount"]
+    method = state["method"]
+    username = callback.from_user.username or "без username"
+    
+    # Создаем диалог с категорией "Вывод"
+    dialog_id = create_dialog(user_id, username, "Вывод")
+    
+    # Отправляем в группу
+    header = (
+        f"📨 <b>Диалог #{dialog_id}</b>\n"
+        f"👤 @{username} (ID: {user_id})\n"
+        f"📁 Категория: Вывод\n\n"
+        f"💰 <b>Обналичивание реф программы</b>\n"
+        f"Сумма: {amount} ⭐\n"
+        f"Способ: {method}"
+    )
+    
+    try:
+        await bot.send_message(
+            SUPPORT_GROUP_ID,
+            header,
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_admin_keyboard(dialog_id, user_id, "Вывод")
+        )
+        
+        await callback.message.edit_text(
+            "✅ <b>Обращение создано!</b>\n\n"
+            "Ожидайте ответа поддержки",
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_close_keyboard(dialog_id)
+        )
+        
+        # Очищаем состояние
+        del withdrawal_states[user_id]
+        
+    except Exception as e:
+        print(f"Error creating withdrawal dialog: {e}")
+        await callback.answer("Ошибка создания обращения", show_alert=True)
+    
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("block_"))
+async def handle_block_user(callback: CallbackQuery):
+    """Блокировка пользователя админом"""
+    admin_id = callback.from_user.id
+    
+    # Проверка прав админа
+    if admin_id not in ADMIN_IDS:
+        await callback.answer("У вас нет прав", show_alert=True)
+        return
+    
+    try:
+        parts = callback.data.split("_")
+        dialog_id = int(parts[1])
+        user_id = int(parts[2])
+        
+        # Добавляем в черный список
+        blocked_users.add(user_id)
+        
+        # Уведомляем пользователя
+        try:
+            await bot.send_message(user_id, "⛔ Вы заблокированы")
+        except:
+            pass
+        
+        # Закрываем диалог
+        close_dialog(dialog_id)
+        
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer("✅ Пользователь заблокирован")
+        
+    except Exception as e:
+        print(f"Error blocking user: {e}")
+        await callback.answer("Ошибка блокировки", show_alert=True)
+
+@dp.callback_query(F.data.startswith("withdraw_done_"))
+async def handle_withdraw_done(callback: CallbackQuery):
+    """Отметка о выполнении вывода"""
+    admin_id = callback.from_user.id
+    
+    # Проверка прав админа
+    if admin_id not in ADMIN_IDS:
+        await callback.answer("У вас нет прав", show_alert=True)
+        return
+    
+    try:
+        dialog_id = int(callback.data.replace("withdraw_done_", ""))
+        
+        # Получаем user_id из диалога
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            user_id = result[0]
+            
+            # Уведомляем пользователя
+            try:
+                await bot.send_message(
+                    user_id,
+                    "✅ <b>Вывод выполнен!</b>\n\nСпасибо за использование Shell",
+                    parse_mode=ParseMode.HTML
+                )
+            except:
+                pass
+            
+            # Закрываем диалог
+            close_dialog(dialog_id)
+            
+            await callback.message.edit_reply_markup(reply_markup=None)
+            await callback.answer("✅ Вывод отмечен как выполненный")
+        else:
+            await callback.answer("Диалог не найден", show_alert=True)
+            
+    except Exception as e:
+        print(f"Error marking withdrawal done: {e}")
+        await callback.answer("Ошибка", show_alert=True)
 
 @dp.callback_query(F.data.startswith("close_"))
 async def handle_close_dialog(callback: CallbackQuery):

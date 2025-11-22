@@ -18,6 +18,8 @@ function PromoCodeModal({ isOpen, onClose }) {
   const [showHistory, setShowHistory] = useState(false)
   const [history, setHistory] = useState([])
   const [refBalance, setRefBalance] = useState(0)
+  const [showWithdrawalDialog, setShowWithdrawalDialog] = useState(false)
+  const [withdrawalAmount, setWithdrawalAmount] = useState('')
 
   // Проверяем существующий промокод при открытии секции создания
   useEffect(() => {
@@ -329,7 +331,10 @@ function PromoCodeModal({ isOpen, onClose }) {
                   
                   {/* Кнопки баланс и история */}
                   <div className="promo-action-buttons">
-                    <div className="promo-balance-display">
+                    <div 
+                      className="promo-balance-display promo-balance-clickable"
+                      onClick={() => setShowWithdrawalDialog(true)}
+                    >
                       <LottieAnimation animationData={starAnim} width={24} height={24} />
                       <span className="promo-balance-text">{refBalance}</span>
                     </div>
@@ -449,6 +454,52 @@ function PromoCodeModal({ isOpen, onClose }) {
               )}
             </div>
           </div>
+
+      {/* Диалог вывода средств */}
+      {showWithdrawalDialog && (
+        <>
+          <div className="promo-history-backdrop" onClick={() => setShowWithdrawalDialog(false)} />
+          <div className="promo-history-sheet">
+            <div className="promo-history-header">
+              <h3>Вывод средств</h3>
+              <button className="promo-history-close" onClick={() => setShowWithdrawalDialog(false)}>×</button>
+            </div>
+            
+            <div className="promo-withdrawal-content">
+              <p className="promo-withdrawal-balance">
+                Доступно: {refBalance} ⭐
+              </p>
+              
+              <input
+                type="number"
+                className="promo-withdrawal-input"
+                placeholder="Введите сумму"
+                value={withdrawalAmount}
+                onChange={(e) => setWithdrawalAmount(e.target.value)}
+                min="1"
+                max={refBalance}
+              />
+              
+              <button
+                className="promo-withdrawal-submit"
+                onClick={() => {
+                  const amount = parseInt(withdrawalAmount)
+                  if (amount > 0 && amount <= refBalance) {
+                    const botUsername = 'shelochwdbot'
+                    const url = `https://t.me/${botUsername}?start=withdraw_${amount}`
+                    window.Telegram?.WebApp?.openTelegramLink(url)
+                    setShowWithdrawalDialog(false)
+                    setWithdrawalAmount('')
+                  }
+                }}
+                disabled={!withdrawalAmount || parseInt(withdrawalAmount) <= 0 || parseInt(withdrawalAmount) > refBalance}
+              >
+                Продолжить
+              </button>
+            </div>
+          </div>
+        </>
+      )}
         </div>
       )}
     </>
