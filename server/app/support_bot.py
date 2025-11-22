@@ -256,9 +256,13 @@ async def handle_user_message(message: Message):
         print(f"Error sending to support group: {e}")
         await message.answer("❌ Ошибка отправки сообщения")
 
-@dp.message(F.reply_to_message & F.chat.id == SUPPORT_GROUP_ID)
+@dp.message(F.reply_to_message)
 async def handle_admin_reply(message: Message):
     """Обработка ответа админа в группе"""
+    # Проверяем что это группа поддержки
+    if message.chat.id != SUPPORT_GROUP_ID:
+        return
+    
     try:
         # Извлекаем dialog_id из оригинального сообщения
         original_text = message.reply_to_message.text or message.reply_to_message.caption
@@ -440,7 +444,12 @@ async def start_support_bot():
         asyncio.create_task(notify_ban_expired())
         
         # Запускаем polling (он блокирует, поэтому должен быть в отдельной задаче)
-        await dp.start_polling(bot, skip_updates=True)
+        # Указываем allowed_updates для получения всех типов сообщений
+        await dp.start_polling(
+            bot, 
+            skip_updates=True,
+            allowed_updates=["message", "callback_query"]
+        )
     except Exception as e:
         print(f"❌ Ошибка бота поддержки: {e}")
     finally:
