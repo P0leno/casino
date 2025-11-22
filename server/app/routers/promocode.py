@@ -8,6 +8,7 @@ import string
 from datetime import datetime
 from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
+from app.utils.rate_limit import balance_rate_limiter
 
 router = APIRouter(prefix="/api/promocode", tags=["promocode"])
 
@@ -242,6 +243,11 @@ async def get_my_promocode(request: GenerateRequest):
         return {"success": False, "error": "Неверные данные"}
     
     user_id = user_data['id']
+    
+    # Rate limit: 1 запрос в 3 секунды
+    allowed, remaining_time = balance_rate_limiter.is_allowed(user_id)
+    if not allowed:
+        return {"success": False, "error": f"Попробуйте через {remaining_time}с"}
     promo_type = request.type
     
     conn = sqlite3.connect(DB_PATH)

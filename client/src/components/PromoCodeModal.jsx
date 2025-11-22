@@ -26,6 +26,17 @@ function PromoCodeModal({ isOpen, onClose }) {
     }
   }, [isOpen, showCreateSection])
 
+  // Автообновление баланса каждые 3 секунды когда показан промокод
+  useEffect(() => {
+    if (!isOpen || !showCreateSection || !generatedCode) return
+
+    const interval = setInterval(() => {
+      checkExistingPromoCode()
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [isOpen, showCreateSection, generatedCode])
+
   const checkExistingPromoCode = async () => {
     try {
       const tg = window.Telegram?.WebApp

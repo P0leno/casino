@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import random
 from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 from app.utils.validate import validate_init_data
+from app.utils.rate_limit import spin_rate_limiter
 from app.pyrogram_client import get_pyrogram
 from app.utils.gift_sender import send_gift_async
 from aiogram import Bot
@@ -126,6 +127,11 @@ async def spin(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
+        # Rate limit: 1 запрос в 5 секунд
+        allowed, remaining_time = spin_rate_limiter.is_allowed(user_id)
+        if not allowed:
+            return {"success": False, "message": f"Попробуйте через {remaining_time}с"}
+        
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
@@ -241,6 +247,11 @@ async def paid_spin(request: ValidateRequest):
         
         user = json.loads(user_data)
         user_id = user.get('id')
+        
+        # Rate limit: 1 запрос в 5 секунд
+        allowed, remaining_time = spin_rate_limiter.is_allowed(user_id)
+        if not allowed:
+            return {"success": False, "message": f"Попробуйте через {remaining_time}с"}
         
         print(f"[PAID-SPIN] User ID: {user_id}")
         

@@ -41,3 +41,9 @@ invoice_rate_limiter = RateLimiter(max_requests=5, time_window=180)
 
 # Rate limiter для команды /start: 6 запросов за 3 минуты (180 секунд)
 start_command_rate_limiter = RateLimiter(max_requests=6, time_window=180)
+
+# Rate limiter для проверки баланса/промокодов: 1 запрос в 3 секунды
+balance_rate_limiter = RateLimiter(max_requests=1, time_window=3)
+
+# Rate limiter для спинов: 1 запрос в 5 секунд
+spin_rate_limiter = RateLimiter(max_requests=1, time_window=5)
