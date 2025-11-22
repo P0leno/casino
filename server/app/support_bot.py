@@ -191,6 +191,10 @@ async def handle_category(callback: CallbackQuery):
 async def handle_user_message(message: Message):
     user_id = message.from_user.id
     
+    # Игнорируем все сообщения из группы (только личные сообщения)
+    if message.chat.type != "private":
+        return
+    
     # Проверка на бан (сохраняем предыдущий статус)
     was_banned = user_id in spam_bans and datetime.now() < spam_bans[user_id][0]
     is_spam, ban_seconds = check_spam(user_id)
@@ -293,6 +297,10 @@ async def handle_admin_reply(message: Message):
             await message.reply("❌ Диалог уже закрыт")
             return
         
+        # Формируем имя админа
+        admin_name = message.from_user.username or message.from_user.first_name or "Админ"
+        admin_prefix = f"👤 <b>{admin_name}:</b>\n\n"
+        
         # Отправляем ответ пользователю
         try:
             if message.photo:
@@ -301,14 +309,14 @@ async def handle_admin_reply(message: Message):
                 await bot.send_photo(
                     user_id,
                     photo=photo.file_id,
-                    caption=f"💬 <b>Ответ поддержки:</b>\n\n{caption}",
+                    caption=f"💬 <b>Ответ поддержки</b>\n{admin_prefix}{caption}",
                     parse_mode=ParseMode.HTML,
                     reply_markup=get_close_keyboard(dialog_id)
                 )
             else:
                 await bot.send_message(
                     user_id,
-                    f"💬 <b>Ответ поддержки:</b>\n\n{message.text}",
+                    f"💬 <b>Ответ поддержки</b>\n{admin_prefix}{message.text}",
                     parse_mode=ParseMode.HTML,
                     reply_markup=get_close_keyboard(dialog_id)
                 )
