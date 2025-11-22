@@ -458,11 +458,11 @@ function PromoCodeModal({ isOpen, onClose }) {
       {/* Диалог вывода средств */}
       {showWithdrawalDialog && (
         <>
-          <div className="promo-history-backdrop" onClick={() => setShowWithdrawalDialog(false)} />
-          <div className="promo-history-sheet">
-            <div className="promo-history-header">
+          <div className="promo-withdrawal-backdrop" onClick={() => setShowWithdrawalDialog(false)} />
+          <div className="promo-withdrawal-sheet">
+            <div className="promo-withdrawal-header">
               <h3>Вывод средств</h3>
-              <button className="promo-history-close" onClick={() => setShowWithdrawalDialog(false)}>×</button>
+              <button className="promo-withdrawal-close" onClick={() => setShowWithdrawalDialog(false)}>×</button>
             </div>
             
             <div className="promo-withdrawal-content">
@@ -485,7 +485,7 @@ function PromoCodeModal({ isOpen, onClose }) {
                 onClick={() => {
                   const amount = parseInt(withdrawalAmount)
                   if (amount > 0 && amount <= refBalance) {
-                    const botUsername = 'shelochwdbot'
+                    const botUsername = 'HelpShellBot'
                     const url = `https://t.me/${botUsername}?start=withdraw_${amount}`
                     window.Telegram?.WebApp?.openTelegramLink(url)
                     setShowWithdrawalDialog(false)
