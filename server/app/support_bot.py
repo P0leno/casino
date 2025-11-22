@@ -263,19 +263,28 @@ async def handle_user_message(message: Message):
 @dp.message(F.reply_to_message)
 async def handle_admin_reply(message: Message):
     """Обработка ответа админа в группе"""
+    print(f"📩 Получен reply в чате {message.chat.id} (нужен {SUPPORT_GROUP_ID})")
+    
     # Проверяем что это группа поддержки
     if message.chat.id != SUPPORT_GROUP_ID:
+        print(f"⚠️  Не та группа, игнорируем")
         return
+    
+    print(f"✅ Это группа поддержки, обрабатываем reply")
     
     try:
         # Извлекаем dialog_id из оригинального сообщения
         original_text = message.reply_to_message.text or message.reply_to_message.caption
+        print(f"📝 Оригинальный текст: {original_text[:100] if original_text else 'None'}")
+        
         if not original_text or "Диалог #" not in original_text:
+            print(f"⚠️  Нет 'Диалог #' в тексте, игнорируем")
             return
         
         # Парсим dialog_id
         dialog_id_str = original_text.split("Диалог #")[1].split("\n")[0]
         dialog_id = int(dialog_id_str)
+        print(f"🔍 Найден dialog_id: {dialog_id}")
         
         # Получаем информацию о диалоге
         conn = sqlite3.connect(DB_PATH)
@@ -288,12 +297,15 @@ async def handle_admin_reply(message: Message):
         conn.close()
         
         if not dialog_info:
+            print(f"❌ Диалог #{dialog_id} не найден в БД")
             await message.reply("❌ Диалог не найден")
             return
         
         user_id, status = dialog_info
+        print(f"📋 Диалог #{dialog_id}: user_id={user_id}, status={status}")
         
         if status != 'open':
+            print(f"❌ Диалог #{dialog_id} уже закрыт")
             await message.reply("❌ Диалог уже закрыт")
             return
         
@@ -303,9 +315,12 @@ async def handle_admin_reply(message: Message):
         
         # Отправляем ответ пользователю
         try:
+            print(f"📤 Отправляем ответ пользователю {user_id}")
+            
             if message.photo:
                 photo = message.photo[-1]
                 caption = message.caption or ""
+                print(f"📷 Отправляем фото с текстом: {caption[:50] if caption else '(пусто)'}")
                 await bot.send_photo(
                     user_id,
                     photo=photo.file_id,
@@ -314,6 +329,7 @@ async def handle_admin_reply(message: Message):
                     reply_markup=get_close_keyboard(dialog_id)
                 )
             else:
+                print(f"💬 Отправляем текст: {message.text[:50] if message.text else '(пусто)'}")
                 await bot.send_message(
                     user_id,
                     f"💬 <b>Ответ поддержки</b>\n{admin_prefix}{message.text}",
@@ -324,8 +340,10 @@ async def handle_admin_reply(message: Message):
             # Обновляем время последнего ответа
             update_last_response(dialog_id)
             
+            print(f"✅ Ответ доставлен пользователю {user_id}")
             await message.reply("✅ Сообщение доставлено пользователю")
         except Exception as e:
+            print(f"❌ Ошибка отправки пользователю {user_id}: {e}")
             await message.reply(f"❌ Не удалось доставить сообщение: {e}")
     
     except Exception as e:
