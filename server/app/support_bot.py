@@ -22,6 +22,7 @@ close_rate_limit = {}  # user_id -> last_close_time
 
 # Перманентная блокировка пользователей
 blocked_users = set()  # user_id
+blocked_notified = set()  # user_id уже уведомленных о блокировке
 
 # Состояние для вывода средств
 withdrawal_states = {}  # user_id -> {"amount": int, "step": "amount"|"method"}
@@ -152,7 +153,9 @@ async def cmd_start(message: Message):
     
     # Проверка на перманентную блокировку
     if user_id in blocked_users:
-        await message.answer("⛔ Вы заблокированы")
+        if user_id not in blocked_notified:
+            await message.answer("⛔ Вы заблокированы")
+            blocked_notified.add(user_id)
         return
     
     # Проверка на бан
@@ -339,7 +342,9 @@ async def handle_user_message(message: Message):
     
     # Проверка на перманентную блокировку
     if user_id in blocked_users:
-        await message.answer("⛔ Вы заблокированы")
+        if user_id not in blocked_notified:
+            await message.answer("⛔ Вы заблокированы")
+            blocked_notified.add(user_id)
         return
     
     # Обработка вывода средств
@@ -500,6 +505,7 @@ async def handle_block_user(callback: CallbackQuery):
         
         # Добавляем в черный список
         blocked_users.add(user_id)
+        blocked_notified.add(user_id)  # Помечаем что уведомили
         
         # Уведомляем пользователя
         try:
