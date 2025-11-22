@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import sqlite3
 from app.config import DB_PATH
-from app.routers.auth import parse_init_data
+from app.routers.auth import verify_init_data
 
 router = APIRouter()
 
@@ -17,11 +17,11 @@ class CheckBanRequest(BaseModel):
 async def check_ban(request: CheckBanRequest):
     """Проверка бана пользователя"""
     try:
-        user_data = parse_init_data(request.initData)
+        user_data = verify_init_data(request.initData)
         if not user_data:
             raise HTTPException(status_code=401, detail="Invalid initData")
         
-        telegram_id = user_data.get('id')
+        telegram_id = user_data.get('telegram_id')
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
