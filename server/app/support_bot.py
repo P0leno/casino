@@ -154,8 +154,12 @@ def get_close_keyboard(dialog_id: int):
 
 def get_admin_keyboard(dialog_id: int, user_id: int, category: str, is_banned: bool = False):
     """Клавиатура для админов под сообщениями в группе"""
-    # Кнопка бан/разбан в зависимости от статуса
-    if is_banned:
+    
+    # Для обжалования бана - специальная кнопка miniApp разбан (доступна всем)
+    if category == "Обжалование бана" and is_banned:
+        ban_button = InlineKeyboardButton(text="miniApp разбан", callback_data=f"miniapp_unban_{dialog_id}_{user_id}")
+    # Обычная кнопка бан/разбан (только для админов)
+    elif is_banned:
         ban_button = InlineKeyboardButton(text="✅ Разблокировать", callback_data=f"unban_{dialog_id}_{user_id}")
     else:
         ban_button = InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_{dialog_id}_{user_id}")
@@ -645,12 +649,52 @@ async def handle_block_user(callback: CallbackQuery):
         print(f"Error blocking user: {e}")
         await callback.answer("Ошибка блокировки", show_alert=True)
 
+@dp.callback_query(F.data.startswith("miniapp_unban_"))
+async def handle_miniapp_unban_user(callback: CallbackQuery):
+    """Разблокировка через miniApp - доступна всем при обжаловании"""
+    # НЕ проверяем ADMIN_IDS - доступна всем
+    
+    try:
+        parts = callback.data.split("_")
+        dialog_id = int(parts[2])
+        user_id = int(parts[3])
+        
+        # Разбаниваем в БД
+        unban_user(user_id)
+        blocked_notified.discard(user_id)
+        
+        # Уведомляем пользователя
+        try:
+            await bot.send_message(user_id, "✅ Вы разблокированы")
+        except:
+            pass
+        
+        # Получаем категорию диалога
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT category FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        category = result[0] if result else ""
+        
+        # Убираем кнопку (кнопка разбана больше не нужна)
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer("✅ Пользователь разблокирован")
+        
+        # Закрываем диалог обжалования
+        close_dialog(dialog_id)
+        
+    except Exception as e:
+        print(f"Error with miniapp unban: {e}")
+        await callback.answer("Ошибка разблокировки", show_alert=True)
+
 @dp.callback_query(F.data.startswith("unban_"))
 async def handle_unban_user(callback: CallbackQuery):
-    """Разблокировка пользователя админом"""
+    """Разблокировка пользователя админом (обычная, не через обжалование)"""
     admin_id = callback.from_user.id
     
-    # Проверка прав админа
+    # Проверка прав админа - ТОЛЬКО админы
     if admin_id not in ADMIN_IDS:
         await callback.answer("У вас нет прав", show_alert=True)
         return
