@@ -1,0 +1,100 @@
+.banned-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  z-index: 10000;
+}
+
+.banned-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+  text-align: center;
+  max-width: 400px;
+  animation: banned-appear 0.5s ease;
+}
+
+@keyframes banned-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.banned-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  animation: banned-shake 0.5s ease;
+}
+
+@keyframes banned-shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+.banned-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ff4757;
+  margin: 0 0 16px 0;
+  text-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+}
+
+.banned-description {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 32px 0;
+  line-height: 1.6;
+}
+
+.banned-appeal-btn {
+  padding: 18px 48px;
+  background: linear-gradient(135deg, #0fbce0 0%, #667eea 100%);
+  border: none;
+  border-radius: 16px;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 8px 24px rgba(15, 188, 224, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.banned-appeal-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.banned-appeal-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(15, 188, 224, 0.5);
+}
+
+.banned-appeal-btn:hover::before {
+  left: 100%;
+}
+
+.banned-appeal-btn:active {
+  transform: translateY(-1px);
+}

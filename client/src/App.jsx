@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import LottieAnimation from './components/LottieAnimation'
+import pawAnim from './assets/paw.json'
 import Home from './components/Home'
 import Shop from './components/Shop'
 import Inventory from './components/Inventory'
@@ -13,6 +15,7 @@ import Profile from './components/Profile'
 import TopUp from './components/TopUp'
 import Tasks from './components/Tasks'
 import TabBar from './components/TabBar'
+import BannedScreen from './components/BannedScreen'
 
 function App() {
   const [error, setError] = useState(null)
@@ -22,6 +25,8 @@ function App() {
   const [isAndroid, setIsAndroid] = useState(false)
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
   const [safeAreaTop, setSafeAreaTop] = useState(0)
+  const [isBanned, setIsBanned] = useState(false)
+  const [botUsername, setBotUsername] = useState('HelpShellBot')
 
   useEffect(() => {
     localStorage.setItem('currentTab', activeTab)
@@ -84,11 +89,28 @@ function App() {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     
-    fetch(`${apiUrl}/api/validate`, {
+    // Сначала проверяем бан
+    fetch(`${apiUrl}/api/check-ban`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData })
     })
+      .then(res => res.json())
+      .then(data => {
+        if (data.banned) {
+          setIsBanned(true)
+          setBotUsername(data.botUsername || 'HelpShellBot')
+          setLoading(false)
+          return
+        }
+        
+        // Если не забанен - проверяем валидность
+        return fetch(`${apiUrl}/api/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData })
+        })
+      })
       .then(res => {
         console.log('Validate response status:', res.status)
         return res.json()
@@ -104,13 +126,6 @@ function App() {
           return
         }
         
-        // Проверяем бан - оставляем бесконечный лоадер
-        if (data.isBanned === true) {
-          console.log('User is banned, showing infinite loader')
-          // НЕ вызываем setLoading(false) - остается лоадер навсегда
-          return
-        }
-        
         // Все ок - убираем лоадер и показываем приложение
         console.log('User validated successfully, showing app')
         setLoading(false)
@@ -121,6 +136,10 @@ function App() {
         setLoading(false)
       })
   }, [])
+
+  if (isBanned) {
+    return <BannedScreen botUsername={botUsername} />
+  }
 
   if (loading) {
     return (
