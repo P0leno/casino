@@ -2,74 +2,58 @@
 Middleware для проверки бана пользователя
 """
 
-from fastapi import HTTPException, Request
+from fastapi import Request
+from fastapi.responses import JSONResponse
 import sqlite3
 from app.config import DB_PATH
 from app.routers.auth import verify_init_data
 
-def check_user_ban(init_data: str):
-    """
-    Проверка бана пользователя по initData
-    Возвращает user_id если не забанен
-    Выбрасывает HTTPException если забанен
-    """
-    user_data = verify_init_data(init_data)
-    if not user_data:
-        raise HTTPException(status_code=401, detail="Invalid initData")
-    
-    user_id = user_data.get('telegram_id')
-    
-    # Проверяем бан в БД
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-    
-    if result and result[0]:
-        raise HTTPException(status_code=403, detail="User is banned")
-    
-    return user_id
-
 async def ban_check_middleware(request: Request, call_next):
     """
-    Middleware для проверки бана на всех запросах кроме /api/check-ban и /api/validate
+    Middleware для проверки бана на всех API запросах кроме check-ban, validate и health
     """
     # Разрешенные пути (не проверяем бан)
-    allowed_paths = ['/api/check-ban', '/api/validate', '/api/health', '/']
+    allowed_paths = ['/api/check-ban', '/api/validate', '/api/health', '/', '/docs', '/openapi.json']
     
+    # Если путь разрешен или не API - пропускаем
     if request.url.path in allowed_paths or not request.url.path.startswith('/api/'):
         return await call_next(request)
     
-    # Пытаемся получить initData из body
-    try:
-        body = await request.body()
-        if body:
-            import json
-            try:
-                data = json.loads(body.decode())
-                init_data = data.get('initData')
-                
-                if init_data:
-                    # Проверяем бан
-                    user_data = verify_init_data(init_data)
-                    if user_data:
-                        user_id = user_data.get('telegram_id')
-                        
-                        conn = sqlite3.connect(DB_PATH)
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,))
-                        result = cursor.fetchone()
-                        conn.close()
-                        
-                        if result and result[0]:
-                            return HTTPException(status_code=403, detail="User is banned").__call__(request.scope, request.receive, request.send)
-            except:
-                pass
-    except:
-        pass
+    # Читаем body
+    body = await request.body()
     
-    # Восстанавливаем body для дальнейшей обработки
+    # Пытаемся получить initData
+    if body:
+        try:
+            import json
+            data = json.loads(body.decode())
+            init_data = data.get('initData')
+            
+            if init_data:
+                # Проверяем валидность
+                user_data = verify_init_data(init_data)
+                
+                if user_data:
+                    user_id = user_data.get('telegram_id')
+                    
+                    # Проверяем бан в БД
+                    conn = sqlite3.connect(DB_PATH)
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,))
+                    result = cursor.fetchone()
+                    conn.close()
+                    
+                    # Если забанен - возвращаем 403
+                    if result and result[0]:
+                        return JSONResponse(
+                            status_code=403,
+                            content={"detail": "User is banned"}
+                        )
+        except Exception as e:
+            print(f"Ban check middleware error: {e}")
+            pass
+    
+    # Восстанавливаем body для следующих обработчиков
     async def receive():
         return {"type": "http.request", "body": body}
     

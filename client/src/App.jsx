@@ -100,8 +100,8 @@ function App() {
         if (data.banned) {
           setIsBanned(true)
           setBotUsername(data.botUsername || 'HelpShellBot')
-          setLoading(false)
-          return
+          // НЕ делаем setLoading(false) - оставляем лоадер
+          return null // Прерываем цепочку
         }
         
         // Если не забанен - проверяем валидность
@@ -112,10 +112,16 @@ function App() {
         })
       })
       .then(res => {
+        // Если res === null, значит пользователь забанен
+        if (res === null) return null
+        
         console.log('Validate response status:', res.status)
         return res.json()
       })
       .then(data => {
+        // Если data === null, значит пользователь забанен
+        if (data === null) return
+        
         console.log('Validate response data:', data)
         
         // Проверяем валидность
