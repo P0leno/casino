@@ -20,9 +20,33 @@ spam_bans = {}  # user_id -> (ban_until, ban_count)
 # Рейт лимит на закрытие диалога
 close_rate_limit = {}  # user_id -> last_close_time
 
-# Перманентная блокировка пользователей
-blocked_users = set()  # user_id
+# Уведомления о блокировке (в памяти, БД - источник истины)
 blocked_notified = set()  # user_id уже уведомленных о блокировке
+
+def is_user_banned(user_id: int) -> bool:
+    """Проверка бана пользователя в БД"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return bool(result[0]) if result else False
+
+def ban_user(user_id: int):
+    """Забанить пользователя в БД"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def unban_user(user_id: int):
+    """Разбанить пользователя в БД"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
 
 # Состояние для вывода средств
 withdrawal_states = {}  # user_id -> {"amount": int, "step": "amount"|"method"}
@@ -128,11 +152,15 @@ def get_close_keyboard(dialog_id: int):
     ])
     return keyboard
 
-def get_admin_keyboard(dialog_id: int, user_id: int, category: str):
+def get_admin_keyboard(dialog_id: int, user_id: int, category: str, is_banned: bool = False):
     """Клавиатура для админов под сообщениями в группе"""
-    buttons = [
-        [InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_{dialog_id}_{user_id}")]
-    ]
+    # Кнопка бан/разбан в зависимости от статуса
+    if is_banned:
+        ban_button = InlineKeyboardButton(text="✅ Разблокировать", callback_data=f"unban_{dialog_id}_{user_id}")
+    else:
+        ban_button = InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_{dialog_id}_{user_id}")
+    
+    buttons = [[ban_button]]
     
     # Для категории "Вывод" добавляем кнопку "Вывод выполнен"
     if category == "Вывод":
@@ -151,20 +179,31 @@ def get_withdrawal_confirm_keyboard():
 async def cmd_start(message: Message):
     user_id = message.from_user.id
     
-    # Проверка на перманентную блокировку
-    if user_id in blocked_users:
+    # Проверка на бан в БД
+    if is_user_banned(user_id):
         if user_id not in blocked_notified:
             await message.answer("⛔ Вы заблокированы")
             blocked_notified.add(user_id)
         return
     
-    # Проверка на бан
+    # Проверка на бан (спам)
     is_spam, ban_seconds = check_spam(user_id)
     if is_spam:
         return  # Игнорируем
     
-    # Проверяем параметр start для вывода средств
+    # Проверяем параметр start для обжалования бана
     args = message.text.split()
+    if len(args) > 1 and args[1] == "appeal":
+        withdrawal_states[user_id] = {"step": "appeal"}
+        await message.answer(
+            "📝 <b>Обжалование бана</b>\n\n"
+            "Вы хотите обжаловать бан?\n"
+            "Напишите дополнительное сообщение поддержке:",
+            parse_mode=ParseMode.HTML
+        )
+        return
+    
+    # Проверяем параметр start для вывода средств
     if len(args) > 1 and args[1].startswith("withdraw_"):
         try:
             amount = int(args[1].replace("withdraw_", ""))
@@ -340,16 +379,34 @@ async def handle_user_message(message: Message):
     if message.chat.type != "private":
         return
     
-    # Проверка на перманентную блокировку
-    if user_id in blocked_users:
+    # Проверка на бан в БД
+    if is_user_banned(user_id):
         if user_id not in blocked_notified:
             await message.answer("⛔ Вы заблокированы")
             blocked_notified.add(user_id)
         return
     
-    # Обработка вывода средств
+    # Обработка обжалования бана и вывода средств
     if user_id in withdrawal_states:
         state = withdrawal_states[user_id]
+        
+        # Обработка обжалования бана
+        if state["step"] == "appeal":
+            appeal_text = message.text or "(фото)"
+            username = message.from_user.username or "без username"
+            
+            await message.answer(
+                f"📋 <b>Ваше обращение:</b>\n\n"
+                f"Тема: Обжалование бана\n"
+                f"Сообщение: {appeal_text}\n\n"
+                f"Нажмите кнопку ниже для отправки:",
+                parse_mode=ParseMode.HTML,
+                reply_markup=get_withdrawal_confirm_keyboard()
+            )
+            
+            withdrawal_states[user_id]["message"] = appeal_text
+            withdrawal_states[user_id]["step"] = "appeal_confirm"
+            return
         
         if state["step"] == "method":
             method = message.text or "(фото)"
@@ -439,17 +496,65 @@ async def handle_user_message(message: Message):
 
 @dp.callback_query(F.data == "confirm_withdrawal")
 async def handle_confirm_withdrawal(callback: CallbackQuery):
-    """Подтверждение вывода средств"""
+    """Подтверждение вывода средств или обжалования бана"""
     user_id = callback.from_user.id
     
-    if user_id not in withdrawal_states or withdrawal_states[user_id]["step"] != "confirm":
-        await callback.answer("Ошибка: состояние вывода не найдено", show_alert=True)
+    if user_id not in withdrawal_states:
+        await callback.answer("Ошибка: состояние не найдено", show_alert=True)
         return
     
     state = withdrawal_states[user_id]
+    username = callback.from_user.username or "без username"
+    
+    # Обработка обжалования бана
+    if state["step"] == "appeal_confirm":
+        appeal_message = state["message"]
+        
+        # Создаем диалог с категорией "Обжалование бана"
+        dialog_id = create_dialog(user_id, username, "Обжалование бана")
+        
+        # Отправляем в группу
+        header = (
+            f"📨 <b>Диалог #{dialog_id}</b>\n"
+            f"👤 @{username} (ID: {user_id})\n"
+            f"📁 Категория: ⚠️ <b>ОБЖАЛОВАНИЕ БАНА</b>\n\n"
+            f"📝 Сообщение: {appeal_message}"
+        )
+        
+        try:
+            # Проверяем текущий статус бана
+            is_banned = is_user_banned(user_id)
+            
+            await bot.send_message(
+                SUPPORT_GROUP_ID,
+                header,
+                parse_mode=ParseMode.HTML,
+                reply_markup=get_admin_keyboard(dialog_id, user_id, "Обжалование бана", is_banned)
+            )
+            
+            await callback.message.edit_text(
+                "✅ <b>Обращение создано!</b>\n\n"
+                "Ожидайте ответа поддержки",
+                parse_mode=ParseMode.HTML,
+                reply_markup=get_close_keyboard(dialog_id)
+            )
+            
+            del withdrawal_states[user_id]
+            
+        except Exception as e:
+            print(f"Error creating appeal dialog: {e}")
+            await callback.answer("Ошибка создания обращения", show_alert=True)
+        
+        await callback.answer()
+        return
+    
+    # Обработка вывода средств
+    if state["step"] != "confirm":
+        await callback.answer("Ошибка: состояние вывода не найдено", show_alert=True)
+        return
+    
     amount = state["amount"]
     method = state["method"]
-    username = callback.from_user.username or "без username"
     
     # Создаем диалог с категорией "Вывод"
     dialog_id = create_dialog(user_id, username, "Вывод")
@@ -503,8 +608,8 @@ async def handle_block_user(callback: CallbackQuery):
         dialog_id = int(parts[1])
         user_id = int(parts[2])
         
-        # Добавляем в черный список
-        blocked_users.add(user_id)
+        # Баним в БД
+        ban_user(user_id)
         blocked_notified.add(user_id)  # Помечаем что уведомили
         
         # Уведомляем пользователя
@@ -516,12 +621,68 @@ async def handle_block_user(callback: CallbackQuery):
         # Закрываем диалог
         close_dialog(dialog_id)
         
-        await callback.message.edit_reply_markup(reply_markup=None)
+        # Получаем категорию диалога
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT category FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        category = result[0] if result else ""
+        
+        # Меняем кнопку на "Разблокировать"
+        await callback.message.edit_reply_markup(
+            reply_markup=get_admin_keyboard(dialog_id, user_id, category, is_banned=True)
+        )
         await callback.answer("✅ Пользователь заблокирован")
         
     except Exception as e:
         print(f"Error blocking user: {e}")
         await callback.answer("Ошибка блокировки", show_alert=True)
+
+@dp.callback_query(F.data.startswith("unban_"))
+async def handle_unban_user(callback: CallbackQuery):
+    """Разблокировка пользователя админом"""
+    admin_id = callback.from_user.id
+    
+    # Проверка прав админа
+    if admin_id not in ADMIN_IDS:
+        await callback.answer("У вас нет прав", show_alert=True)
+        return
+    
+    try:
+        parts = callback.data.split("_")
+        dialog_id = int(parts[1])
+        user_id = int(parts[2])
+        
+        # Разбаниваем в БД
+        unban_user(user_id)
+        blocked_notified.discard(user_id)  # Убираем из уведомленных
+        
+        # Уведомляем пользователя
+        try:
+            await bot.send_message(user_id, "✅ Вы разблокированы")
+        except:
+            pass
+        
+        # Получаем категорию диалога
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT category FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        category = result[0] if result else ""
+        
+        # Меняем кнопку на "Заблокировать"
+        await callback.message.edit_reply_markup(
+            reply_markup=get_admin_keyboard(dialog_id, user_id, category, is_banned=False)
+        )
+        await callback.answer("✅ Пользователь разблокирован")
+        
+    except Exception as e:
+        print(f"Error unblocking user: {e}")
+        await callback.answer("Ошибка разблокировки", show_alert=True)
 
 @dp.callback_query(F.data.startswith("withdraw_done_"))
 async def handle_withdraw_done(callback: CallbackQuery):

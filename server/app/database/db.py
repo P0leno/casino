@@ -203,6 +203,18 @@ def init_db():
     except Exception as e:
         print(f"⚠️  Ошибка миграции tasks: {e}")
     
+    # Миграция: добавление поля is_banned если его нет
+    try:
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'is_banned' not in columns:
+            print("⚙️  Миграция: добавление поля is_banned в users...")
+            cursor.execute("ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT 0")
+            conn.commit()
+            print("✅ Миграция завершена: is_banned добавлен")
+    except Exception as e:
+        print(f"⚠️  Ошибка миграции users: {e}")
+    
     # Таблица диалогов поддержки
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS support_dialogs (
