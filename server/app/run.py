@@ -216,6 +216,10 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    # Middleware для проверки бана
+    from app.middlewares.ban_check import ban_check_middleware
+    app.middleware("http")(ban_check_middleware)
 
     app.include_router(auth.router)
     app.include_router(game.router)

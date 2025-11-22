@@ -137,13 +137,10 @@ function App() {
       })
   }, [])
 
-  if (isBanned) {
-    return <BannedScreen botUsername={botUsername} />
-  }
-
   if (loading) {
     return (
-      <div className="loader-container">
+      <>
+        <div className="loader-container">
         <div className="loader-wrapper">
           <div className="preloader">
             <div className="crack"></div>
@@ -154,6 +151,8 @@ function App() {
           </div>
         </div>
       </div>
+        {isBanned && <BannedScreen botUsername={botUsername} />}
+      </>
     )
   }
 
