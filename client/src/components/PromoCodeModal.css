@@ -625,15 +625,17 @@
   box-shadow: none;
 }
 
-/* Backdrop и Sheet для окна вывода */
+}
+
+/* Backdrop и Sheet для окна вывода - обновленный дизайн */
 .promo-withdrawal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
   z-index: 1003 !important;
   animation: fadeIn 0.3s ease;
 }
@@ -644,46 +646,54 @@
   right: 0;
   bottom: 0;
   height: auto;
-  max-height: 70vh;
-  background: #1a1a1a;
-  border-radius: 24px 24px 0 0;
+  max-height: 60vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 32px 32px 0 0;
   z-index: 1004 !important;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow-y: auto;
+  overflow: hidden;
+  box-shadow: 0 -8px 32px rgba(15, 188, 224, 0.2);
 }
 
 .promo-withdrawal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(15, 188, 224, 0.15) 0%, rgba(102, 126, 234, 0.15) 100%);
+  border-bottom: 2px solid rgba(15, 188, 224, 0.3);
 }
 
 .promo-withdrawal-header h3 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0fbce0 0%, #667eea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .promo-withdrawal-close {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 28px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.3s;
 }
 
 .promo-withdrawal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
-  transform: rotate(90deg);
+  transform: rotate(90deg) scale(1.1);
+  border-color: rgba(15, 188, 224, 0.5);
 }
