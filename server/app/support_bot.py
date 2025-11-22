@@ -529,14 +529,14 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
         )
         
         try:
-            # Проверяем текущий статус бана
-            is_banned = is_user_banned(user_id)
+            # При обжаловании бана пользователь ВСЕГДА забанен
+            # (иначе он не мог бы открыть обжалование)
             
             await bot.send_message(
                 SUPPORT_GROUP_ID,
                 header,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard(dialog_id, user_id, "Обжалование бана", is_banned)
+                reply_markup=get_admin_keyboard(dialog_id, user_id, "Обжалование бана", is_banned=True)
             )
             
             await callback.message.edit_text(
