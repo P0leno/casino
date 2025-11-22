@@ -130,8 +130,8 @@ def check_spam(user_id: int) -> tuple[bool, int]:
     # Добавляем текущее сообщение
     spam_counters[user_id].append(now)
     
-    # Проверяем: 3 сообщения за 6 секунд = спам
-    if len(spam_counters[user_id]) > 3:
+    # Проверяем: 3+ сообщения за 6 секунд = спам
+    if len(spam_counters[user_id]) >= 3:
         # Определяем длительность бана
         ban_count = spam_bans.get(user_id, (None, 0))[1] + 1
         ban_duration = 60 * (2 ** (ban_count - 1))  # 60, 120, 240, ...
@@ -191,12 +191,11 @@ async def cmd_start(message: Message):
 async def handle_category(callback: CallbackQuery):
     user_id = callback.from_user.id
     
-    # Проверка на бан
+    # Проверка на бан - игнорируем полностью
     if user_id in spam_bans:
         ban_until, _ = spam_bans[user_id]
         if datetime.now() < ban_until:
-            await callback.answer("Вы временно заблокированы", show_alert=True)
-            return
+            return  # Игнорируем без ответа
     
     # Проверяем активный диалог
     active_dialog = get_active_dialog(user_id)
@@ -228,17 +227,20 @@ async def handle_category(callback: CallbackQuery):
 async def handle_user_message(message: Message):
     user_id = message.from_user.id
     
-    # Проверка на бан
+    # Проверка на бан (сохраняем предыдущий статус)
+    was_banned = user_id in spam_bans and datetime.now() < spam_bans[user_id][0]
     is_spam, ban_seconds = check_spam(user_id)
+    
     if is_spam:
-        # Первое сообщение после превышения лимита
-        if ban_seconds > 0:
+        # Показываем сообщение о бане только первый раз (когда только что забанили)
+        if not was_banned and ban_seconds > 0:
             minutes = ban_seconds // 60
             await message.answer(
                 f"⛔ <b>Вы спамили!</b>\n\n"
                 f"Наказание: молчание на {minutes} минут",
                 parse_mode=ParseMode.HTML
             )
+        # Все остальные сообщения игнорируем молча
         return
     
     # Проверяем активный диалог
@@ -357,12 +359,11 @@ async def handle_admin_reply(message: Message):
 async def handle_close_dialog(callback: CallbackQuery):
     user_id = callback.from_user.id
     
-    # Проверка на бан
+    # Проверка на бан - игнорируем полностью
     if user_id in spam_bans:
         ban_until, _ = spam_bans[user_id]
         if datetime.now() < ban_until:
-            await callback.answer("Вы временно заблокированы", show_alert=True)
-            return
+            return  # Игнорируем без ответа
     
     # Рейт лимит на закрытие: 1 раз в минуту
     now = datetime.now()
