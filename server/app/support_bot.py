@@ -464,6 +464,9 @@ async def handle_user_message(message: Message):
     )
     
     try:
+        # Проверяем текущий статус бана для правильной кнопки
+        user_is_banned = is_user_banned(user_id)
+        
         if message.photo:
             # Фото с подписью
             photo = message.photo[-1]
@@ -473,7 +476,7 @@ async def handle_user_message(message: Message):
                 photo=photo.file_id,
                 caption=caption,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard(dialog_id, user_id, category)
+                reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_is_banned)
             )
         else:
             # Только текст
@@ -481,7 +484,7 @@ async def handle_user_message(message: Message):
                 SUPPORT_GROUP_ID,
                 header + text,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard(dialog_id, user_id, category)
+                reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_is_banned)
             )
         
         await message.answer(
