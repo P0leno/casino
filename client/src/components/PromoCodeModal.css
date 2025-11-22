@@ -451,6 +451,25 @@
   text-align: right;
 }
 
+.promo-history-topup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.promo-history-topup-amount {
+  font-size: 13px;
+  color: rgba(15, 188, 224, 0.9);
+  font-weight: 500;
+}
+
+.promo-history-topup-income {
+  font-size: 10px;
+  color: rgba(15, 188, 224, 0.6);
+  font-weight: 400;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(100%);

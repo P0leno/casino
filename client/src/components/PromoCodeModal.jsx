@@ -423,10 +423,14 @@ function PromoCodeModal({ isOpen, onClose }) {
                         <div className="promo-history-date">{new Date(item.createdAt).toLocaleDateString()}</div>
                       </div>
                       <div className="promo-history-action">
-                        {item.actionType === 'activated' ? 
-                          'Активировал промокод' : 
-                          `Пополнил +${item.amount}⭐`
-                        }
+                        {item.actionType === 'activated' ? (
+                          'Активировал промокод'
+                        ) : (
+                          <div className="promo-history-topup">
+                            <div className="promo-history-topup-amount">Пополнил +{item.amount}⭐</div>
+                            <div className="promo-history-topup-income">Доход 10%</div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

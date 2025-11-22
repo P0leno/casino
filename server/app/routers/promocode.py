@@ -309,12 +309,13 @@ async def get_promo_history(request: GenerateRequest):
         
         promo_id = promo[0]
         
-        # Получаем историю активаций и пополнений
+        # Получаем историю активаций и пополнений (фильтруем topup < 10)
         cursor.execute("""
             SELECT ph.action_type, ph.amount, ph.created_at, ph.user_id, u.username, u.avatar_url
             FROM promo_history ph
             LEFT JOIN users u ON ph.user_id = u.id
             WHERE ph.promo_id = ?
+            AND (ph.action_type != 'topup' OR ph.amount >= 10)
             ORDER BY ph.created_at DESC
             LIMIT 100
         """, (promo_id,))

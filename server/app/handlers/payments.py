@@ -104,10 +104,10 @@ async def process_successful_payment(message: Message):
                             (ref_bonus, owner_id)
                         )
                         
-                        # Логируем в историю промокода
+                        # Логируем в историю промокода (записываем полную сумму пополнения, не бонус)
                         cursor.execute(
                             "INSERT INTO promo_history (promo_id, user_id, action_type, amount) VALUES (?, ?, 'topup', ?)",
-                            (promo_id, user_id, ref_bonus)
+                            (promo_id, user_id, amount)
                         )
                         
                         conn.commit()
