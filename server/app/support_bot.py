@@ -8,7 +8,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from collections import defaultdict
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReactionTypeEmoji
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
 from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS
@@ -276,7 +276,18 @@ async def handle_admin_reply(message: Message):
             update_last_response(dialog_id)
             
             print(f"✅ Ответ доставлен пользователю {user_id}")
-            # Не отправляем подтверждение в группу
+            
+            # Ставим реакцию ✅ на сообщение в группе
+            try:
+                await bot.set_message_reaction(
+                    chat_id=SUPPORT_GROUP_ID,
+                    message_id=message.reply_to_message.message_id,
+                    reaction=[ReactionTypeEmoji(emoji="✅")],
+                    is_big=False
+                )
+                print(f"✅ Реакция добавлена на сообщение в группе")
+            except Exception as e:
+                print(f"⚠️ Не удалось поставить реакцию: {e}")
         except Exception as e:
             print(f"❌ Ошибка отправки пользователю {user_id}: {e}")
             await message.reply(f"❌ Не удалось доставить сообщение: {e}")
