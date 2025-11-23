@@ -1,6 +1,8 @@
 import './Maintenance.css'
 
 function Maintenance() {
+  console.log('Maintenance component rendered!')
+  
   return (
     <div className="maintenance-container">
       <div className="maintenance-content">
