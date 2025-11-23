@@ -73,6 +73,38 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
             conn.commit()
             print("✅ Миграция завершена: avatar_url добавлен")
+        
+        if 'support_banned' not in columns:
+            print("⚙️  Миграция: добавление поля support_banned...")
+            cursor.execute("ALTER TABLE users ADD COLUMN support_banned INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ Миграция завершена: support_banned добавлен")
+        
+        if 'support_banned_until' not in columns:
+            print("⚙️  Миграция: добавление поля support_banned_until...")
+            cursor.execute("ALTER TABLE users ADD COLUMN support_banned_until TEXT")
+            conn.commit()
+            print("✅ Миграция завершена: support_banned_until добавлен")
+        
+        # Создание таблицы настроек бота поддержки
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS support_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TEXT
+            )
+        """)
+        
+        # Инициализация надбавки очереди
+        cursor.execute("SELECT value FROM support_settings WHERE key = 'queue_offset'")
+        if not cursor.fetchone():
+            import random
+            offset = random.randint(10, 20)
+            cursor.execute(
+                "INSERT INTO support_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                ('queue_offset', str(offset))
+            )
+            print(f"✅ Инициализирована надбавка очереди: {offset}")
     except Exception as e:
         print(f"⚠️  Ошибка миграции: {e}")
     cursor.execute("""

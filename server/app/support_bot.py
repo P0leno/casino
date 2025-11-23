@@ -8,10 +8,11 @@ import sqlite3
 from datetime import datetime, timedelta
 from collections import defaultdict
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReactionTypeEmoji
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReactionTypeEmoji, PreCheckoutQuery, LabeledPrice
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
-from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS
+from app.config import DB_PATH, BOT_TOKEN, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS
+import json
 
 # Антиспам: счётчики сообщений
 spam_counters = defaultdict(list)  # user_id -> [timestamps]
@@ -23,35 +24,175 @@ close_rate_limit = {}  # user_id -> last_close_time
 # Уведомления о блокировке (в памяти, БД - источник истины)
 blocked_notified = set()  # user_id уже уведомленных о блокировке
 
+# Инвойсы приоритета
+priority_invoices = {}  # invoice_id -> {"user_id": int, "dialog_id": int}
+
+def get_queue_size() -> int:
+    """Получить размер очереди: реальные открытые обращения + надбавка"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Реальное количество открытых диалогов
+    cursor.execute("SELECT COUNT(*) FROM support_dialogs WHERE status = 'open'")
+    real_count = cursor.fetchone()[0]
+    
+    # Надбавка из БД
+    cursor.execute("SELECT value FROM support_settings WHERE key = 'queue_offset'")
+    offset_row = cursor.fetchone()
+    offset = int(offset_row[0]) if offset_row else 0
+    
+    conn.close()
+    
+    return real_count + offset
+
+def update_queue_offset():
+    """Обновить надбавку очереди случайным числом от 10 до 20"""
+    import random
+    offset = random.randint(10, 20)
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT OR REPLACE INTO support_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+        ('queue_offset', str(offset))
+    )
+    conn.commit()
+    conn.close()
+    
+    print(f"✅ Обновлена надбавка очереди: {offset}")
+
 def is_user_banned(user_id: int) -> bool:
     """Проверка бана пользователя в БД"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,))
+    cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
     result = cursor.fetchone()
     conn.close()
     return bool(result[0]) if result else False
 
-def ban_user(user_id: int):
-    """Забанить пользователя в БД"""
+def ban_user_in_support(user_id: int, until_date: str = None):
+    """Забанить пользователя ТОЛЬКО в поддержке (не трогает is_banned в аппке)
+    
+    Args:
+        user_id: ID пользователя
+        until_date: Дата разбана в формате ISO (например "2025-11-24T12:00:00") или None для постоянного бана
+    """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (user_id,))
+    
+    # Проверяем существование пользователя
+    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+    user_exists = cursor.fetchone()
+    
+    if not user_exists:
+        print(f"ERROR: Cannot ban user {user_id} in support - user not found in database!")
+        conn.close()
+        return False
+    
+    # Обновляем support_banned и support_banned_until (НЕ is_banned!)
+    cursor.execute(
+        "UPDATE users SET support_banned = 1, support_banned_until = ? WHERE id = ?", 
+        (until_date, user_id)
+    )
+    rows_affected = cursor.rowcount
     conn.commit()
     conn.close()
+    
+    if until_date:
+        print(f"Ban user {user_id} in SUPPORT until {until_date}: {rows_affected} rows affected")
+    else:
+        print(f"Ban user {user_id} in SUPPORT permanently: {rows_affected} rows affected")
+    return True
+
+def unban_user_in_support(user_id: int):
+    """Разбанить пользователя ТОЛЬКО в поддержке (не трогает is_banned в аппке)"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Проверяем существование пользователя
+    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+    user_exists = cursor.fetchone()
+    
+    if not user_exists:
+        print(f"ERROR: Cannot unban user {user_id} in support - user not found in database!")
+        conn.close()
+        return False
+    
+    # Обновляем support_banned (НЕ is_banned!)
+    cursor.execute("UPDATE users SET support_banned = 0 WHERE id = ?", (user_id,))
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    print(f"Unban user {user_id} in SUPPORT only: {rows_affected} rows affected")
+    return True
+
+def is_user_banned_in_support(user_id: int) -> bool:
+    """Проверка бана в поддержке с учётом временного бана"""
+    from datetime import datetime
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT support_banned, support_banned_until FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if not result:
+        return False
+    
+    support_banned, banned_until = result
+    
+    if not support_banned:
+        return False
+    
+    # Если временный бан - проверяем дату
+    if banned_until:
+        try:
+            until_dt = datetime.fromisoformat(banned_until)
+            now = datetime.now()
+            
+            # Если срок истёк - снимаем бан
+            if now >= until_dt:
+                cursor = sqlite3.connect(DB_PATH).cursor()
+                cursor.execute(
+                    "UPDATE users SET support_banned = 0, support_banned_until = NULL WHERE id = ?", 
+                    (user_id,)
+                )
+                cursor.connection.commit()
+                cursor.connection.close()
+                print(f"Support ban expired for user {user_id}")
+                return False
+        except:
+            pass
+    
+    return True
 
 def unban_user(user_id: int):
     """Разбанить пользователя в БД"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (user_id,))
+    
+    # Проверяем существование пользователя
+    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+    user_exists = cursor.fetchone()
+    
+    if not user_exists:
+        print(f"ERROR: Cannot unban user {user_id} - user not found in database!")
+        conn.close()
+        return False
+    
+    # Обновляем is_banned
+    cursor.execute("UPDATE users SET is_banned = 0 WHERE id = ?", (user_id,))
+    rows_affected = cursor.rowcount
     conn.commit()
     conn.close()
+    print(f"Unban user {user_id}: {rows_affected} rows affected")
+    return True
 
 # Состояние для вывода средств
 withdrawal_states = {}  # user_id -> {"amount": int, "step": "amount"|"method"}
 
 bot = Bot(token=SUPPORT_BOT_TOKEN)
+main_bot = Bot(token=BOT_TOKEN)  # Основной бот для инвойсов
 dp = Dispatcher()
 
 def get_active_dialog(user_id: int):
@@ -140,31 +281,48 @@ def check_spam(user_id: int) -> tuple[bool, int]:
 def get_main_keyboard():
     """Главное меню с категориями"""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="❗ Проблема", callback_data="cat_problem")],
-        [InlineKeyboardButton(text="💡 Предложение", callback_data="cat_suggestion")]
+        [
+            InlineKeyboardButton(text="❗ Проблема", callback_data="cat_problem"),
+            InlineKeyboardButton(text="💡 Предложение", callback_data="cat_suggestion")
+        ],
+        [InlineKeyboardButton(text="📝 Другое", callback_data="cat_other")]
     ])
     return keyboard
 
 def get_close_keyboard(dialog_id: int):
-    """Клавиатура с кнопкой закрытия диалога"""
+    """Клавиатура с кнопкой закрытия диалога и приоритетом"""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Закрыть обращение", callback_data=f"close_{dialog_id}")]
+        [InlineKeyboardButton(text="✅ Закрыть обращение", callback_data=f"close_{dialog_id}")],
+        [InlineKeyboardButton(text="⭐ Приоритетная очередь", callback_data=f"priority_{dialog_id}")]
     ])
     return keyboard
 
-def get_admin_keyboard(dialog_id: int, user_id: int, category: str, is_banned: bool = False):
+def get_admin_keyboard(dialog_id: int, user_id: int, category: str, support_banned: bool = False):
     """Клавиатура для админов под сообщениями в группе"""
     
-    # Для обжалования бана - специальная кнопка miniApp разбан (доступна всем)
-    if category == "Обжалование бана" and is_banned:
-        ban_button = InlineKeyboardButton(text="miniApp разбан", callback_data=f"miniapp_unban_{dialog_id}_{user_id}")
-    # Обычная кнопка бан/разбан (только для админов)
-    elif is_banned:
-        ban_button = InlineKeyboardButton(text="✅ Разблокировать", callback_data=f"unban_{dialog_id}_{user_id}")
+    # Для обжалования бана - три кнопки: Заблокировать в поддержке + MiniApp разбан + Не подлежит обжалованию
+    if category == "Обжалование бана":
+        # is_banned проверяется для аппки, показываем кнопку MiniApp разбан
+        is_app_banned = is_user_banned(user_id)
+        if is_app_banned:
+            buttons = [
+                [InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")],
+                [InlineKeyboardButton(text="✅ MiniApp разбан", callback_data=f"miniapp_unban_{dialog_id}_{user_id}")],
+                [InlineKeyboardButton(text="❌ Не подлежит обжалованию", callback_data=f"reject_appeal_{dialog_id}_{user_id}")]
+            ]
+        else:
+            # Юзер уже разбанен в аппке, остается блок в поддержке и отклонение
+            buttons = [
+                [InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")],
+                [InlineKeyboardButton(text="❌ Не подлежит обжалованию", callback_data=f"reject_appeal_{dialog_id}_{user_id}")]
+            ]
+    # Обычная кнопка бан/разбан в поддержке (только для админов)
+    elif support_banned:
+        ban_button = InlineKeyboardButton(text="✅ Разблокировать в поддержке", callback_data=f"unban_{dialog_id}_{user_id}")
+        buttons = [[ban_button]]
     else:
-        ban_button = InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_{dialog_id}_{user_id}")
-    
-    buttons = [[ban_button]]
+        ban_button = InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")
+        buttons = [[ban_button]]
     
     # Для категории "Вывод" добавляем кнопку "Вывод выполнен"
     if category == "Вывод":
@@ -183,19 +341,8 @@ def get_withdrawal_confirm_keyboard():
 async def cmd_start(message: Message):
     user_id = message.from_user.id
     
-    # Проверка на бан в БД
-    if is_user_banned(user_id):
-        if user_id not in blocked_notified:
-            await message.answer("⛔ Вы заблокированы")
-            blocked_notified.add(user_id)
-        return
-    
-    # Проверка на бан (спам)
-    is_spam, ban_seconds = check_spam(user_id)
-    if is_spam:
-        return  # Игнорируем
-    
-    # Проверяем параметр start для обжалования бана
+    # СНАЧАЛА проверяем параметр start для обжалования бана
+    # Забаненным юзерам РАЗРЕШЕНО обжаловать бан!
     args = message.text.split()
     if len(args) > 1 and args[1] == "appeal":
         withdrawal_states[user_id] = {"step": "appeal"}
@@ -207,10 +354,39 @@ async def cmd_start(message: Message):
         )
         return
     
+    # Проверка на бан В ПОДДЕРЖКЕ (только ПОСЛЕ проверки appeal!)
+    # Это ПОЛНОСТЬЮ блокирует доступ к боту
+    if is_user_banned_in_support(user_id):
+        if user_id not in blocked_notified:
+            await message.answer("⛔ Вы заблокированы в поддержке")
+            blocked_notified.add(user_id)
+        return
+    
+    # Проверка на бан в АППКЕ - НЕ блокирует доступ к поддержке!
+    # Юзер может писать в поддержку по любым вопросам (вывод, тех. поддержка и т.д.)
+    
+    # Проверка на бан (спам)
+    is_spam, ban_seconds = check_spam(user_id)
+    if is_spam:
+        return  # Игнорируем
+    
     # Проверяем параметр start для вывода средств
     if len(args) > 1 and args[1].startswith("withdraw_"):
         try:
-            amount = int(args[1].replace("withdraw_", ""))
+            amount_str = args[1].replace("withdraw_", "")
+            
+            # Валидация: только цифры
+            if not amount_str.isdigit():
+                await message.answer("❌ Некорректная сумма вывода")
+                return
+            
+            amount = int(amount_str)
+            
+            # Валидация: положительное число и разумный лимит
+            if amount <= 0 or amount > 1000000:
+                await message.answer("❌ Некорректная сумма вывода")
+                return
+            
             withdrawal_states[user_id] = {"amount": amount, "step": "method"}
             
             await message.answer(
@@ -359,7 +535,8 @@ async def handle_category(callback: CallbackQuery):
     
     category_map = {
         "cat_problem": "Проблема",
-        "cat_suggestion": "Предложение"
+        "cat_suggestion": "Предложение",
+        "cat_other": "Другое"
     }
     
     category = category_map.get(callback.data)
@@ -383,14 +560,8 @@ async def handle_user_message(message: Message):
     if message.chat.type != "private":
         return
     
-    # Проверка на бан в БД
-    if is_user_banned(user_id):
-        if user_id not in blocked_notified:
-            await message.answer("⛔ Вы заблокированы")
-            blocked_notified.add(user_id)
-        return
-    
-    # Обработка обжалования бана и вывода средств
+    # СНАЧАЛА обработка обжалования бана и вывода средств
+    # Забаненным юзерам РАЗРЕШЕНО обжаловать бан!
     if user_id in withdrawal_states:
         state = withdrawal_states[user_id]
         
@@ -431,6 +602,17 @@ async def handle_user_message(message: Message):
             withdrawal_states[user_id]["step"] = "confirm"
             return
     
+    # Проверка на бан В ПОДДЕРЖКЕ (только ПОСЛЕ обработки withdrawal_states!)
+    # Это ПОЛНОСТЬЮ блокирует доступ к боту
+    if is_user_banned_in_support(user_id):
+        if user_id not in blocked_notified:
+            await message.answer("⛔ Вы заблокированы в поддержке")
+            blocked_notified.add(user_id)
+        return
+    
+    # Проверка на бан в АППКЕ - НЕ блокирует доступ к поддержке!
+    # Юзер может писать в поддержку по любым вопросам (вывод, тех. поддержка и т.д.)
+    
     # Проверка на бан (сохраняем предыдущий статус)
     was_banned = user_id in spam_bans and datetime.now() < spam_bans[user_id][0]
     is_spam, ban_seconds = check_spam(user_id)
@@ -469,7 +651,7 @@ async def handle_user_message(message: Message):
     
     try:
         # Проверяем текущий статус бана для правильной кнопки
-        user_is_banned = is_user_banned(user_id)
+        user_support_banned = is_user_banned_in_support(user_id)
         
         if message.photo:
             # Фото с подписью
@@ -480,7 +662,7 @@ async def handle_user_message(message: Message):
                 photo=photo.file_id,
                 caption=caption,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_is_banned)
+                reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_support_banned)
             )
         else:
             # Только текст
@@ -488,12 +670,15 @@ async def handle_user_message(message: Message):
                 SUPPORT_GROUP_ID,
                 header + text,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_is_banned)
+                reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_support_banned)
             )
         
+        queue_size = get_queue_size()
+        
         await message.answer(
-            "✅ <b>Сообщение успешно доставлено в команду поддержки</b>\n\n"
-            "Ожидайте ответа",
+            f"✅ <b>Сообщение успешно доставлено в команду поддержки</b>\n\n"
+            f"Очередь: {queue_size}\n"
+            f"Ожидайте ответа",
             parse_mode=ParseMode.HTML,
             reply_markup=get_close_keyboard(dialog_id)
         )
@@ -536,12 +721,15 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
                 SUPPORT_GROUP_ID,
                 header,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard(dialog_id, user_id, "Обжалование бана", is_banned=True)
+                reply_markup=get_admin_keyboard(dialog_id, user_id, "Обжалование бана")
             )
             
+            queue_size = get_queue_size()
+            
             await callback.message.edit_text(
-                "✅ <b>Обращение создано!</b>\n\n"
-                "Ожидайте ответа поддержки",
+                f"✅ <b>Обращение создано!</b>\n\n"
+                f"Очередь: {queue_size}\n"
+                f"Ожидайте ответа поддержки",
                 parse_mode=ParseMode.HTML,
                 reply_markup=get_close_keyboard(dialog_id)
             )
@@ -577,18 +765,21 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
     )
     
     try:
-        user_is_banned = is_user_banned(user_id)
+        user_support_banned = is_user_banned_in_support(user_id)
         
         await bot.send_message(
             SUPPORT_GROUP_ID,
             header,
             parse_mode=ParseMode.HTML,
-            reply_markup=get_admin_keyboard(dialog_id, user_id, "Вывод", user_is_banned)
+            reply_markup=get_admin_keyboard(dialog_id, user_id, "Вывод", user_support_banned)
         )
         
+        queue_size = get_queue_size()
+        
         await callback.message.edit_text(
-            "✅ <b>Обращение создано!</b>\n\n"
-            "Ожидайте ответа поддержки",
+            f"✅ <b>Обращение создано!</b>\n\n"
+            f"Очередь: {queue_size}\n"
+            f"Ожидайте ответа поддержки",
             parse_mode=ParseMode.HTML,
             reply_markup=get_close_keyboard(dialog_id)
         )
@@ -604,7 +795,7 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
 
 @dp.callback_query(F.data.startswith("block_"))
 async def handle_block_user(callback: CallbackQuery):
-    """Блокировка пользователя админом"""
+    """Блокировка пользователя ТОЛЬКО в поддержке (не трогает аппку)"""
     admin_id = callback.from_user.id
     
     # Проверка прав админа
@@ -617,13 +808,17 @@ async def handle_block_user(callback: CallbackQuery):
         dialog_id = int(parts[1])
         user_id = int(parts[2])
         
-        # Баним в БД
-        ban_user(user_id)
+        # Баним ТОЛЬКО в поддержке (НЕ трогаем is_banned!)
+        success = ban_user_in_support(user_id)
+        if not success:
+            await callback.answer("❌ Пользователь не найден в БД", show_alert=True)
+            return
+        
         blocked_notified.add(user_id)  # Помечаем что уведомили
         
         # Уведомляем пользователя
         try:
-            await bot.send_message(user_id, "⛔ Вы заблокированы")
+            await bot.send_message(user_id, "⛔ Вы заблокированы в поддержке")
         except:
             pass
         
@@ -639,9 +834,13 @@ async def handle_block_user(callback: CallbackQuery):
         
         category = result[0] if result else ""
         
-        # Меняем кнопку на "Разблокировать"
+        # Меняем кнопку на "Разблокировать в поддержке"
+        # Для закрытого диалога обжалования НЕ показываем MiniApp разбан, только обычную разблокировку
+        if category == "Обжалование бана":
+            category = ""  # Убираем категорию, чтобы показалась обычная кнопка разблокировки
+        
         await callback.message.edit_reply_markup(
-            reply_markup=get_admin_keyboard(dialog_id, user_id, category, is_banned=True)
+            reply_markup=get_admin_keyboard(dialog_id, user_id, category, support_banned=True)
         )
         await callback.answer("✅ Пользователь заблокирован")
         
@@ -660,12 +859,24 @@ async def handle_miniapp_unban_user(callback: CallbackQuery):
         user_id = int(parts[3])
         
         # Разбаниваем в БД
-        unban_user(user_id)
+        success = unban_user(user_id)
+        if not success:
+            await callback.answer("❌ Пользователь не найден в БД", show_alert=True)
+            return
+        
         blocked_notified.discard(user_id)
         
-        # Уведомляем пользователя
+        # Уведомляем пользователя с кнопкой-ссылкой на приложение
         try:
-            await bot.send_message(user_id, "✅ Вы разблокированы")
+            app_button = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🎁 Открыть Shell", url="https://t.me/shellgiftbot/shell")]
+            ])
+            await bot.send_message(
+                user_id,
+                "✅ <b>Вы были разблокированы в MiniApp</b>",
+                parse_mode=ParseMode.HTML,
+                reply_markup=app_button
+            )
         except:
             pass
         
@@ -678,20 +889,76 @@ async def handle_miniapp_unban_user(callback: CallbackQuery):
         
         category = result[0] if result else ""
         
-        # Убираем кнопку (кнопка разбана больше не нужна)
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.answer("✅ Пользователь разблокирован")
-        
         # Закрываем диалог обжалования
         close_dialog(dialog_id)
+        
+        # Убираем кнопки (диалог закрыт)
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer("✅ Пользователь разблокирован в MiniApp, диалог закрыт")
         
     except Exception as e:
         print(f"Error with miniapp unban: {e}")
         await callback.answer("Ошибка разблокировки", show_alert=True)
 
+@dp.callback_query(F.data.startswith("reject_appeal_"))
+async def handle_reject_appeal(callback: CallbackQuery):
+    """Отклонение обжалования - бан в поддержке на 1 день"""
+    admin_id = callback.from_user.id
+    
+    # Проверка прав админа
+    if admin_id not in ADMIN_IDS:
+        await callback.answer("У вас нет прав", show_alert=True)
+        return
+    
+    try:
+        parts = callback.data.split("_")
+        dialog_id = int(parts[2])
+        user_id = int(parts[3])
+        
+        # Выдаём бан в поддержке на 1 день
+        from datetime import datetime, timedelta
+        tomorrow = datetime.now() + timedelta(days=1)
+        until_date = tomorrow.isoformat()
+        
+        success = ban_user_in_support(user_id, until_date)
+        if not success:
+            await callback.answer("❌ Пользователь не найден в БД", show_alert=True)
+            return
+        
+        # Уведомляем пользователя
+        try:
+            await bot.send_message(
+                user_id,
+                "❌ <b>Бан обжалованию не подлежит</b>\n\n"
+                "Бан в поддержке выдан на 1 день за ложное обращение.\n"
+                f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            pass
+        
+        # Закрываем диалог
+        close_dialog(dialog_id)
+        
+        # Добавляем сообщение в группу
+        await callback.message.reply_text(
+            f"❌ <b>Обжалование отклонено</b>\n\n"
+            f"Пользователь забанен в поддержке на 1 день за ложное обращение.\n"
+            f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",
+            parse_mode=ParseMode.HTML
+        )
+        
+        # Убираем кнопки
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer("✅ Обжалование отклонено, выдан бан в поддержке на 1 день")
+        
+    except Exception as e:
+        print(f"Error rejecting appeal: {e}")
+        await callback.answer("Ошибка отклонения обжалования", show_alert=True)
+
 @dp.callback_query(F.data.startswith("unban_"))
 async def handle_unban_user(callback: CallbackQuery):
-    """Разблокировка пользователя админом (обычная, не через обжалование)"""
+    """Разблокировка пользователя ТОЛЬКО в поддержке (не трогает аппку)"""
     admin_id = callback.from_user.id
     
     # Проверка прав админа - ТОЛЬКО админы
@@ -704,13 +971,17 @@ async def handle_unban_user(callback: CallbackQuery):
         dialog_id = int(parts[1])
         user_id = int(parts[2])
         
-        # Разбаниваем в БД
-        unban_user(user_id)
+        # Разбаниваем ТОЛЬКО в поддержке (НЕ трогаем is_banned!)
+        success = unban_user_in_support(user_id)
+        if not success:
+            await callback.answer("❌ Пользователь не найден в БД", show_alert=True)
+            return
+        
         blocked_notified.discard(user_id)  # Убираем из уведомленных
         
         # Уведомляем пользователя
         try:
-            await bot.send_message(user_id, "✅ Вы разблокированы")
+            await bot.send_message(user_id, "✅ Вы разблокированы в поддержке")
         except:
             pass
         
@@ -723,9 +994,9 @@ async def handle_unban_user(callback: CallbackQuery):
         
         category = result[0] if result else ""
         
-        # Меняем кнопку на "Заблокировать"
+        # Меняем кнопку на "Заблокировать в поддержке"
         await callback.message.edit_reply_markup(
-            reply_markup=get_admin_keyboard(dialog_id, user_id, category, is_banned=False)
+            reply_markup=get_admin_keyboard(dialog_id, user_id, category, support_banned=False)
         )
         await callback.answer("✅ Пользователь разблокирован")
         
@@ -777,6 +1048,97 @@ async def handle_withdraw_done(callback: CallbackQuery):
     except Exception as e:
         print(f"Error marking withdrawal done: {e}")
         await callback.answer("Ошибка", show_alert=True)
+
+@dp.callback_query(F.data.startswith("priority_"))
+async def handle_priority_queue(callback: CallbackQuery):
+    """Обработка запроса на приоритетную очередь"""
+    user_id = callback.from_user.id
+    
+    # Проверка на бан - игнорируем полностью
+    if user_id in spam_bans:
+        ban_until, _ = spam_bans[user_id]
+        if datetime.now() < ban_until:
+            return  # Игнорируем без ответа
+    
+    try:
+        dialog_id = int(callback.data.split("_")[1])
+        
+        # Проверяем что диалог принадлежит пользователю
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
+            (dialog_id,)
+        )
+        dialog_info = cursor.fetchone()
+        conn.close()
+        
+        if not dialog_info:
+            await callback.answer("Диалог не найден", show_alert=True)
+            return
+        
+        dialog_user_id, status = dialog_info
+        
+        if dialog_user_id != user_id:
+            await callback.answer("Это не ваш диалог", show_alert=True)
+            return
+        
+        if status != 'open':
+            await callback.answer("Диалог уже закрыт", show_alert=True)
+            return
+        
+        # Создаем инвойс на 1 звезду через основной бот
+        title = "Приоритетная очередь"
+        description = "Ваше обращение будет выделено и уведомит всех сотрудников поддержки"
+        payload = json.dumps({"type": "priority", "dialog_id": dialog_id, "user_id": user_id})
+        currency = "XTR"  # Telegram Stars
+        prices = [LabeledPrice(label="1 звезда", amount=1)]
+        
+        try:
+            invoice_link = await main_bot.create_invoice_link(
+                title=title,
+                description=description,
+                payload=payload,
+                currency=currency,
+                prices=prices
+            )
+            
+            # Сохраняем информацию о инвойсе
+            # priority_invoices[invoice_id] = {"user_id": user_id, "dialog_id": dialog_id}
+            # Но мы используем payload для этого
+            
+            # Отправляем пользователю инвойс
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💳 Оплатить 1⭐", url=invoice_link)],
+                [InlineKeyboardButton(text="❌ Отмена", callback_data=f"cancel_priority_{dialog_id}")]
+            ])
+            
+            await callback.message.answer(
+                "⭐ <b>Приоритетная очередь</b>\n\n"
+                "Стоимость: 1 звезда\n\n"
+                "После оплаты:\n"
+                "• Ваше обращение будет выделено\n"
+                "• Все сотрудники поддержки получат уведомление\n"
+                "• Приоритетная обработка",
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard
+            )
+            
+            await callback.answer()
+            
+        except Exception as e:
+            print(f"Error creating priority invoice: {e}")
+            await callback.answer("Ошибка создания платежа", show_alert=True)
+            
+    except Exception as e:
+        print(f"Error handling priority queue: {e}")
+        await callback.answer("Ошибка обработки запроса", show_alert=True)
+
+@dp.callback_query(F.data.startswith("cancel_priority_"))
+async def handle_cancel_priority(callback: CallbackQuery):
+    """Отмена приоритетной очереди"""
+    await callback.message.delete()
+    await callback.answer("Отменено")
 
 @dp.callback_query(F.data.startswith("close_"))
 async def handle_close_dialog(callback: CallbackQuery):
@@ -882,6 +1244,34 @@ async def notify_ban_expired():
         for user_id in expired_bans:
             del spam_bans[user_id]
 
+async def update_queue_offset_task():
+    """Фоновая задача для обновления надбавки очереди каждые 3 часа"""
+    while True:
+        await asyncio.sleep(10800)  # 3 часа = 10800 секунд
+        update_queue_offset()
+
+async def get_group_members() -> list:
+    """Получить список участников группы поддержки"""
+    try:
+        members = []
+        chat = await bot.get_chat(SUPPORT_GROUP_ID)
+        
+        # Получаем список админов
+        admins = await bot.get_chat_administrators(SUPPORT_GROUP_ID)
+        
+        for admin in admins:
+            # Пропускаем бота
+            if admin.user.id == (await bot.get_me()).id:
+                continue
+            
+            username = f"@{admin.user.username}" if admin.user.username else admin.user.full_name
+            members.append({"id": admin.user.id, "mention": username})
+        
+        return members
+    except Exception as e:
+        print(f"Error getting group members: {e}")
+        return []
+
 async def start_support_bot():
     """Запуск бота поддержки"""
     if not SUPPORT_BOT_TOKEN:
@@ -892,18 +1282,19 @@ async def start_support_bot():
         print("⚠️  SUPPORT_GROUP_ID не настроен - бот поддержки отключен")
         return
     
+    print("✅ Бот поддержки запущен (polling mode)")
+    
     try:
-        print("✅ Бот поддержки запущен (polling mode)")
-        
-        # Запускаем фоновую задачу для уведомлений
+        # Запускаем фоновые задачи
         asyncio.create_task(notify_ban_expired())
+        asyncio.create_task(update_queue_offset_task())
         
         # Запускаем polling (он блокирует, поэтому должен быть в отдельной задаче)
         # Указываем allowed_updates для получения всех типов сообщений
         await dp.start_polling(
             bot, 
             skip_updates=True,
-            allowed_updates=["message", "callback_query"]
+            allowed_updates=["message", "callback_query", "pre_checkout_query", "message_reaction"]
         )
     except Exception as e:
         print(f"❌ Ошибка бота поддержки: {e}")

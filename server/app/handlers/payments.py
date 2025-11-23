@@ -1,8 +1,9 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import PreCheckoutQuery, Message
+from aiogram.enums import ParseMode
 import json
 import sqlite3
-from app.config import DB_PATH
+from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID
 
 router = Router()
 
@@ -10,16 +11,28 @@ router = Router()
 async def process_pre_checkout_query(pre_checkout_query: PreCheckoutQuery):
     try:
         payload_data = json.loads(pre_checkout_query.invoice_payload)
-        expected_amount = payload_data.get("amount")
-        actual_amount = pre_checkout_query.total_amount
+        payment_type = payload_data.get("type")
         
-        # Проверяем что сумма не была подменена
-        if expected_amount != actual_amount:
-            await pre_checkout_query.answer(
-                ok=False, 
-                error_message="Сумма платежа была изменена. Попробуйте снова."
-            )
-            return
+        # Для приоритетной очереди сумма всегда 1 звезда
+        if payment_type == "priority":
+            if pre_checkout_query.total_amount != 1:
+                await pre_checkout_query.answer(
+                    ok=False, 
+                    error_message="Неверная сумма платежа."
+                )
+                return
+        else:
+            # Для обычных пополнений проверяем сумму
+            expected_amount = payload_data.get("amount")
+            actual_amount = pre_checkout_query.total_amount
+            
+            # Проверяем что сумма не была подменена
+            if expected_amount != actual_amount:
+                await pre_checkout_query.answer(
+                    ok=False, 
+                    error_message="Сумма платежа была изменена. Попробуйте снова."
+                )
+                return
         
         await pre_checkout_query.answer(ok=True)
     except Exception as e:
@@ -35,6 +48,83 @@ async def process_successful_payment(message: Message):
     
     try:
         payload_data = json.loads(payment.invoice_payload)
+        payment_type = payload_data.get("type")
+        
+        # Обработка приоритетной очереди
+        if payment_type == "priority":
+            dialog_id = payload_data.get("dialog_id")
+            user_id = payload_data.get("user_id")
+            
+            if not dialog_id or not user_id:
+                print(f"Invalid priority payment data: dialog_id={dialog_id}, user_id={user_id}")
+                return
+            
+            # Получаем информацию о диалоге
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT username, category FROM support_dialogs WHERE dialog_id = ?",
+                (dialog_id,)
+            )
+            dialog_info = cursor.fetchone()
+            conn.close()
+            
+            if not dialog_info:
+                print(f"Dialog #{dialog_id} not found")
+                await message.answer("❌ Диалог не найден")
+                return
+            
+            username, category = dialog_info
+            
+            # Уведомляем пользователя
+            await message.answer(
+                "✅ <b>Вы купили приоритет!</b>\n\n"
+                "Ищу свободных сотрудников...",
+                parse_mode=ParseMode.HTML
+            )
+            
+            # Получаем список участников группы
+            if SUPPORT_BOT_TOKEN and SUPPORT_GROUP_ID:
+                try:
+                    support_bot = Bot(token=SUPPORT_BOT_TOKEN)
+                    
+                    # Получаем список админов
+                    admins = await support_bot.get_chat_administrators(SUPPORT_GROUP_ID)
+                    bot_me = await support_bot.get_me()
+                    
+                    mentions = []
+                    for admin in admins:
+                        # Пропускаем бота
+                        if admin.user.id == bot_me.id:
+                            continue
+                        
+                        if admin.user.username:
+                            mentions.append(f"@{admin.user.username}")
+                        else:
+                            # Используем mention по ID (только для отображения, не тегает)
+                            mentions.append(f"[{admin.user.full_name}](tg://user?id={admin.user.id})")
+                    
+                    mentions_text = " ".join(mentions)
+                    
+                    # Отправляем сообщение в группу
+                    await support_bot.send_message(
+                        SUPPORT_GROUP_ID,
+                        f"⭐ <b>ПРИОРИТЕТНАЯ ОЧЕРЕДЬ</b>\n\n"
+                        f"Пользователь @{username} (ID: {user_id}) купил приоритет\n"
+                        f"Диалог: #{dialog_id}\n"
+                        f"Категория: {category}\n\n"
+                        f"Сотрудники: {mentions_text}",
+                        parse_mode=ParseMode.HTML
+                    )
+                    
+                    await support_bot.session.close()
+                    
+                except Exception as e:
+                    print(f"Error notifying support group: {e}")
+            
+            return
+        
+        # Обработка обычного пополнения
         user_id = payload_data.get("user_id")
         
         # ВАЖНО: Используем total_amount из payment, а НЕ из payload!
