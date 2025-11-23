@@ -5,9 +5,11 @@ const Settings = () => {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
 
   useEffect(() => {
     loadSettings();
+    loadMaintenanceStatus();
   }, []);
 
   const loadSettings = async () => {
@@ -59,6 +61,63 @@ const Settings = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMaintenanceStatus = async () => {
+    try {
+      const tg = window.Telegram.WebApp;
+      const initData = tg.initData;
+
+      const response = await fetch('https://api.shelloch.xyz/api/get-maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setMaintenanceMode(data.maintenance_mode);
+      }
+    } catch (error) {
+      console.error('Error loading maintenance status:', error);
+    }
+  };
+
+  const toggleMaintenance = async () => {
+    if (saving) return;
+    
+    setSaving(true);
+    
+    try {
+      const tg = window.Telegram.WebApp;
+      const initData = tg.initData;
+      
+      const response = await fetch('https://api.shelloch.xyz/api/toggle-maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setMaintenanceMode(data.maintenance_mode);
+        tg.HapticFeedback.notificationOccurred('success');
+        
+        const status = data.maintenance_mode ? 'включен' : 'выключен';
+        tg.showAlert?.(`Режим технических работ ${status}`);
+      } else {
+        tg.showAlert?.(data.message || 'Ошибка переключения режима');
+        tg.HapticFeedback.notificationOccurred('error');
+      }
+    } catch (error) {
+      console.error('Error toggling maintenance:', error);
+      window.Telegram.WebApp.showAlert?.('Ошибка переключения режима');
+      window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -269,6 +328,31 @@ const Settings = () => {
       </div>
 
       <div className="settings-list">
+        {/* Режим технических работ */}
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-icon">🔧</div>
+            <div className="setting-details">
+              <div className="setting-name">Технические работы</div>
+              <div className="setting-status">
+                {maintenanceMode ? 
+                  <span className="status-enabled">✓ Включен</span> : 
+                  <span className="status-disabled">✗ Выключен</span>
+                }
+              </div>
+            </div>
+          </div>
+          <label className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={maintenanceMode}
+              onChange={toggleMaintenance}
+              disabled={saving}
+            />
+            <span className="toggle-slider"></span>
+          </label>
+        </div>
+
         {/* Пополнение звездами */}
         {settings.stars_topup_enabled && (
           <div className="setting-item">
