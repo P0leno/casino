@@ -13,7 +13,7 @@ async def ban_check_middleware(request: Request, call_next):
     Middleware для проверки бана на всех API запросах кроме check-ban, validate и health
     """
     # Разрешенные пути (не проверяем бан)
-    allowed_paths = ['/api/check-ban', '/api/validate', '/api/health', '/', '/docs', '/openapi.json']
+    allowed_paths = ['/api/check-ban', '/api/validate', '/api/health', '/']
     
     # Если путь разрешен или не API - пропускаем
     if request.url.path in allowed_paths or not request.url.path.startswith('/api/'):
@@ -39,7 +39,7 @@ async def ban_check_middleware(request: Request, call_next):
                     # Проверяем бан в БД
                     conn = sqlite3.connect(DB_PATH)
                     cursor = conn.cursor()
-                    cursor.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,))
+                    cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
                     result = cursor.fetchone()
                     conn.close()
                     

@@ -507,7 +507,7 @@
 
 /* Диалог вывода средств */
 .promo-withdrawal-content {
-  padding: 32px 24px;
+  padding: 32px 24px calc(15px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -521,22 +521,14 @@
   margin: 0 0 8px 0;
 }
 
-.promo-withdrawal-balance::before {
-  content: '💰';
-  margin-right: 8px;
-  font-size: 20px;
-}
+
 
 .promo-withdrawal-amount-display {
   text-align: center;
   font-size: 42px;
   font-weight: 800;
-  background: linear-gradient(135deg, #0fbce0 0%, #667eea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 8px;
-  text-shadow: 0 0 30px rgba(15, 188, 224, 0.3);
 }
 
 .promo-withdrawal-input-wrapper {
@@ -555,22 +547,20 @@
 .promo-withdrawal-input {
   width: 100%;
   padding: 16px 20px;
-  background: rgba(15, 188, 224, 0.05);
-  border: 2px solid rgba(15, 188, 224, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 20px;
   font-weight: 700;
   text-align: center;
   outline: none;
-  transition: all 0.3s;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
 }
 
 .promo-withdrawal-input:focus {
-  border-color: rgba(15, 188, 224, 0.6);
-  background: rgba(15, 188, 224, 0.1);
-  box-shadow: 0 0 0 4px rgba(15, 188, 224, 0.1), inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .promo-withdrawal-input::placeholder {
@@ -580,49 +570,52 @@
 
 .promo-withdrawal-submit {
   width: 100%;
-  padding: 18px;
-  background: linear-gradient(135deg, #0fbce0 0%, #667eea 100%);
-  border: none;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(38, 171, 255, 0.55) 0%, rgba(0, 157, 255, 0.55) 50%, rgba(0, 144, 234, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
-  color: white;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 8px 24px rgba(15, 188, 224, 0.3);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   position: relative;
-  overflow: hidden;
 }
 
 .promo-withdrawal-submit::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.promo-withdrawal-submit:hover:not(:disabled)::before {
-  left: 100%;
-}
-
-.promo-withdrawal-submit:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(15, 188, 224, 0.5);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .promo-withdrawal-submit:active:not(:disabled) {
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(12, 139, 217, 0.55) 0%, rgba(0, 133, 216, 0.55) 50%, rgba(0, 129, 209, 0.55) 100%);
+  transform: translateY(1px);
+}
+
+.promo-withdrawal-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .promo-withdrawal-submit:disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+  background: rgba(0, 78, 127, 0.55);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Backdrop и Sheet для окна вывода - обновленный дизайн */
@@ -645,53 +638,12 @@
   bottom: 0;
   height: auto;
   max-height: 60vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: #1a1a1a;
   border-radius: 32px 32px 0 0;
   z-index: 1004 !important;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  box-shadow: 0 -8px 32px rgba(15, 188, 224, 0.2);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.promo-withdrawal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  background: linear-gradient(135deg, rgba(15, 188, 224, 0.15) 0%, rgba(102, 126, 234, 0.15) 100%);
-  border-bottom: 2px solid rgba(15, 188, 224, 0.3);
-}
 
-.promo-withdrawal-header h3 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #0fbce0 0%, #667eea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.promo-withdrawal-close {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-}
-
-.promo-withdrawal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  transform: rotate(90deg) scale(1.1);
-  border-color: rgba(15, 188, 224, 0.5);
-}

@@ -49,113 +49,117 @@ async def parse_gifts():
         
         gifts_count = 0
         
-        async for gift in app.get_chat_gifts(
-            chat_id=me.id,
-            exclude_unlimited=True,
-            limit=100
-        ):
-            gifts_count += 1
+        try:
+            async for gift in app.get_chat_gifts(
+                chat_id=me.id,
+                exclude_unlimited=True,
+                limit=100
+            ):
+                gifts_count += 1
             
-            # Извлекаем данные
-            gift_id = str(gift.id)
-            slug = getattr(gift, 'name', None)  # HappyBrownie-95259
-            title = gift.title
-            model_name = None
-            model_path = None
-            symbol_name = None
-            backdrop_name = None
-            center_color = None
-            edge_color = None
-            pattern_color = None
-            text_color = None
-            rarity_model = None
-            rarity_symbol = None
-            rarity_backdrop = None
+                # Извлекаем данные
+                gift_id = str(gift.id)
+                slug = getattr(gift, 'name', None)  # HappyBrownie-95259
+                title = gift.title
+                model_name = None
+                model_path = None
+                symbol_name = None
+                backdrop_name = None
+                center_color = None
+                edge_color = None
+                pattern_color = None
+                text_color = None
+                rarity_model = None
+                rarity_symbol = None
+                rarity_backdrop = None
             
-            # Парсим attributes
-            if hasattr(gift, 'attributes') and gift.attributes:
-                for attr in gift.attributes:
-                    # Преобразуем в dict, обрабатываем вложенные объекты
-                    if hasattr(attr, '__dict__'):
-                        attr_dict = attr.__dict__
-                    elif isinstance(attr, dict):
-                        attr_dict = attr
-                    else:
-                        continue
+                # Парсим attributes
+                if hasattr(gift, 'attributes') and gift.attributes:
+                    for attr in gift.attributes:
+                        # Преобразуем в dict, обрабатываем вложенные объекты
+                        if hasattr(attr, '__dict__'):
+                            attr_dict = attr.__dict__
+                        elif isinstance(attr, dict):
+                            attr_dict = attr
+                        else:
+                            continue
                     
-                    attr_name = attr_dict.get('name', '')
-                    attr_type = str(attr_dict.get('type', ''))
+                        attr_name = attr_dict.get('name', '')
+                        attr_type = str(attr_dict.get('type', ''))
                     
-                    # MODEL type
-                    if 'MODEL' in attr_type or (hasattr(attr, 'sticker') and hasattr(attr, 'name') and not hasattr(attr, 'center_color')):
-                        model_name = attr_name
-                        rarity_model = attr_dict.get('rarity', 0)
-                        # Формируем путь к анимации
-                        if model_name:
-                            model_path = f"/gifts/models/{title}/{model_name}.json"
+                        # MODEL type
+                        if 'MODEL' in attr_type or (hasattr(attr, 'sticker') and hasattr(attr, 'name') and not hasattr(attr, 'center_color')):
+                            model_name = attr_name
+                            rarity_model = attr_dict.get('rarity', 0)
+                            # Формируем путь к анимации
+                            if model_name:
+                                model_path = f"/gifts/models/{title}/{model_name}.json"
                     
-                    # SYMBOL type
-                    elif 'SYMBOL' in attr_type:
-                        symbol_name = attr_name
-                        rarity_symbol = attr_dict.get('rarity', 0)
+                        # SYMBOL type
+                        elif 'SYMBOL' in attr_type:
+                            symbol_name = attr_name
+                            rarity_symbol = attr_dict.get('rarity', 0)
                     
-                    # BACKDROP type - определяем по наличию center_color
-                    elif hasattr(attr, 'center_color') or 'BACKDROP' in attr_type:
-                        backdrop_name = attr_name
-                        rarity_backdrop = attr_dict.get('rarity', 0)
+                        # BACKDROP type - определяем по наличию center_color
+                        elif hasattr(attr, 'center_color') or 'BACKDROP' in attr_type:
+                            backdrop_name = attr_name
+                            rarity_backdrop = attr_dict.get('rarity', 0)
                         
-                        # Конвертируем цвета
-                        if hasattr(attr, 'center_color'):
-                            center_color = int_to_hex_color(attr.center_color)
-                        if hasattr(attr, 'edge_color'):
-                            edge_color = int_to_hex_color(attr.edge_color)
-                        if hasattr(attr, 'pattern_color'):
-                            pattern_color = int_to_hex_color(attr.pattern_color)
-                        if hasattr(attr, 'text_color'):
-                            text_color = int_to_hex_color(attr.text_color)
+                            # Конвертируем цвета
+                            if hasattr(attr, 'center_color'):
+                                center_color = int_to_hex_color(attr.center_color)
+                            if hasattr(attr, 'edge_color'):
+                                edge_color = int_to_hex_color(attr.edge_color)
+                            if hasattr(attr, 'pattern_color'):
+                                pattern_color = int_to_hex_color(attr.pattern_color)
+                            if hasattr(attr, 'text_color'):
+                                text_color = int_to_hex_color(attr.text_color)
             
-            available_amount = getattr(gift, 'available_amount', 0)
-            total_amount = getattr(gift, 'total_amount', 0)
-            # Цена теперь обновляется через price_updater.py (каждый час с Tonnel)
+                available_amount = getattr(gift, 'available_amount', 0)
+                total_amount = getattr(gift, 'total_amount', 0)
+                # Цена теперь обновляется через price_updater.py (каждый час с Tonnel)
             
-            # Сохраняем в БД (БЕЗ изменения price - он обновляется отдельно)
-            # Проверяем существует ли подарок
-            cursor.execute("SELECT id, price FROM shop_gifts WHERE gift_id = ?", (gift_id,))
-            existing = cursor.fetchone()
+                # Сохраняем в БД (БЕЗ изменения price - он обновляется отдельно)
+                # Проверяем существует ли подарок
+                cursor.execute("SELECT id, price FROM shop_gifts WHERE gift_id = ?", (gift_id,))
+                existing = cursor.fetchone()
             
-            if existing:
-                # Обновляем все кроме price
-                cursor.execute("""
-                    UPDATE shop_gifts SET
-                        slug = ?, title = ?, model_name = ?, model_path = ?,
-                        symbol_name = ?, backdrop_name = ?,
-                        center_color = ?, edge_color = ?, pattern_color = ?, text_color = ?,
-                        available_amount = ?, total_amount = ?,
-                        rarity_model = ?, rarity_symbol = ?, rarity_backdrop = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE gift_id = ?
-                """, (
-                    slug, title, model_name, model_path, symbol_name, backdrop_name,
-                    center_color, edge_color, pattern_color, text_color,
-                    available_amount, total_amount,
-                    rarity_model, rarity_symbol, rarity_backdrop,
-                    gift_id
-                ))
-            else:
-                # Новый подарок - вставляем с price = 0 (будет обновлен price_updater)
-                cursor.execute("""
-                    INSERT INTO shop_gifts 
-                    (gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
-                     center_color, edge_color, pattern_color, text_color,
-                     available_amount, total_amount, price,
-                     rarity_model, rarity_symbol, rarity_backdrop, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)
-                """, (
-                    gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
-                    center_color, edge_color, pattern_color, text_color,
-                    available_amount, total_amount,
-                    rarity_model, rarity_symbol, rarity_backdrop
-                ))
+                if existing:
+                    # Обновляем все кроме price
+                    cursor.execute("""
+                        UPDATE shop_gifts SET
+                            slug = ?, title = ?, model_name = ?, model_path = ?,
+                            symbol_name = ?, backdrop_name = ?,
+                            center_color = ?, edge_color = ?, pattern_color = ?, text_color = ?,
+                            available_amount = ?, total_amount = ?,
+                            rarity_model = ?, rarity_symbol = ?, rarity_backdrop = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE gift_id = ?
+                    """, (
+                        slug, title, model_name, model_path, symbol_name, backdrop_name,
+                        center_color, edge_color, pattern_color, text_color,
+                        available_amount, total_amount,
+                        rarity_model, rarity_symbol, rarity_backdrop,
+                        gift_id
+                    ))
+                else:
+                    # Новый подарок - вставляем с price = 0 (будет обновлен price_updater)
+                    cursor.execute("""
+                        INSERT INTO shop_gifts 
+                        (gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
+                         center_color, edge_color, pattern_color, text_color,
+                         available_amount, total_amount, price,
+                         rarity_model, rarity_symbol, rarity_backdrop, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """, (
+                        gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
+                        center_color, edge_color, pattern_color, text_color,
+                        available_amount, total_amount,
+                        rarity_model, rarity_symbol, rarity_backdrop
+                    ))
+        except (AttributeError, ConnectionError) as e:
+            # Pyrogram connection lost during iteration
+            print(f"⚠️  Pyrogram connection lost: {e}")
         
         conn.commit()
         conn.close()
@@ -189,5 +193,7 @@ async def gift_parser_loop():
         
         try:
             await parse_gifts()
+        except (AttributeError, ConnectionError) as e:
+            print(f"⚠️  Pyrogram connection error (will retry): {e}")
         except Exception as e:
             print(f"❌ Ошибка в gift_parser_loop: {e}")

@@ -16,7 +16,7 @@ function BannedScreen({ botUsername }) {
         </p>
         
         <button className="banned-appeal-btn" onClick={handleAppeal}>
-          Обжаловать
+          <span className="button-main-text">Обжалование</span>
         </button>
       </div>
     </div>

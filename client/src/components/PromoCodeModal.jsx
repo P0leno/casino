@@ -454,16 +454,15 @@ function PromoCodeModal({ isOpen, onClose }) {
               )}
             </div>
           </div>
+        </div>
+      )}
 
       {/* Диалог вывода средств */}
       {showWithdrawalDialog && (
         <>
           <div className="promo-withdrawal-backdrop" onClick={() => setShowWithdrawalDialog(false)} />
           <div className="promo-withdrawal-sheet">
-            <div className="promo-withdrawal-header">
-              <h3>Вывод средств</h3>
-              <button className="promo-withdrawal-close" onClick={() => setShowWithdrawalDialog(false)}>×</button>
-            </div>
+            <button className="promo-close-btn" onClick={() => setShowWithdrawalDialog(false)}>×</button>
             
             <div className="promo-withdrawal-content">
               <div>
@@ -480,13 +479,17 @@ function PromoCodeModal({ isOpen, onClose }) {
                   Сумма вывода
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className="promo-withdrawal-input"
                   placeholder="0"
                   value={withdrawalAmount}
-                  onChange={(e) => setWithdrawalAmount(e.target.value)}
-                  min="1"
-                  max={refBalance}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '')
+                    setWithdrawalAmount(value)
+                  }}
+                  maxLength="10"
                 />
               </div>
               
@@ -509,8 +512,6 @@ function PromoCodeModal({ isOpen, onClose }) {
             </div>
           </div>
         </>
-      )}
-        </div>
       )}
     </>
   )
