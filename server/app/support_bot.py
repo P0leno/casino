@@ -11,8 +11,9 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReactionTypeEmoji, PreCheckoutQuery, LabeledPrice
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
-from app.config import DB_PATH, BOT_TOKEN, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS
+from app.config import DB_PATH, BOT_TOKEN, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS, SERVER_URL
 import json
+import os
 
 # Антиспам: счётчики сообщений
 spam_counters = defaultdict(list)  # user_id -> [timestamps]
@@ -230,6 +231,9 @@ def close_dialog(dialog_id: int):
     )
     conn.commit()
     conn.close()
+    
+    # Удаляем фото диалога
+    delete_dialog_photos(dialog_id)
 
 def update_last_response(dialog_id: int):
     """Обновить время последнего ответа"""
@@ -241,6 +245,56 @@ def update_last_response(dialog_id: int):
     )
     conn.commit()
     conn.close()
+
+def save_message_to_dialog(dialog_id: int, sender_type: str, sender_name: str, message_text: str = None, photo_path: str = None):
+    """Сохранить сообщение в историю диалога"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO dialog_messages (dialog_id, sender_type, sender_name, message_text, photo_path) VALUES (?, ?, ?, ?, ?)",
+        (dialog_id, sender_type, sender_name, message_text, photo_path)
+    )
+    conn.commit()
+    conn.close()
+
+async def download_photo(photo_file_id: str, dialog_id: int) -> str:
+    """Скачать фото и сохранить в app/temp"""
+    try:
+        # Получаем файл
+        file = await bot.get_file(photo_file_id)
+        file_path = file.file_path
+        
+        # Создаем имя файла
+        file_extension = file_path.split('.')[-1]
+        filename = f"dialog_{dialog_id}_{photo_file_id}.{file_extension}"
+        local_path = f"app/temp/{filename}"
+        
+        # Скачиваем
+        await bot.download_file(file_path, local_path)
+        
+        return local_path
+    except Exception as e:
+        print(f"Error downloading photo: {e}")
+        return None
+
+def delete_dialog_photos(dialog_id: int):
+    """Удалить все фото диалога из app/temp"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT photo_path FROM dialog_messages WHERE dialog_id = ? AND photo_path IS NOT NULL",
+            (dialog_id,)
+        )
+        photos = cursor.fetchall()
+        conn.close()
+        
+        for (photo_path,) in photos:
+            if photo_path and os.path.exists(photo_path):
+                os.remove(photo_path)
+                print(f"Deleted photo: {photo_path}")
+    except Exception as e:
+        print(f"Error deleting dialog photos: {e}")
 
 def check_spam(user_id: int) -> tuple[bool, int]:
     """
@@ -486,9 +540,17 @@ async def handle_admin_reply(message: Message):
         try:
             print(f"📤 Отправляем ответ пользователю {user_id}")
             
+            photo_path = None
+            message_text = None
+            
             if message.photo:
                 photo = message.photo[-1]
                 caption = message.caption or ""
+                message_text = caption
+                
+                # Скачиваем фото
+                photo_path = await download_photo(photo.file_id, dialog_id)
+                
                 print(f"📷 Отправляем фото с текстом: {caption[:50] if caption else '(пусто)'}")
                 await bot.send_photo(
                     user_id,
@@ -498,6 +560,7 @@ async def handle_admin_reply(message: Message):
                     reply_markup=get_close_keyboard(dialog_id)
                 )
             else:
+                message_text = message.text
                 print(f"💬 Отправляем текст: {message.text[:50] if message.text else '(пусто)'}")
                 await bot.send_message(
                     user_id,
@@ -505,6 +568,9 @@ async def handle_admin_reply(message: Message):
                     parse_mode=ParseMode.HTML,
                     reply_markup=get_close_keyboard(dialog_id)
                 )
+            
+            # Сохраняем ответ в историю
+            save_message_to_dialog(dialog_id, "support", "Поддержка", message_text, photo_path)
             
             # Обновляем время последнего ответа
             update_last_response(dialog_id)
@@ -665,9 +731,14 @@ async def handle_user_message(message: Message):
         # Проверяем текущий статус бана для правильной кнопки
         user_support_banned = is_user_banned_in_support(user_id)
         
+        # Сохраняем сообщение в БД
+        photo_path = None
         if message.photo:
-            # Фото с подписью
+            # Скачиваем фото
             photo = message.photo[-1]
+            photo_path = await download_photo(photo.file_id, dialog_id)
+            
+            # Отправляем в группу
             caption = header + (text if text else "(без текста)")
             await bot.send_photo(
                 SUPPORT_GROUP_ID,
@@ -684,6 +755,9 @@ async def handle_user_message(message: Message):
                 parse_mode=ParseMode.HTML,
                 reply_markup=get_admin_keyboard(dialog_id, user_id, category, user_support_banned)
             )
+        
+        # Сохраняем в историю
+        save_message_to_dialog(dialog_id, "user", username, text if text else None, photo_path)
         
         queue_size = get_queue_size()
         
@@ -716,6 +790,9 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
         
         # Создаем диалог с категорией "Обжалование бана"
         dialog_id = create_dialog(user_id, username, "Обжалование бана")
+        
+        # Сохраняем первое сообщение в историю
+        save_message_to_dialog(dialog_id, "user", username, appeal_message, None)
         
         # Отправляем в группу
         header = (
@@ -765,6 +842,10 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
     
     # Создаем диалог с категорией "Вывод"
     dialog_id = create_dialog(user_id, username, "Вывод")
+    
+    # Сохраняем первое сообщение в историю
+    withdrawal_text = f"💰 Обналичивание реф программы\nСумма: {amount} ⭐\nСпособ: {method}"
+    save_message_to_dialog(dialog_id, "user", username, withdrawal_text, None)
     
     # Отправляем в группу
     header = (
@@ -1210,12 +1291,16 @@ async def handle_close_dialog(callback: CallbackQuery):
             parse_mode=ParseMode.HTML
         )
         
-        # Уведомляем группу
+        # Уведомляем группу с кнопкой HTML
         try:
+            html_button = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📄 HTML", url=f"{SERVER_URL}/api/support/dialog/{dialog_id}")]
+            ])
             await bot.send_message(
                 SUPPORT_GROUP_ID,
                 f"✅ <b>Диалог #{dialog_id} закрыт пользователем</b>",
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                reply_markup=html_button
             )
         except:
             pass

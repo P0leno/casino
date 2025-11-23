@@ -5,9 +5,10 @@ import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
-from app.routers import auth, game, admin, payments, crash, ton_payments, tasks, shop, inventory, promocode, ban
+from app.routers import auth, game, admin, payments, crash, ton_payments, tasks, shop, inventory, promocode, ban, support_html
 from app.bot import start_bot, stop_bot
 from app.pyrogram_client import start_pyrogram, stop_pyrogram
 from app.tasks.spin_notifications import spin_notification_loop
@@ -207,7 +208,12 @@ async def lifespan(app: FastAPI):
     print("✅ Все сервисы остановлены")
 
 def create_app():
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(
+        lifespan=lifespan,
+        docs_url=None,  # Отключаем /docs
+        redoc_url=None,  # Отключаем /redoc
+        openapi_url=None  # Отключаем /openapi.json
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -232,6 +238,10 @@ def create_app():
     app.include_router(inventory.router)
     app.include_router(promocode.router)
     app.include_router(ban.router)
+    app.include_router(support_html.router)
+    
+    # Статические файлы для фото диалогов
+    app.mount("/api/app", StaticFiles(directory="app"), name="app_static")
 
     @app.get("/")
     async def root():

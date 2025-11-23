@@ -273,6 +273,21 @@ def init_db():
     """)
     print("✅ Таблица support_dialogs создана/проверена")
     
+    # Таблица сообщений диалогов
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS dialog_messages (
+            message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dialog_id INTEGER NOT NULL,
+            sender_type TEXT NOT NULL,
+            sender_name TEXT,
+            message_text TEXT,
+            photo_path TEXT,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (dialog_id) REFERENCES support_dialogs(dialog_id)
+        )
+    """)
+    print("✅ Таблица dialog_messages создана/проверена")
+    
     # Таблица сообщений поддержки
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS support_messages (
