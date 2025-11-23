@@ -48,6 +48,8 @@ async def validate(request: ValidateRequest):
         return {"valid": False, "isBanned": False}
     
     # Проверяем режим технических работ ПЕРВЫМ делом
+    print("=" * 80)
+    print("[VALIDATE] Starting maintenance check...")
     try:
         parsed = parse_qs(request.initData)
         user_data = parsed.get('user', [''])[0]
@@ -56,31 +58,57 @@ async def validate(request: ValidateRequest):
             user = json.loads(user_data)
             user_id = user.get('id')
             
+            print(f"[VALIDATE] Parsed user_id: {user_id}")
+            print(f"[VALIDATE] ADMIN_IDS: {ADMIN_IDS}")
+            print(f"[VALIDATE] DB_PATH: {DB_PATH}")
+            
             # Проверяем maintenance_mode
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
-            maintenance_result = cursor.fetchone()
-            conn.close()
             
-            print(f"[MAINTENANCE CHECK] user_id={user_id}, maintenance_result={maintenance_result}, is_admin={user_id in ADMIN_IDS}")
+            # Сначала проверим что таблица существует
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")
+            table_exists = cursor.fetchone()
+            print(f"[VALIDATE] Settings table exists: {table_exists is not None}")
             
-            # Если режим включен и пользователь не админ - блокируем
-            if maintenance_result and maintenance_result[0] == '1':
-                if user_id not in ADMIN_IDS:
-                    print(f"[MAINTENANCE] User {user_id} BLOCKED during maintenance")
-                    return JSONResponse(
-                        status_code=503,
-                        content={
-                            "detail": "Технические работы",
-                            "message": "Ведутся технические работы. Попробуйте позже.",
-                            "maintenance": True
-                        }
-                    )
+            if table_exists:
+                cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+                maintenance_result = cursor.fetchone()
+                print(f"[VALIDATE] Maintenance result from DB: {maintenance_result}")
+                
+                conn.close()
+                
+                is_admin = user_id in ADMIN_IDS
+                print(f"[VALIDATE] user_id={user_id}, maintenance_value={maintenance_result[0] if maintenance_result else 'None'}, is_admin={is_admin}")
+                
+                # Если режим включен и пользователь не админ - блокируем
+                if maintenance_result and maintenance_result[0] == '1':
+                    if not is_admin:
+                        print(f"[MAINTENANCE] ⛔ User {user_id} BLOCKED during maintenance - returning 503")
+                        return JSONResponse(
+                            status_code=503,
+                            content={
+                                "detail": "Технические работы",
+                                "message": "Ведутся технические работы. Попробуйте позже.",
+                                "maintenance": True
+                            }
+                        )
+                    else:
+                        print(f"[MAINTENANCE] ✅ Admin {user_id} ALLOWED during maintenance")
                 else:
-                    print(f"[MAINTENANCE] Admin {user_id} ALLOWED during maintenance")
+                    print(f"[VALIDATE] Maintenance is OFF or not found, continuing...")
+            else:
+                print(f"[VALIDATE] WARNING: settings table does not exist!")
+                conn.close()
+        else:
+            print(f"[VALIDATE] No user data in initData")
     except Exception as e:
-        print(f"[MAINTENANCE] Error checking maintenance: {e}")
+        print(f"[MAINTENANCE] ❌ ERROR checking maintenance: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    print("[VALIDATE] Maintenance check completed, continuing to normal flow...")
+    print("=" * 80)
     
     try:
         parsed = parse_qs(request.initData)
