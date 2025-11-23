@@ -305,3 +305,34 @@
   border-top: 1px solid #3a3a3c;
   line-height: 1.4;
 }
+
+/* TON Payment styles */
+.payment-info {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row span:first-child {
+  color: #8e8e93;
+  font-size: 14px;
+}
+
+.info-row span:last-child {
+  color: white;
+  font-size: 14px;
+}
