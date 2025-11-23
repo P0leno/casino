@@ -1112,6 +1112,29 @@ async def handle_miniapp_unban_user(callback: CallbackQuery):
         # Закрываем диалог обжалования
         close_dialog(dialog_id)
         
+        # Генерируем и отправляем HTML файл в группу
+        try:
+            from aiogram.types import FSInputFile
+            
+            # Генерируем HTML
+            html_path = await generate_dialog_html(dialog_id)
+            
+            if html_path and os.path.exists(html_path):
+                # Отправляем HTML файл
+                html_file = FSInputFile(html_path)
+                await bot.send_document(
+                    SUPPORT_GROUP_ID,
+                    html_file,
+                    caption=f"✅ <b>Пользователь разблокирован в MiniApp - Диалог #{dialog_id}</b>",
+                    parse_mode=ParseMode.HTML
+                )
+                
+                # Удаляем HTML файл
+                os.remove(html_path)
+                print(f"Deleted HTML: {html_path}")
+        except Exception as e:
+            print(f"Error sending dialog HTML: {e}")
+        
         # Убираем кнопки (диалог закрыт)
         await callback.message.edit_reply_markup(reply_markup=None)
         await callback.answer("✅ Пользователь разблокирован в MiniApp, диалог закрыт")
@@ -1160,14 +1183,50 @@ async def handle_reject_appeal(callback: CallbackQuery):
         # Закрываем диалог
         close_dialog(dialog_id)
         
-        # Добавляем сообщение в группу
-        await bot.send_message(
-            SUPPORT_GROUP_ID,
-            f"❌ <b>Обжалование отклонено</b>\n\n"
-            f"Пользователь забанен в поддержке на 1 день за ложное обращение.\n"
-            f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",
-            parse_mode=ParseMode.HTML
-        )
+        # Генерируем и отправляем HTML файл в группу
+        try:
+            from aiogram.types import FSInputFile
+            
+            # Генерируем HTML
+            html_path = await generate_dialog_html(dialog_id)
+            
+            if html_path and os.path.exists(html_path):
+                # Отправляем HTML файл
+                html_file = FSInputFile(html_path)
+                await bot.send_document(
+                    SUPPORT_GROUP_ID,
+                    html_file,
+                    caption=f"❌ <b>Обжалование отклонено - Диалог #{dialog_id}</b>\n\n"
+                            f"Пользователь забанен в поддержке на 1 день за ложное обращение.\n"
+                            f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",
+                    parse_mode=ParseMode.HTML
+                )
+                
+                # Удаляем HTML файл
+                os.remove(html_path)
+                print(f"Deleted HTML: {html_path}")
+            else:
+                # Если HTML не создан, просто отправляем текст
+                await bot.send_message(
+                    SUPPORT_GROUP_ID,
+                    f"❌ <b>Обжалование отклонено</b>\n\n"
+                    f"Пользователь забанен в поддержке на 1 день за ложное обращение.\n"
+                    f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",
+                    parse_mode=ParseMode.HTML
+                )
+        except Exception as e:
+            print(f"Error sending dialog HTML: {e}")
+            # Пробуем хотя бы отправить текст
+            try:
+                await bot.send_message(
+                    SUPPORT_GROUP_ID,
+                    f"❌ <b>Обжалование отклонено</b>\n\n"
+                    f"Пользователь забанен в поддержке на 1 день за ложное обращение.\n"
+                    f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",
+                    parse_mode=ParseMode.HTML
+                )
+            except:
+                pass
         
         # Убираем кнопки
         await callback.message.edit_reply_markup(reply_markup=None)
@@ -1260,6 +1319,29 @@ async def handle_withdraw_done(callback: CallbackQuery):
             
             # Закрываем диалог
             close_dialog(dialog_id)
+            
+            # Генерируем и отправляем HTML файл в группу
+            try:
+                from aiogram.types import FSInputFile
+                
+                # Генерируем HTML
+                html_path = await generate_dialog_html(dialog_id)
+                
+                if html_path and os.path.exists(html_path):
+                    # Отправляем HTML файл
+                    html_file = FSInputFile(html_path)
+                    await bot.send_document(
+                        SUPPORT_GROUP_ID,
+                        html_file,
+                        caption=f"✅ <b>Вывод выполнен для диалога #{dialog_id}</b>",
+                        parse_mode=ParseMode.HTML
+                    )
+                    
+                    # Удаляем HTML файл
+                    os.remove(html_path)
+                    print(f"Deleted HTML: {html_path}")
+            except Exception as e:
+                print(f"Error sending dialog HTML: {e}")
             
             await callback.message.edit_reply_markup(reply_markup=None)
             await callback.answer("✅ Вывод отмечен как выполненный")
