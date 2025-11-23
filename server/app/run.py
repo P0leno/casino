@@ -27,10 +27,11 @@ gift_parser_task = None
 price_updater_task = None
 ton_price_task = None
 support_bot_task = None
+cryptobot_checker_task = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, price_updater_task, ton_price_task, support_bot_task
+    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, price_updater_task, ton_price_task, support_bot_task, cryptobot_checker_task
     
     # Инициализация БД
     init_db()
@@ -114,10 +115,25 @@ async def lifespan(app: FastAPI):
     support_bot_task = asyncio.create_task(start_support_bot())
     print("✅ Запущен бот поддержки (polling mode)")
     
+    # CryptoBot checker (каждые 30 секунд)
+    from app.tasks.cryptobot_invoice_checker import cryptobot_checker_loop
+    cryptobot_checker_task = asyncio.create_task(cryptobot_checker_loop())
+    print("✅ Запущен CryptoBot Invoice Checker (каждые 30 секунд)")
+    
     yield
     
     # Graceful shutdown
     print("🛑 Начинается остановка сервисов...")
+    
+    # Останавливаем CryptoBot checker
+    if cryptobot_checker_task:
+        cryptobot_checker_task.cancel()
+        try:
+            await asyncio.wait_for(cryptobot_checker_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  CryptoBot checker не завершился")
+        except asyncio.CancelledError:
+            pass
     
     # Останавливаем фоновую задачу уведомлений
     if notification_task:

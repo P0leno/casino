@@ -140,7 +140,7 @@ async def check_pending_invoices():
         import traceback
         traceback.print_exc()
 
-async def main():
+async def cryptobot_checker_loop():
     """Основной цикл проверки"""
     print("🚀 CryptoBot Invoice Checker started")
     print(f"Checking every 30 seconds...")
@@ -149,7 +149,7 @@ async def main():
         try:
             await check_pending_invoices()
         except Exception as e:
-            print(f"Error in main loop: {e}")
+            print(f"Error in cryptobot checker loop: {e}")
             import traceback
             traceback.print_exc()
         
@@ -157,4 +157,4 @@ async def main():
         await asyncio.sleep(30)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(cryptobot_checker_loop())

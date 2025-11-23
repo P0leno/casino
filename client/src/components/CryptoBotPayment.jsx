@@ -184,7 +184,7 @@ function CryptoBotPayment({ onNavigateBack }) {
   return (
     <div className="topup-page">
       <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>💎 Пополнение через USDT</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>CryptoBot</h2>
 
         <div className="topup-body">
           {/* Количество USDT по середине */}

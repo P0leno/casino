@@ -362,7 +362,7 @@ function TopUp({ onNavigateBack }) {
             className={`payment-tab ${paymentMethod === 'cryptobot' ? 'active' : ''}`}
             onClick={() => setPaymentMethod('cryptobot')}
           >
-            💎 USDT
+            CryptoBot
           </button>
         </div>
 
