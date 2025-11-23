@@ -91,42 +91,14 @@ function App() {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     
-    // Сначала проверяем режим технических работ
-    fetch(`${apiUrl}/api/check-maintenance`)
+    // Проверяем бан (НЕ проверяем maintenance здесь - он проверится в validate)
+    fetch(`${apiUrl}/api/check-ban`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData })
+    })
       .then(res => res.json())
       .then(data => {
-        if (data.maintenance) {
-          // Режим тех. работ включен
-          setMaintenanceMode(true)
-          setLoading(false)
-          return null // Прерываем дальнейшую загрузку
-        }
-        
-        // Если режим выключен - продолжаем проверку бана
-        return fetch(`${apiUrl}/api/check-ban`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData })
-        })
-      })
-      .then(res => {
-        if (res === null) return null // Прерываем если режим тех.работ
-        
-        // Проверяем статус 503 (maintenance)
-        if (res.status === 503) {
-          return res.json().then(errorData => {
-            if (errorData.maintenance) {
-              setMaintenanceMode(true)
-              setLoading(false)
-            }
-            return null
-          })
-        }
-        
-        return res.json()
-      })
-      .then(data => {
-        if (data === null) return null // Прерываем если режим тех.работ
         
         if (data.banned) {
           setIsBanned(true)
