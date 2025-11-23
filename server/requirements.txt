@@ -4,3 +4,5 @@ python-dotenv==1.0.0
 aiogram==3.22
 pyrofork==2.3.68
 tgcrypto==1.2.5
+qrcode==7.4.2
+Pillow==10.1.0

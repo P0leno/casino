@@ -1,11 +1,14 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 import json
 import sqlite3
 from datetime import datetime
 import random
 import string
+import qrcode
+import io
+import base64
 from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 
@@ -15,62 +18,63 @@ router = APIRouter(prefix="/api/ton", tags=["ton"])
 # Получите адрес в Tonkeeper: Receive → Copy address
 MERCHANT_ADDRESS = "UQA3XG-IIuVK9VetB8iUft4aavAT1OSyBmoT9ipWh9PUCN5Y"  # ЗАМЕНИТЕ НА СВОЙ
 
-class ConnectWalletRequest(BaseModel):
-    initData: str
-    walletAddress: str | None
-
 class CreatePaymentRequest(BaseModel):
     initData: str
-    amount: int  # Количество звезд
+    tonAmount: float  # Количество TON (не Stars!)
 
 def generate_payment_code():
-    """Генерирует уникальный 16-значный код"""
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    """Генерирует уникальный 8-значный код"""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
-@router.post("/connect-wallet")
-async def connect_wallet(request: ConnectWalletRequest):
-    """Сохраняет адрес TON кошелька пользователя"""
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
-    
-    if not is_valid:
-        return {"success": False, "message": "Invalid initData"}
-    
+def get_ton_usd_rate():
+    """Получить текущий курс TON/USD из базы данных"""
     try:
-        parsed = parse_qs(request.initData)
-        user_data = parsed.get('user', [''])[0]
-        
-        if not user_data:
-            return {"success": False, "message": "User data not found"}
-        
-        user = json.loads(user_data)
-        user_id = user.get('id')
-        
-        # Сохраняем адрес кошелька в БД
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
-        cursor.execute(
-            "UPDATE users SET ton_wallet_address = ? WHERE id = ?",
-            (request.walletAddress, user_id)
-        )
-        
-        conn.commit()
+        cursor.execute("SELECT value FROM settings WHERE key = 'ton_price_usd'")
+        result = cursor.fetchone()
         conn.close()
-        
-        if request.walletAddress:
-            print(f"✅ TON wallet connected: user={user_id}, address={request.walletAddress[:8]}...")
-            return {"success": True, "message": "Кошелек подключен"}
-        else:
-            print(f"✅ TON wallet disconnected: user={user_id}")
-            return {"success": True, "message": "Кошелек отключен"}
-        
-    except Exception as e:
-        print(f"Error connecting wallet: {e}")
-        return {"success": False, "message": "Ошибка подключения кошелька"}
+        if result:
+            return float(result[0])
+    except:
+        pass
+    return 5.5  # Fallback курс
+
+def calculate_stars_from_ton(ton_amount: float) -> int:
+    """
+    Рассчитать количество Stars из TON с бонусом +5%
+    50 Stars = $0.75
+    """
+    ton_usd_rate = get_ton_usd_rate()
+    usd_amount = ton_amount * ton_usd_rate
+    
+    # 50 stars = $0.75, значит 1 star = $0.015
+    stars_base = int(usd_amount / 0.015)
+    
+    # +5% бонус
+    stars_with_bonus = int(stars_base * 1.05)
+    
+    return stars_with_bonus
+
+def generate_qr_code(data: str) -> str:
+    """Генерирует QR код и возвращает base64"""
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Конвертируем в base64
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    return f"data:image/png;base64,{img_base64}"
 
 @router.post("/create-payment")
 async def create_payment(request: CreatePaymentRequest):
-    """Создает платеж TON - генерирует код и сохраняет в payments"""
+    """Создает платеж TON - генерирует QR код и deep link"""
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
     
     if not is_valid:
@@ -86,41 +90,28 @@ async def create_payment(request: CreatePaymentRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        # Проверяем что кошелек подключен
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        ton_amount = request.tonAmount
         
-        cursor.execute("SELECT ton_wallet_address FROM users WHERE id = ?", (user_id,))
-        result = cursor.fetchone()
+        if ton_amount < 0.1:
+            return {"success": False, "message": "Минимальная сумма 0.1 TON"}
         
-        if not result or not result[0]:
-            conn.close()
-            return {"success": False, "message": "Сначала подключите кошелек"}
+        # Рассчитываем Stars с +5% бонусом
+        stars_amount = calculate_stars_from_ton(ton_amount)
         
-        wallet_address = result[0]
-        
-        # Рассчитываем сумму в TON
-        # 50 звезд = $0.75
-        stars_in_usd = (request.amount / 50) * 0.75
-        
-        # TODO: Получить актуальный курс TON/USD через API
-        # Пока используем примерный курс ~$5.5 за 1 TON
-        ton_rate = 5.5
-        ton_amount = stars_in_usd / ton_rate
-        
-        # Генерируем уникальный payment код
+        # Генерируем уникальный payment код (комментарий)
         payment_code = generate_payment_code()
         
         # Создаем таблицу payments если не существует
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS payments (
+            CREATE TABLE IF NOT EXISTS ton_payments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 payment_code TEXT UNIQUE NOT NULL,
-                payment_method TEXT NOT NULL,
+                amount_ton REAL NOT NULL,
                 amount_stars INTEGER NOT NULL,
-                amount_ton REAL,
-                amount_usd REAL,
                 status TEXT DEFAULT 'pending',
                 created_at TEXT NOT NULL,
                 confirmed_at TEXT,
@@ -129,59 +120,74 @@ async def create_payment(request: CreatePaymentRequest):
         """)
         
         cursor.execute(
-            """INSERT INTO payments 
-               (user_id, payment_code, payment_method, amount_stars, amount_ton, amount_usd, created_at)
-               VALUES (?, ?, 'ton', ?, ?, ?, ?)""",
-            (user_id, payment_code, request.amount, ton_amount, stars_in_usd, datetime.now().isoformat())
+            """INSERT INTO ton_payments 
+               (user_id, payment_code, amount_ton, amount_stars, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (user_id, payment_code, ton_amount, stars_amount, datetime.now().isoformat())
         )
         
         conn.commit()
         conn.close()
         
-        print(f"✅ TON payment created: user={user_id}, code={payment_code}, amount={ton_amount} TON")
+        # Конвертируем в nanoTON
+        amount_nano = int(ton_amount * 1e9)
+        
+        # Формируем deep link (ton:// работает для всех кошельков)
+        # tonkeeper:// специфичен для Tonkeeper
+        comment_encoded = quote(payment_code)
+        deep_link_ton = f"ton://transfer/{MERCHANT_ADDRESS}?amount={amount_nano}&text={comment_encoded}"
+        deep_link_tonkeeper = f"tonkeeper://transfer/{MERCHANT_ADDRESS}?amount={amount_nano}&text={comment_encoded}"
+        
+        # Генерируем QR код с ton:// ссылкой
+        qr_code_base64 = generate_qr_code(deep_link_ton)
+        
+        print(f"✅ TON payment created: user={user_id}, code={payment_code}, amount={ton_amount} TON -> {stars_amount} Stars")
         
         return {
             "success": True,
             "tonAmount": ton_amount,
-            "usdAmount": stars_in_usd,
+            "starsAmount": stars_amount,
             "paymentCode": payment_code,
-            "walletAddress": wallet_address,
-            "merchantAddress": MERCHANT_ADDRESS  # Адрес для отправки платежа
+            "merchantAddress": MERCHANT_ADDRESS,
+            "qrCode": qr_code_base64,
+            "deepLinkTon": deep_link_ton,
+            "deepLinkTonkeeper": deep_link_tonkeeper
         }
         
     except Exception as e:
         print(f"Error creating payment: {e}")
+        import traceback
+        traceback.print_exc()
         return {"success": False, "message": "Ошибка создания платежа"}
 
-@router.post("/get-wallet")
-async def get_wallet(request: BaseModel):
-    """Получает сохраненный адрес кошелька"""
+@router.post("/calculate-stars")
+async def calculate_stars(request: CreatePaymentRequest):
+    """Рассчитать количество Stars из TON с +5% бонусом"""
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
     
     if not is_valid:
-        return {"success": False, "wallet": None}
+        return {"success": False, "message": "Invalid initData"}
     
     try:
-        parsed = parse_qs(request.initData)
-        user_data = parsed.get('user', [''])[0]
+        ton_amount = request.tonAmount
         
-        if not user_data:
-            return {"success": False, "wallet": None}
+        if ton_amount < 0.1:
+            return {"success": False, "message": "Минимальная сумма 0.1 TON", "stars": 0}
         
-        user = json.loads(user_data)
-        user_id = user.get('id')
+        # Рассчитываем Stars с +5% бонусом
+        stars_amount = calculate_stars_from_ton(ton_amount)
+        ton_usd_rate = get_ton_usd_rate()
+        usd_amount = ton_amount * ton_usd_rate
         
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT ton_wallet_address FROM users WHERE id = ?", (user_id,))
-        result = cursor.fetchone()
-        conn.close()
-        
-        wallet = result[0] if result and result[0] else None
-        
-        return {"success": True, "wallet": wallet}
+        return {
+            "success": True,
+            "stars": stars_amount,
+            "tonAmount": ton_amount,
+            "usdAmount": round(usd_amount, 2),
+            "tonUsdRate": ton_usd_rate,
+            "bonusPercent": 5
+        }
         
     except Exception as e:
-        print(f"Error getting wallet: {e}")
-        return {"success": False, "wallet": None}
+        print(f"Error calculating stars: {e}")
+        return {"success": False, "message": "Ошибка расчета", "stars": 0}
