@@ -110,11 +110,23 @@ function App() {
         })
       })
       .then(res => {
-        if (res === null) return null // Прерываем если teh.raboty
+        if (res === null) return null // Прерываем если режим тех.работ
+        
+        // Проверяем статус 503 (maintenance)
+        if (res.status === 503) {
+          return res.json().then(errorData => {
+            if (errorData.maintenance) {
+              setMaintenanceMode(true)
+              setLoading(false)
+            }
+            return null
+          })
+        }
+        
         return res.json()
       })
       .then(data => {
-        if (data === null) return null // Прерываем если teh.raboty
+        if (data === null) return null // Прерываем если режим тех.работ
         
         if (data.banned) {
           setIsBanned(true)
@@ -131,14 +143,25 @@ function App() {
         })
       })
       .then(res => {
-        // Если res === null, значит пользователь забанен
+        // Если res === null, значит пользователь забанен или режим тех.работ
         if (res === null) return null
+        
+        // Проверяем статус 503 (maintenance)
+        if (res.status === 503) {
+          return res.json().then(errorData => {
+            if (errorData.maintenance) {
+              setMaintenanceMode(true)
+              setLoading(false)
+            }
+            return null
+          })
+        }
         
         console.log('Validate response status:', res.status)
         return res.json()
       })
       .then(data => {
-        // Если data === null, значит пользователь забанен
+        // Если data === null, значит пользователь забанен или режим тех.работ
         if (data === null) return
         
         console.log('Validate response data:', data)

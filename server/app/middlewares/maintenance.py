@@ -35,6 +35,7 @@ async def maintenance_middleware(request: Request, call_next):
         '/api/validate',
         '/api/check-admin',
         '/api/check-maintenance',
+        '/api/check-ban',
         '/api/health',
         '/'
     ]
@@ -53,38 +54,47 @@ async def maintenance_middleware(request: Request, call_next):
     if body:
         try:
             import json
+            from urllib.parse import parse_qs
+            
             data = json.loads(body.decode())
             init_data = data.get('initData')
             
             if init_data:
-                # Проверяем валидность и получаем user_id
-                user_data = verify_init_data(init_data)
-                
-                if user_data:
-                    user_id = user_data.get('telegram_id')
+                # Парсим initData для получения user_id
+                try:
+                    parsed = parse_qs(init_data)
+                    user_data_str = parsed.get('user', [''])[0]
                     
-                    # Проверяем что это админ
-                    if user_id in ADMIN_IDS:
-                        # Админ - пропускаем
-                        print(f"[MAINTENANCE] Admin {user_id} allowed during maintenance")
+                    if user_data_str:
+                        user_obj = json.loads(user_data_str)
+                        user_id = user_obj.get('id')
                         
-                        # Восстанавливаем body для следующих обработчиков
-                        async def receive():
-                            return {"type": "http.request", "body": body}
-                        
-                        request._receive = receive
-                        return await call_next(request)
-                    else:
-                        # Не админ - блокируем
-                        print(f"[MAINTENANCE] User {user_id} blocked during maintenance")
-                        return JSONResponse(
-                            status_code=503,
-                            content={
-                                "detail": "Технические работы",
-                                "message": "Ведутся технические работы. Попробуйте позже.",
-                                "maintenance": True
-                            }
-                        )
+                        # Проверяем что это админ
+                        if user_id and user_id in ADMIN_IDS:
+                            # Админ - пропускаем
+                            print(f"[MAINTENANCE] Admin {user_id} allowed during maintenance")
+                            
+                            # Восстанавливаем body для следующих обработчиков
+                            async def receive():
+                                return {"type": "http.request", "body": body}
+                            
+                            request._receive = receive
+                            return await call_next(request)
+                        else:
+                            # Не админ - блокируем
+                            print(f"[MAINTENANCE] User {user_id} blocked during maintenance")
+                            return JSONResponse(
+                                status_code=503,
+                                content={
+                                    "detail": "Технические работы",
+                                    "message": "Ведутся технические работы. Попробуйте позже.",
+                                    "maintenance": True
+                                }
+                            )
+                except Exception as parse_error:
+                    print(f"[MAINTENANCE] Parse error: {parse_error}")
+                    # Не смогли распарсить - блокируем
+                    pass
         except Exception as e:
             print(f"Maintenance middleware error: {e}")
     
