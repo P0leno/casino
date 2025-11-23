@@ -57,11 +57,38 @@ def calculate_stars_from_ton(ton_amount: float) -> int:
     
     return stars_with_bonus
 
+def convert_address_to_raw(address: str) -> str:
+    """
+    Конвертировать user-friendly адрес в raw формат (0:hex)
+    UQA3XG-I... -> 0:375c6f88...
+    """
+    # Если адрес уже в raw формате, возвращаем как есть
+    if address.startswith("0:") or address.startswith("-1:"):
+        return address
+    
+    # Простая конвертация для базового случая
+    # В production лучше использовать библиотеку pytoniq или tonpy
+    try:
+        import base64
+        # Декодируем base64
+        decoded = base64.b64decode(address.replace("-", "+").replace("_", "/") + "==")
+        # Первый байт - флаги, второй - workchain
+        workchain = decoded[1] if len(decoded) > 1 else 0
+        # Следующие 32 байта - адрес
+        addr_bytes = decoded[2:34] if len(decoded) >= 34 else decoded[2:]
+        addr_hex = addr_bytes.hex()
+        
+        return f"{workchain}:{addr_hex}"
+    except Exception as e:
+        print(f"Error converting address: {e}, using as is: {address}")
+        return address
+
 async def get_transactions(address: str, limit: int = 10):
     """Получить последние транзакции адреса"""
     global last_checked_lt
     
     try:
+        # TONAPI требует адрес в любом формате, но проверим оба
         url = f"{TON_API_URL}/blockchain/accounts/{address}/transactions"
         params = {"limit": limit}
         
@@ -69,12 +96,16 @@ async def get_transactions(address: str, limit: int = 10):
             async with session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-                    return data.get("transactions", [])
+                    transactions = data.get("transactions", [])
+                    print(f"📬 Fetched {len(transactions)} transactions from TONAPI")
+                    return transactions
                 else:
-                    print(f"TON API error: {response.status}")
+                    print(f"TON API error: {response.status}, response: {await response.text()}")
                     return []
     except Exception as e:
         print(f"Error fetching transactions: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 async def notify_user(user_id: int, stars_amount: int, ton_amount: float):
@@ -98,45 +129,66 @@ async def notify_user(user_id: int, stars_amount: int, ton_amount: float):
 async def process_transaction(tx):
     """Обработать входящую транзакцию"""
     try:
-        # Проверяем что это входящая транзакция
+        # Получаем все сообщения в транзакции
         in_msg = tx.get("in_msg", {})
-        if not in_msg:
-            return
+        out_msgs = tx.get("out_msgs", [])
         
-        # Получаем данные транзакции
-        value = int(in_msg.get("value", 0))
+        # Ищем входящее сообщение с TON
+        value = 0
+        comment = ""
+        
+        # Проверяем in_msg
+        if in_msg:
+            value = int(in_msg.get("value", 0))
+            message = in_msg.get("message", "")
+            decoded = in_msg.get("decoded_body", {})
+            comment = decoded.get("text", message) if decoded else message
+        
+        # Если нет in_msg, проверяем out_msgs
+        if value <= 0 and out_msgs:
+            for msg in out_msgs:
+                msg_value = int(msg.get("value", 0))
+                if msg_value > 0:
+                    value = msg_value
+                    message = msg.get("message", "")
+                    decoded = msg.get("decoded_body", {})
+                    comment = decoded.get("text", message) if decoded else message
+                    break
+        
         if value <= 0:
+            print(f"⏭️  Transaction with no value, skipping")
             return
         
         # Конвертируем nanoTON в TON
         ton_amount = value / 1e9
         
-        # Получаем комментарий
-        message = in_msg.get("message", "")
-        decoded_message = in_msg.get("decoded_body", {})
-        comment = decoded_message.get("text", message) if decoded_message else message
-        
         if not comment:
-            print(f"Transaction without comment: {ton_amount} TON")
+            print(f"💬 Transaction without comment: {ton_amount} TON, tx_hash: {tx.get('hash', 'unknown')}")
             return
         
         # Убираем пробелы
         comment = comment.strip()
         
-        print(f"Found transaction: {ton_amount} TON, comment: {comment}")
+        print(f"🔍 Found transaction: {ton_amount} TON, comment: '{comment}', tx_hash: {tx.get('hash', 'unknown')[:8]}...")
         
-        # Ищем инвойс по коду платежа
+        # Ищем инвойс по коду платежа (регистронезависимо)
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
         cursor.execute(
-            "SELECT id, user_id, amount_ton, status FROM ton_invoices WHERE payment_code = ?",
+            "SELECT id, user_id, amount_ton, status FROM ton_invoices WHERE UPPER(payment_code) = UPPER(?)",
             (comment,)
         )
         invoice = cursor.fetchone()
         
         if not invoice:
-            print(f"Invoice not found for payment_code: {comment}")
+            print(f"❌ Invoice not found for payment_code: {comment}")
+            # Проверим все pending инвойсы для отладки
+            cursor.execute("SELECT payment_code FROM ton_invoices WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5")
+            pending = cursor.fetchall()
+            if pending:
+                codes = [p[0] for p in pending]
+                print(f"   Pending payment codes in DB: {codes}")
             conn.close()
             return
         
@@ -192,11 +244,12 @@ async def check_new_transactions():
     """Проверить новые транзакции"""
     global last_checked_lt
     
-    print(f"Checking transactions for {MERCHANT_ADDRESS}...")
+    print(f"🔍 Checking TON transactions for wallet: {MERCHANT_ADDRESS}")
     
     transactions = await get_transactions(MERCHANT_ADDRESS, limit=20)
     
     if not transactions:
+        print("📭 No new transactions")
         return
     
     # Сортируем по lt (logical time) в порядке возрастания
