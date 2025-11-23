@@ -291,10 +291,22 @@ def get_main_keyboard():
 
 def get_close_keyboard(dialog_id: int):
     """Клавиатура с кнопкой закрытия диалога и приоритетом"""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Закрыть обращение", callback_data=f"close_{dialog_id}")],
-        [InlineKeyboardButton(text="⭐ Приоритетная очередь", callback_data=f"priority_{dialog_id}")]
-    ])
+    # Проверяем isPriority в БД
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT isPriority FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    is_priority = result[0] if result else 0
+    
+    buttons = [[InlineKeyboardButton(text="✅ Закрыть обращение", callback_data=f"close_{dialog_id}")]]
+    
+    # Показываем кнопку приоритета только если не куплена
+    if not is_priority:
+        buttons.append([InlineKeyboardButton(text="⭐ Приоритетная очередь", callback_data=f"priority_{dialog_id}")])
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
 
 def get_admin_keyboard(dialog_id: int, user_id: int, category: str, support_banned: bool = False):
@@ -941,7 +953,8 @@ async def handle_reject_appeal(callback: CallbackQuery):
         close_dialog(dialog_id)
         
         # Добавляем сообщение в группу
-        await callback.message.reply_text(
+        await bot.send_message(
+            SUPPORT_GROUP_ID,
             f"❌ <b>Обжалование отклонено</b>\n\n"
             f"Пользователь забанен в поддержке на 1 день за ложное обращение.\n"
             f"Разбан: {tomorrow.strftime('%d.%m.%Y %H:%M')}",

@@ -105,6 +105,16 @@ def init_db():
                 ('queue_offset', str(offset))
             )
             print(f"✅ Инициализирована надбавка очереди: {offset}")
+        
+        # Миграция: добавление isPriority в support_dialogs
+        cursor.execute("PRAGMA table_info(support_dialogs)")
+        dialogs_columns = [col[1] for col in cursor.fetchall()]
+        
+        if 'isPriority' not in dialogs_columns:
+            print("⚙️  Миграция: добавление поля isPriority в support_dialogs...")
+            cursor.execute("ALTER TABLE support_dialogs ADD COLUMN isPriority INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ Миграция завершена: isPriority добавлен")
     except Exception as e:
         print(f"⚠️  Ошибка миграции: {e}")
     cursor.execute("""
@@ -257,7 +267,8 @@ def init_db():
             status TEXT DEFAULT 'open',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             closed_at TIMESTAMP,
-            last_response_at TIMESTAMP
+            last_response_at TIMESTAMP,
+            isPriority INTEGER DEFAULT 0
         )
     """)
     print("✅ Таблица support_dialogs создана/проверена")

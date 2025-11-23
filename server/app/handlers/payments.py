@@ -76,7 +76,17 @@ async def process_successful_payment(message: Message):
             
             username, category = dialog_info
             
-            # Уведомляем пользователя
+            # Устанавливаем isPriority = 1
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE support_dialogs SET isPriority = 1 WHERE dialog_id = ?",
+                (dialog_id,)
+            )
+            conn.commit()
+            conn.close()
+            
+            # Уведомляем пользователя (message это сообщение от основного бота)
             await message.answer(
                 "✅ <b>Вы купили приоритет!</b>\n\n"
                 "Ищу свободных сотрудников...",
