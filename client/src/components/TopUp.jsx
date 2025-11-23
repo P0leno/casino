@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import './TopUp.css'
-import TonPayment from './TonPayment'
+import CryptoBotPayment from './CryptoBotPayment'
 
 function TopUp({ onNavigateBack }) {
-  const [paymentMethod, setPaymentMethod] = useState('stars') // 'stars' или 'ton'
+  const [paymentMethod, setPaymentMethod] = useState('stars') // 'stars' или 'cryptobot'
   const [amount, setAmount] = useState(100)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -342,9 +342,9 @@ function TopUp({ onNavigateBack }) {
     }
   }
 
-  // Если выбрана оплата TON - показываем TonPayment компонент
-  if (paymentMethod === 'ton') {
-    return <TonPayment onNavigateBack={onNavigateBack} />
+  // Если выбрана оплата CryptoBot - показываем CryptoBotPayment компонент
+  if (paymentMethod === 'cryptobot') {
+    return <CryptoBotPayment onNavigateBack={onNavigateBack} />
   }
 
   return (
@@ -359,10 +359,10 @@ function TopUp({ onNavigateBack }) {
             ⭐️ Звезды
           </button>
           <button 
-            className={`payment-tab ${paymentMethod === 'ton' ? 'active' : ''}`}
-            onClick={() => setPaymentMethod('ton')}
+            className={`payment-tab ${paymentMethod === 'cryptobot' ? 'active' : ''}`}
+            onClick={() => setPaymentMethod('cryptobot')}
           >
-            💎 TON
+            💎 USDT
           </button>
         </div>
 

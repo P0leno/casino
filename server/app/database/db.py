@@ -175,6 +175,25 @@ def init_db():
     
     print("✅ Таблица settings создана/проверена")
     
+    # Таблица для CryptoBot счетов
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cryptobot_invoices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            invoice_id INTEGER NOT NULL UNIQUE,
+            amount_usdt REAL NOT NULL,
+            amount_stars_expected INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            bot_invoice_url TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            confirmed_at TEXT,
+            amount_stars_actual INTEGER,
+            expires_at TEXT NOT NULL
+        )
+    """)
+    
+    print("✅ Таблица cryptobot_invoices создана/проверена")
+    
     # УДАЛЯЕМ старую таблицу crash_settings (переносим в settings)
     try:
         cursor.execute("DROP TABLE IF EXISTS crash_settings")
