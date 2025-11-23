@@ -514,9 +514,16 @@ def get_admin_keyboard(dialog_id: int, user_id: int, category: str, support_bann
                 [InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")],
                 [InlineKeyboardButton(text="❌ Не подлежит обжалованию", callback_data=f"reject_appeal_{dialog_id}_{user_id}")]
             ]
-    # Для категорий "Проблема", "Предложение", "Другое" - кнопка закрытия для всех
+    # Для категорий "Проблема", "Предложение", "Другое" - кнопки бана И закрытия
     elif category in ["Проблема", "Предложение", "Другое"]:
+        # Кнопка бан/разбан в зависимости от статуса
+        if support_banned:
+            ban_button = InlineKeyboardButton(text="✅ Разблокировать в поддержке", callback_data=f"unban_{dialog_id}_{user_id}")
+        else:
+            ban_button = InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")
+        
         buttons = [
+            [ban_button],
             [InlineKeyboardButton(text="✅ Закрыть обращение", callback_data=f"admin_close_{dialog_id}")]
         ]
     # Обычная кнопка бан/разбан в поддержке (только для админов)
