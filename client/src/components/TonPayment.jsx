@@ -271,17 +271,6 @@ function TonPayment({ onNavigateBack }) {
           >
             {loading ? 'Создание...' : 'Оплатить'}
           </button>
-
-          <div style={{ 
-            marginTop: '16px', 
-            textAlign: 'center', 
-            fontSize: '13px', 
-            color: '#888',
-            lineHeight: '1.5'
-          }}>
-            Минимальная сумма: 0.1 TON<br/>
-            Курс обновляется автоматически
-          </div>
         </div>
       </div>
     </div>
