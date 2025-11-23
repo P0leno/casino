@@ -242,11 +242,10 @@ def create_app():
     from app.middlewares.ban_check import ban_check_middleware
     from app.middlewares.maintenance import maintenance_middleware
     
-    # Добавляем middleware технических работ (первым - самый приоритетный)
-    app.middleware("http")(maintenance_middleware)
-    
-    # Добавляем middleware проверки бана
+    # Middleware проверки бана
     app.middleware("http")(ban_check_middleware)
+    
+    # Maintenance проверяется в эндпоинте /api/validate, не в middleware
 
     app.include_router(auth.router)
     app.include_router(game.router)

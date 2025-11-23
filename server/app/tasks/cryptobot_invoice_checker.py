@@ -87,11 +87,12 @@ async def check_pending_invoices():
                 crypto = get_crypto()
                 invoices = await crypto.get_invoices(invoice_ids=[invoice_id])
                 
-                if not invoices or len(invoices.items) == 0:
+                # invoices это список, не объект с .items
+                if not invoices or len(invoices) == 0:
                     print(f"⚠️ Invoice {invoice_id} not found")
                     continue
                 
-                invoice = invoices.items[0]
+                invoice = invoices[0]
                 
                 # Проверяем статус
                 if invoice.status == "paid":
