@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './TopUp.css'
+import TonPayment from './TonPayment'
 
 function TopUp({ onNavigateBack }) {
   const [paymentMethod, setPaymentMethod] = useState('stars') // 'stars' или 'ton'
@@ -341,6 +342,11 @@ function TopUp({ onNavigateBack }) {
     }
   }
 
+  // Если выбрана оплата TON - показываем TonPayment компонент
+  if (paymentMethod === 'ton') {
+    return <TonPayment onNavigateBack={onNavigateBack} />
+  }
+
   return (
     <div className="topup-page">
       <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
@@ -361,40 +367,7 @@ function TopUp({ onNavigateBack }) {
         </div>
 
         <div className="topup-body">
-          {/* Блок для TON */}
-          {paymentMethod === 'ton' && !walletAddress && (
-            <div className="wallet-connect-section">
-              <p className="wallet-info">Подключите кошелек TON для пополнения</p>
-              <button 
-                className="connect-wallet-btn" 
-                onClick={connectTonWallet}
-                disabled={loading}
-              >
-                {loading ? 'Подключение...' : 'Подключить кошелек'}
-              </button>
-            </div>
-          )}
 
-          {paymentMethod === 'ton' && walletAddress && (
-            <div className="ton-info-section">
-              <div className="wallet-connected">
-                <div className="wallet-header">
-                  <div>
-                    <p className="wallet-label">Подключенный кошелек:</p>
-                    <p className="wallet-address">{walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}</p>
-                  </div>
-                  <button 
-                    className="disconnect-wallet-btn" 
-                    onClick={disconnectWallet}
-                    disabled={loading}
-                  >
-                    Отключить
-                  </button>
-                </div>
-                <p className="ton-hint">💡 При нажатии "Пополнить" откроется ваш TON кошелек для подтверждения транзакции. Код платежа будет автоматически добавлен в комментарий.</p>
-              </div>
-            </div>
-          )}
 
           <div className="amount-display" onClick={() => setIsEditing(true)}>
             {isEditing ? (
