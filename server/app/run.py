@@ -240,7 +240,6 @@ def create_app():
     
     # Middleware для проверки бана
     from app.middlewares.ban_check import ban_check_middleware
-    from app.middlewares.maintenance import maintenance_middleware
     
     # Middleware проверки бана
     app.middleware("http")(ban_check_middleware)
