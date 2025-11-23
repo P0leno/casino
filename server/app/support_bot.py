@@ -1182,9 +1182,15 @@ async def handle_reject_appeal(callback: CallbackQuery):
     """Отклонение обжалования - бан в поддержке на 1 день"""
     admin_id = callback.from_user.id
     
-    # Проверка прав админа
-    if admin_id not in ADMIN_IDS:
-        await callback.answer("У вас нет прав", show_alert=True)
+    # Проверка прав админа группы
+    try:
+        member = await bot.get_chat_member(SUPPORT_GROUP_ID, admin_id)
+        if member.status not in ['creator', 'administrator']:
+            await callback.answer("У вас нет прав", show_alert=True)
+            return
+    except Exception as e:
+        print(f"Error checking admin rights: {e}")
+        await callback.answer("Ошибка проверки прав", show_alert=True)
         return
     
     try:
