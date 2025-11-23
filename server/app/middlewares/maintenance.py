@@ -30,12 +30,14 @@ async def maintenance_middleware(request: Request, call_next):
     Middleware для проверки режима технических работ
     Пропускает админов, блокирует остальных
     """
-    # Разрешенные пути (не проверяем режим)
+    # Разрешенные пути (validate сам проверит maintenance)
     allowed_paths = [
         '/api/validate',
         '/api/check-admin',
         '/api/check-maintenance',
         '/api/check-ban',
+        '/api/get-maintenance',
+        '/api/toggle-maintenance',
         '/api/health',
         '/'
     ]
