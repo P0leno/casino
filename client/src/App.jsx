@@ -16,6 +16,7 @@ import TopUp from './components/TopUp'
 import Tasks from './components/Tasks'
 import TabBar from './components/TabBar'
 import BannedScreen from './components/BannedScreen'
+import Maintenance from './components/Maintenance'
 
 function App() {
   const [error, setError] = useState(null)
@@ -27,6 +28,7 @@ function App() {
   const [safeAreaTop, setSafeAreaTop] = useState(0)
   const [isBanned, setIsBanned] = useState(false)
   const [botUsername, setBotUsername] = useState('HelpShellBot')
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('currentTab', activeTab)
@@ -89,14 +91,31 @@ function App() {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     
-    // Сначала проверяем бан
-    fetch(`${apiUrl}/api/check-ban`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData })
-    })
+    // Сначала проверяем режим технических работ
+    fetch(`${apiUrl}/api/check-maintenance`)
       .then(res => res.json())
       .then(data => {
+        if (data.maintenance) {
+          // Режим тех. работ включен
+          setMaintenanceMode(true)
+          setLoading(false)
+          return null // Прерываем дальнейшую загрузку
+        }
+        
+        // Если режим выключен - продолжаем проверку бана
+        return fetch(`${apiUrl}/api/check-ban`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData })
+        })
+      })
+      .then(res => {
+        if (res === null) return null // Прерываем если teh.raboty
+        return res.json()
+      })
+      .then(data => {
+        if (data === null) return null // Прерываем если teh.raboty
+        
         if (data.banned) {
           setIsBanned(true)
           setBotUsername(data.botUsername || 'HelpShellBot')
