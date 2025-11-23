@@ -264,8 +264,9 @@ def save_message_to_dialog(dialog_id: int, sender_type: str, sender_name: str, m
 async def download_photo(photo_file_id: str, dialog_id: int) -> str:
     """Скачать фото и сохранить в app/temp"""
     try:
-        # Создаем папку если её нет
-        os.makedirs("app/temp", exist_ok=True)
+        # Создаем папку с правами на запись если её нет
+        temp_dir = "app/temp"
+        os.makedirs(temp_dir, mode=0o777, exist_ok=True)
         
         # Получаем файл
         file = await bot.get_file(photo_file_id)
@@ -274,10 +275,13 @@ async def download_photo(photo_file_id: str, dialog_id: int) -> str:
         # Создаем имя файла
         file_extension = file_path.split('.')[-1]
         filename = f"dialog_{dialog_id}_{photo_file_id}.{file_extension}"
-        local_path = f"app/temp/{filename}"
+        local_path = f"{temp_dir}/{filename}"
         
         # Скачиваем
         await bot.download_file(file_path, local_path)
+        
+        # Устанавливаем права на файл
+        os.chmod(local_path, 0o666)
         
         return local_path
     except Exception as e:
@@ -421,10 +425,17 @@ async def generate_dialog_html(dialog_id: int) -> str:
 </html>
 """
     
+    # Создаем папку temp с правами на запись если её нет
+    temp_dir = "app/temp"
+    os.makedirs(temp_dir, mode=0o777, exist_ok=True)
+    
     # Сохраняем HTML в файл
-    filename = f"app/temp/dialog_{dialog_id}_{user_id}.html"
+    filename = f"{temp_dir}/dialog_{dialog_id}_{user_id}.html"
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(html)
+    
+    # Устанавливаем права на файл
+    os.chmod(filename, 0o666)
     
     return filename
 
