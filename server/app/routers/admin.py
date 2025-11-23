@@ -238,8 +238,8 @@ async def refund_payment(request: RefundPaymentRequest):
             transaction_amount = 0
             if request.deductFromBalance:
                 try:
-                    # Получаем историю транзакций пользователя
-                    transactions = await bot.get_star_transactions(user_id=request.userId, limit=100)
+                    # Получаем историю транзакций бота
+                    transactions = await bot.get_star_transactions(limit=100)
                     
                     # Ищем нужную транзакцию по telegram_payment_charge_id
                     for transaction in transactions.transactions:
