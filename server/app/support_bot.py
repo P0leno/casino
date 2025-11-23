@@ -394,17 +394,22 @@ async def generate_dialog_html(dialog_id: int) -> str:
                     <span class="sender {sender_class}">{sender_name}</span>
                     <span class="timestamp">{time_formatted}</span>
                 </div>
-                <div class="message-content">{message_text or "(фото)"}</div>
 """
             
+            # Показываем текст только если он есть и это не просто "(фото)"
+            if message_text and message_text.strip():
+                html += f'<div class="message-content">{message_text}</div>'
+            
+            # Встраиваем фото как base64
             if photo_path and os.path.exists(photo_path):
                 try:
                     with open(photo_path, 'rb') as f:
                         photo_data = base64.b64encode(f.read()).decode()
                         ext = photo_path.split('.')[-1]
-                        html += f'<img src="data:image/{ext};base64,{photo_data}" alt="Фото" class="message-photo">'
-                except:
-                    pass
+                        html += f'<img src="data:image/{ext};base64,{photo_data}" alt="Фото" class="message-photo" style="margin-top: 8px;">'
+                except Exception as e:
+                    print(f"Error encoding photo to base64: {e}")
+                    html += '<div class="message-content" style="color: #666; font-style: italic;">Фото не загружено</div>'
             
             html += "</div>"
     else:
