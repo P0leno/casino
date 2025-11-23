@@ -512,6 +512,96 @@ async def get_settings(request: ValidateRequest):
         print(f"Error getting settings: {e}")
         return {"valid": False, "settings": {}, "error": str(e)}
 
+@router.post("/get-maintenance")
+async def get_maintenance(request: ValidateRequest):
+    """Получить статус режима технических работ (для админов)"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        # Проверка прав админа
+        if user_id not in ADMIN_IDS:
+            return {"success": False, "message": "Access denied"}
+        
+        # Получаем статус
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+        result = cursor.fetchone()
+        conn.close()
+        
+        enabled = result[0] == '1' if result else False
+        
+        return {
+            "success": True,
+            "maintenance_mode": enabled
+        }
+        
+    except Exception as e:
+        print(f"Error getting maintenance mode: {e}")
+        return {"success": False, "message": "Server error"}
+
+@router.post("/toggle-maintenance")
+async def toggle_maintenance(request: ValidateRequest):
+    """Переключить режим технических работ (только для админов)"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        # Проверка прав админа
+        if user_id not in ADMIN_IDS:
+            return {"success": False, "message": "Access denied"}
+        
+        # Получаем текущее значение
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+        result = cursor.fetchone()
+        
+        current = result[0] if result else '0'
+        new_value = '0' if current == '1' else '1'
+        
+        # Обновляем
+        cursor.execute(
+            "UPDATE settings SET value = ? WHERE key = 'maintenance_mode'",
+            (new_value,)
+        )
+        conn.commit()
+        conn.close()
+        
+        print(f"✅ Maintenance mode toggled by admin {user_id}: {current} -> {new_value}")
+        
+        return {
+            "success": True,
+            "maintenance_mode": new_value == '1'
+        }
+        
+    except Exception as e:
+        print(f"Error toggling maintenance mode: {e}")
+        return {"success": False, "message": "Server error"}
+
 @router.post("/update-setting")
 async def update_setting(request: UpdateSettingRequest):
     """Обновление настройки (только для админов)"""

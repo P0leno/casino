@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
-from app.routers import auth, game, admin, payments, crash, ton_payments, tasks, shop, inventory, promocode, ban
+from app.routers import auth, game, admin, payments, crash, ton_payments, tasks, shop, inventory, promocode, ban, maintenance
 from app.bot import start_bot, stop_bot
 from app.pyrogram_client import start_pyrogram, stop_pyrogram
 from app.tasks.spin_notifications import spin_notification_loop
@@ -224,6 +224,12 @@ def create_app():
     
     # Middleware для проверки бана
     from app.middlewares.ban_check import ban_check_middleware
+    from app.middlewares.maintenance import maintenance_middleware
+    
+    # Добавляем middleware технических работ (первым - самый приоритетный)
+    app.middleware("http")(maintenance_middleware)
+    
+    # Добавляем middleware проверки бана
     app.middleware("http")(ban_check_middleware)
 
     app.include_router(auth.router)
@@ -237,6 +243,7 @@ def create_app():
     app.include_router(inventory.router)
     app.include_router(promocode.router)
     app.include_router(ban.router)
+    app.include_router(maintenance.router)
 
     @app.get("/")
     async def root():

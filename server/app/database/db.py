@@ -171,6 +171,7 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('shop_commission', '10', 'Наценка на подарки (%)')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('sell_commission', '10', 'Комиссия на продажу подарков (%)')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('custom_promo_refs_required', '10', 'Рефералов для именного промокода')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('maintenance_mode', '0', 'Режим технических работ (0/1)')")
     
     print("✅ Таблица settings создана/проверена")
     
