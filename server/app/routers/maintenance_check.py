@@ -45,12 +45,14 @@ async def check_user_maintenance(request: CheckMaintenanceRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        print(f"[MAINTENANCE CHECK] User ID: {user_id}")
+        print(f"[MAINTENANCE CHECK] User ID: {user_id} (type: {type(user_id)})")
         print(f"[MAINTENANCE CHECK] ADMIN_IDS: {ADMIN_IDS}")
         
-        # Проверяем админа
-        is_admin = user_id in ADMIN_IDS
-        print(f"[MAINTENANCE CHECK] Is admin: {is_admin}")
+        # Проверяем админа - ВАЖНО: приводим типы
+        # user_id может быть int, ADMIN_IDS тоже int
+        is_admin = int(user_id) in ADMIN_IDS
+        
+        print(f"[MAINTENANCE CHECK] Is admin check: int({user_id}) in {ADMIN_IDS} = {is_admin}")
         
         # Проверяем режим в БД
         conn = sqlite3.connect(DB_PATH)
