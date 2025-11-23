@@ -514,6 +514,11 @@ def get_admin_keyboard(dialog_id: int, user_id: int, category: str, support_bann
                 [InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")],
                 [InlineKeyboardButton(text="❌ Не подлежит обжалованию", callback_data=f"reject_appeal_{dialog_id}_{user_id}")]
             ]
+    # Для категорий "Проблема", "Предложение", "Другое" - кнопка закрытия для всех
+    elif category in ["Проблема", "Предложение", "Другое"]:
+        buttons = [
+            [InlineKeyboardButton(text="✅ Закрыть обращение", callback_data=f"admin_close_{dialog_id}")]
+        ]
     # Обычная кнопка бан/разбан в поддержке (только для админов)
     elif support_banned:
         ban_button = InlineKeyboardButton(text="✅ Разблокировать в поддержке", callback_data=f"unban_{dialog_id}_{user_id}")
@@ -1356,6 +1361,85 @@ async def handle_withdraw_done(callback: CallbackQuery):
     except Exception as e:
         print(f"Error marking withdrawal done: {e}")
         await callback.answer("Ошибка", show_alert=True)
+
+@dp.callback_query(F.data.startswith("admin_close_"))
+async def handle_admin_close_dialog(callback: CallbackQuery):
+    """Закрытие диалога из группы (доступно всем)"""
+    try:
+        dialog_id = int(callback.data.replace("admin_close_", ""))
+        
+        # Получаем информацию о диалоге
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
+            (dialog_id,)
+        )
+        dialog_info = cursor.fetchone()
+        conn.close()
+        
+        if not dialog_info:
+            await callback.answer("Диалог не найден", show_alert=True)
+            return
+        
+        user_id, status = dialog_info
+        
+        if status != 'open':
+            await callback.answer("Диалог уже закрыт", show_alert=True)
+            return
+        
+        # Уведомляем пользователя
+        try:
+            await bot.send_message(
+                user_id,
+                "✅ <b>Обращение закрыто</b>\n\n"
+                "Спасибо за обращение!\n"
+                "Используйте /start для нового обращения",
+                parse_mode=ParseMode.HTML
+            )
+        except Exception as e:
+            print(f"Could not notify user: {e}")
+        
+        # Закрываем диалог
+        close_dialog(dialog_id)
+        
+        # Генерируем и отправляем HTML файл в группу
+        try:
+            from aiogram.types import FSInputFile
+            
+            # Генерируем HTML
+            html_path = await generate_dialog_html(dialog_id)
+            
+            if html_path and os.path.exists(html_path):
+                # Отправляем HTML файл
+                html_file = FSInputFile(html_path)
+                await bot.send_document(
+                    SUPPORT_GROUP_ID,
+                    html_file,
+                    caption=f"✅ <b>Диалог #{dialog_id} закрыт сотрудником @{callback.from_user.username or callback.from_user.first_name}</b>",
+                    parse_mode=ParseMode.HTML
+                )
+                
+                # Удаляем HTML файл
+                os.remove(html_path)
+                print(f"Deleted HTML: {html_path}")
+            else:
+                # Если HTML не создан, просто отправляем текст
+                await bot.send_message(
+                    SUPPORT_GROUP_ID,
+                    f"✅ <b>Диалог #{dialog_id} закрыт сотрудником @{callback.from_user.username or callback.from_user.first_name}</b>",
+                    parse_mode=ParseMode.HTML
+                )
+        except Exception as e:
+            print(f"Error sending dialog HTML: {e}")
+        
+        # Убираем кнопки
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer("✅ Обращение закрыто")
+        
+    except Exception as e:
+        print(f"Error closing dialog from group: {e}")
+        await callback.answer("Ошибка закрытия обращения", show_alert=True)
 
 @dp.callback_query(F.data.startswith("priority_"))
 async def handle_priority_queue(callback: CallbackQuery):
