@@ -11,9 +11,12 @@ from aiocryptopay import AioCryptoPay, Networks
 from aiogram import Bot
 from aiogram.enums import ParseMode
 
-# Инициализация
-crypto = AioCryptoPay(token=CRYPTOBOT_API_TOKEN, network=Networks.MAIN_NET)
+# Bot инициализируется один раз
 bot = Bot(token=BOT_TOKEN)
+
+def get_crypto():
+    """Получить экземпляр AioCryptoPay"""
+    return AioCryptoPay(token=CRYPTOBOT_API_TOKEN, network=Networks.MAIN_NET)
 
 def calculate_stars_from_usdt(usdt_amount: float) -> int:
     """
@@ -81,6 +84,7 @@ async def check_pending_invoices():
                     continue
                 
                 # Получаем инвойс через API
+                crypto = get_crypto()
                 invoices = await crypto.get_invoices(invoice_ids=[invoice_id])
                 
                 if not invoices or len(invoices.items) == 0:

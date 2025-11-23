@@ -15,8 +15,10 @@ from aiocryptopay import AioCryptoPay, Networks
 
 router = APIRouter(prefix="/api/cryptobot", tags=["cryptobot"])
 
-# Инициализация CryptoPay
-crypto = AioCryptoPay(token=CRYPTOBOT_API_TOKEN, network=Networks.MAIN_NET)
+# CryptoPay будет инициализироваться в async функциях
+def get_crypto():
+    """Получить экземпляр AioCryptoPay"""
+    return AioCryptoPay(token=CRYPTOBOT_API_TOKEN, network=Networks.MAIN_NET)
 
 class CreateInvoiceRequest(BaseModel):
     initData: str
@@ -68,6 +70,7 @@ async def create_invoice(request: CreateInvoiceRequest):
         stars_amount = calculate_stars_from_usdt(usdt_amount)
         
         # Создаем счет через CryptoPay
+        crypto = get_crypto()
         invoice = await crypto.create_invoice(
             amount=usdt_amount,
             currency_type="crypto",
