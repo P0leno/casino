@@ -146,18 +146,28 @@ function App() {
         // Если res === null, значит пользователь забанен или режим тех.работ
         if (res === null) return null
         
-        // Проверяем статус 503 (maintenance)
+        console.log('Validate response status:', res.status)
+        
+        // Проверяем статус 503 (maintenance) - ВАЖНО: до res.json()
         if (res.status === 503) {
+          console.log('Got 503 from validate - maintenance mode')
           return res.json().then(errorData => {
+            console.log('Maintenance error data:', errorData)
             if (errorData.maintenance) {
+              console.log('Setting maintenance mode TRUE')
               setMaintenanceMode(true)
               setLoading(false)
             }
             return null
+          }).catch(err => {
+            console.error('Error parsing 503 response:', err)
+            // На всякий случай включаем режим если 503
+            setMaintenanceMode(true)
+            setLoading(false)
+            return null
           })
         }
         
-        console.log('Validate response status:', res.status)
         return res.json()
       })
       .then(data => {
