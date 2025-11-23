@@ -7,9 +7,11 @@ import asyncio
 import aiohttp
 import sqlite3
 from datetime import datetime
-from app.config import DB_PATH
+from app.config import DB_PATH, BOT_TOKEN
 import os
 from dotenv import load_dotenv
+from aiogram import Bot
+from aiogram.enums import ParseMode
 
 load_dotenv()
 
@@ -21,6 +23,9 @@ TON_API_URL = "https://tonapi.io/v2"
 
 # Последняя проверенная транзакция (lt - logical time)
 last_checked_lt = None
+
+# Инициализация бота для уведомлений
+bot = Bot(token=BOT_TOKEN)
 
 def get_ton_usd_rate():
     """Получить текущий курс TON/USD из базы данных"""
@@ -72,7 +77,25 @@ async def get_transactions(address: str, limit: int = 10):
         print(f"Error fetching transactions: {e}")
         return []
 
-def process_transaction(tx):
+async def notify_user(user_id: int, stars_amount: int, ton_amount: float):
+    """Отправить уведомление пользователю о пополнении"""
+    try:
+        message = (
+            f"✅ <b>Обнаружено пополнение</b>\n\n"
+            f"<b>{stars_amount} × ⭐</b>\n\n"
+            f"Получено: {ton_amount} TON"
+        )
+        
+        await bot.send_message(
+            user_id,
+            message,
+            parse_mode=ParseMode.HTML
+        )
+        print(f"✅ Notification sent to user {user_id}")
+    except Exception as e:
+        print(f"Error sending notification to user {user_id}: {e}")
+
+async def process_transaction(tx):
     """Обработать входящую транзакцию"""
     try:
         # Проверяем что это входящая транзакция
@@ -157,7 +180,8 @@ def process_transaction(tx):
         
         print(f"✅ Payment confirmed! User {user_id} received {stars_to_credit} Stars ({ton_amount} TON)")
         
-        # TODO: Отправить уведомление пользователю через бота
+        # Отправляем уведомление пользователю
+        await notify_user(user_id, stars_to_credit, ton_amount)
         
     except Exception as e:
         print(f"Error processing transaction: {e}")
@@ -186,7 +210,7 @@ async def check_new_transactions():
         if last_checked_lt and tx_lt <= last_checked_lt:
             continue
         
-        process_transaction(tx)
+        await process_transaction(tx)
         last_checked_lt = tx_lt
     
     # Сохраняем последний lt
