@@ -1,7 +1,7 @@
 import './GiftDetailsModal.css'
 import LottieAnimation from './LottieAnimation'
 import { useState } from 'react'
-import starStaticIcon from '../assets/star_static.svg'
+import starAnim from '../assets/star.json'
 
 function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInventory = false }) {
   if (!gift) return null
@@ -226,21 +226,35 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
                     {withdrawing ? 'Вывод...' : 'Вывести'}
                   </button>
                   <button 
-                    className="modal-sell-button" 
+                    className="spin-button-fixed modal-sell-button" 
                     onClick={handleSell}
                     disabled={selling}
                   >
-                    {selling ? 'Продажа...' : 'Продать'}
+                    {selling ? (
+                      'Продажа...'
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="button-main-text">Продать за {gift.sell_price || 0}</span>
+                        <LottieAnimation animationData={starAnim} width={24} height={24} />
+                      </div>
+                    )}
                   </button>
                 </>
               ) : (
                 // NFT подарок - только Продать
                 <button 
-                  className="modal-sell-button-full" 
+                  className="spin-button-fixed modal-sell-button-full" 
                   onClick={handleSell}
                   disabled={selling}
                 >
-                  {selling ? 'Продажа...' : 'Продать'}
+                  {selling ? (
+                    'Продажа...'
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="button-main-text">Продать за {gift.sell_price || 0}</span>
+                      <LottieAnimation animationData={starAnim} width={24} height={24} />
+                    </div>
+                  )}
                 </button>
               )}
             </div>
@@ -248,21 +262,18 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
             // Кнопки для магазина
             isShopGift && gift.price > 0 && (
               <button 
-                className="modal-buy-button" 
+                className="spin-button-fixed modal-buy-button" 
                 onClick={handlePurchase}
                 disabled={purchasing}
               >
-                <div className="buy-button-content">
-                  <span className="buy-button-title">
-                    {purchasing ? 'Покупка...' : 'Купить'}
-                  </span>
-                  {!purchasing && (
-                    <div className="buy-button-price">
-                      <span>{gift.price}</span>
-                      <img src={starStaticIcon} alt="⭐" className="star-icon-inline" />
-                    </div>
-                  )}
-                </div>
+                {purchasing ? (
+                  'Покупка...'
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="button-main-text">Купить за {gift.price}</span>
+                    <LottieAnimation animationData={starAnim} width={24} height={24} />
+                  </div>
+                )}
               </button>
             )
           )}
