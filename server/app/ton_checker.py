@@ -175,6 +175,8 @@ async def process_transaction(tx):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
+        print(f"🔎 Searching invoice for payment_code: '{comment}'")
+        
         cursor.execute(
             "SELECT id, user_id, amount_ton, status FROM ton_invoices WHERE UPPER(payment_code) = UPPER(?)",
             (comment,)
@@ -182,7 +184,7 @@ async def process_transaction(tx):
         invoice = cursor.fetchone()
         
         if not invoice:
-            print(f"❌ Invoice not found for payment_code: {comment}")
+            print(f"❌ Invoice not found for payment_code: '{comment}'")
             # Проверим все pending инвойсы для отладки
             cursor.execute("SELECT payment_code FROM ton_invoices WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5")
             pending = cursor.fetchall()
@@ -193,19 +195,24 @@ async def process_transaction(tx):
             return
         
         invoice_id, user_id, expected_ton, status = invoice
+        print(f"✅ Invoice found: id={invoice_id}, user_id={user_id}, expected={expected_ton} TON, status={status}")
         
         if status == 'confirmed':
-            print(f"Invoice {invoice_id} already confirmed")
+            print(f"⚠️  Invoice {invoice_id} already confirmed, skipping")
             conn.close()
             return
         
         # Рассчитываем Stars по полученной сумме
+        print(f"💰 Calculating Stars: {ton_amount} TON")
         stars_to_credit = calculate_stars_from_ton(ton_amount)
+        print(f"⭐ Stars to credit: {stars_to_credit}")
         
         # Получаем tx данные
         tx_hash = tx.get("hash", "")
         tx_lt = str(tx.get("lt", ""))
         tx_timestamp = tx.get("utime", 0)
+        
+        print(f"💾 Updating database: invoice_id={invoice_id}, tx_hash={tx_hash[:8]}...")
         
         # Обновляем инвойс
         cursor.execute(
@@ -221,6 +228,8 @@ async def process_transaction(tx):
             (datetime.now().isoformat(), ton_amount, stars_to_credit, tx_hash, tx_lt, tx_timestamp, invoice_id)
         )
         
+        print(f"💳 Crediting {stars_to_credit} Stars to user {user_id}")
+        
         # Начисляем Stars пользователю
         cursor.execute(
             "UPDATE users SET balance = balance + ? WHERE id = ?",
@@ -233,6 +242,7 @@ async def process_transaction(tx):
         print(f"✅ Payment confirmed! User {user_id} received {stars_to_credit} Stars ({ton_amount} TON)")
         
         # Отправляем уведомление пользователю
+        print(f"📨 Sending notification to user {user_id}...")
         await notify_user(user_id, stars_to_credit, ton_amount)
         
     except Exception as e:
