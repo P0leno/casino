@@ -86,17 +86,18 @@ async def process_successful_payment(message: Message):
             conn.commit()
             conn.close()
             
-            # Уведомляем пользователя (message это сообщение от основного бота)
-            await message.answer(
-                "✅ <b>Вы купили приоритет!</b>\n\n"
-                "Ищу свободных сотрудников...",
-                parse_mode=ParseMode.HTML
-            )
-            
-            # Получаем список участников группы
+            # Получаем список участников группы и отправляем уведомления
             if SUPPORT_BOT_TOKEN and SUPPORT_GROUP_ID:
                 try:
                     support_bot = Bot(token=SUPPORT_BOT_TOKEN)
+                    
+                    # Уведомляем пользователя от бота поддержки
+                    await support_bot.send_message(
+                        user_id,
+                        "✅ <b>Вы купили приоритет!</b>\n\n"
+                        "Ищу свободных сотрудников...",
+                        parse_mode=ParseMode.HTML
+                    )
                     
                     # Получаем список админов
                     admins = await support_bot.get_chat_administrators(SUPPORT_GROUP_ID)
