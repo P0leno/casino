@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
@@ -61,6 +62,26 @@ async def validate(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        
+        # Проверяем режим технических работ
+        cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+        maintenance_result = cursor.fetchone()
+        
+        # Если режим включен и пользователь не админ - блокируем
+        if maintenance_result and maintenance_result[0] == '1':
+            if user_id not in ADMIN_IDS:
+                conn.close()
+                print(f"[MAINTENANCE] User {user_id} blocked during maintenance in validate")
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "detail": "Технические работы",
+                        "message": "Ведутся технические работы. Попробуйте позже.",
+                        "maintenance": True
+                    }
+                )
+            else:
+                print(f"[MAINTENANCE] Admin {user_id} allowed during maintenance in validate")
         
         cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
