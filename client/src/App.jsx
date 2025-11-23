@@ -91,14 +91,38 @@ function App() {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     
-    // Проверяем бан (НЕ проверяем maintenance здесь - он проверится в validate)
-    fetch(`${apiUrl}/api/check-ban`, {
+    // ПЕРВЫМ делом проверяем режим технических работ
+    fetch(`${apiUrl}/api/check-user-maintenance`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData })
     })
       .then(res => res.json())
       .then(data => {
+        console.log('Maintenance check response:', data)
+        
+        if (data.shouldBlock) {
+          console.log('User should be blocked - showing maintenance screen')
+          setMaintenanceMode(true)
+          setLoading(false)
+          return null // Прерываем загрузку
+        }
+        
+        console.log('Maintenance check passed, continuing...')
+        
+        // Продолжаем проверку бана
+        return fetch(`${apiUrl}/api/check-ban`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData })
+        })
+      })
+      .then(res => {
+        if (res === null) return null // Прерываем если maintenance
+        return res.json()
+      })
+      .then(data => {
+        if (data === null) return null // Прерываем если maintenance
         
         if (data.banned) {
           setIsBanned(true)
