@@ -47,6 +47,41 @@ async def validate(request: ValidateRequest):
     if not is_valid:
         return {"valid": False, "isBanned": False}
     
+    # Проверяем режим технических работ ПЕРВЫМ делом
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if user_data:
+            user = json.loads(user_data)
+            user_id = user.get('id')
+            
+            # Проверяем maintenance_mode
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+            maintenance_result = cursor.fetchone()
+            conn.close()
+            
+            print(f"[MAINTENANCE CHECK] user_id={user_id}, maintenance_result={maintenance_result}, is_admin={user_id in ADMIN_IDS}")
+            
+            # Если режим включен и пользователь не админ - блокируем
+            if maintenance_result and maintenance_result[0] == '1':
+                if user_id not in ADMIN_IDS:
+                    print(f"[MAINTENANCE] User {user_id} BLOCKED during maintenance")
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            "detail": "Технические работы",
+                            "message": "Ведутся технические работы. Попробуйте позже.",
+                            "maintenance": True
+                        }
+                    )
+                else:
+                    print(f"[MAINTENANCE] Admin {user_id} ALLOWED during maintenance")
+    except Exception as e:
+        print(f"[MAINTENANCE] Error checking maintenance: {e}")
+    
     try:
         parsed = parse_qs(request.initData)
         user_data = parsed.get('user', [''])[0]
@@ -62,26 +97,6 @@ async def validate(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
-        # Проверяем режим технических работ
-        cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
-        maintenance_result = cursor.fetchone()
-        
-        # Если режим включен и пользователь не админ - блокируем
-        if maintenance_result and maintenance_result[0] == '1':
-            if user_id not in ADMIN_IDS:
-                conn.close()
-                print(f"[MAINTENANCE] User {user_id} blocked during maintenance in validate")
-                return JSONResponse(
-                    status_code=503,
-                    content={
-                        "detail": "Технические работы",
-                        "message": "Ведутся технические работы. Попробуйте позже.",
-                        "maintenance": True
-                    }
-                )
-            else:
-                print(f"[MAINTENANCE] Admin {user_id} allowed during maintenance in validate")
         
         cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
