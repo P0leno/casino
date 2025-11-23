@@ -9,6 +9,7 @@ function TonPayment({ onNavigateBack }) {
   const [showPayment, setShowPayment] = useState(false)
   const [paymentData, setPaymentData] = useState(null)
   const [returnTab, setReturnTab] = useState('home')
+  const [isEditing, setIsEditing] = useState(false)
   
   const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
                    window.Telegram?.WebApp?.platform === 'ios'
@@ -214,69 +215,37 @@ function TonPayment({ onNavigateBack }) {
     <div className="topup-page">
       <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>💎 Пополнение через TON</h2>
-        
-        <div className="ton-payment-hint" style={{
-          padding: '12px',
-          background: 'rgba(15, 188, 224, 0.1)',
-          border: '1px solid rgba(15, 188, 224, 0.3)',
-          borderRadius: '12px',
-          marginBottom: '20px',
-          fontSize: '13px',
-          lineHeight: '1.5'
-        }}>
-          🎁 <b>+5% бонус</b> при оплате через TON!
-        </div>
 
         <div className="topup-body">
-          {/* Ввод TON */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontSize: '14px',
-              color: '#888'
-            }}>
-              Введите количество TON:
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              min="0.1"
-              className="ton-input"
-              value={tonAmount}
-              onChange={(e) => setTonAmount(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '18px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-                color: 'white',
-                textAlign: 'center'
-              }}
-            />
+          {/* Количество TON по середине */}
+          <div className="amount-display" onClick={() => setIsEditing(true)}>
+            {isEditing ? (
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                className="amount-input"
+                value={tonAmount}
+                onChange={(e) => setTonAmount(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                onBlur={() => setIsEditing(false)}
+                autoFocus
+              />
+            ) : (
+              <div className="amount-number">{tonAmount}</div>
+            )}
+            <div className="amount-label">TON</div>
           </div>
 
-          {/* Показываем Stars */}
+          {/* Показываем сколько получит Stars */}
           {starsAmount > 0 && (
             <div style={{
-              padding: '16px',
-              background: 'rgba(15, 188, 224, 0.1)',
-              border: '1px solid rgba(15, 188, 224, 0.3)',
-              borderRadius: '12px',
-              marginBottom: '16px',
-              textAlign: 'center'
+              textAlign: 'center',
+              marginTop: '12px',
+              marginBottom: '20px',
+              fontSize: '16px',
+              color: '#0FBCE0'
             }}>
-              <div style={{ fontSize: '14px', color: '#888', marginBottom: '8px' }}>
-                Вы получите:
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#0FBCE0' }}>
-                {starsAmount} ⭐
-              </div>
-              <div style={{ fontSize: '12px', color: '#0FBCE0', marginTop: '4px' }}>
-                +5% бонус включен
-              </div>
+              Получите {starsAmount} ⭐
             </div>
           )}
 

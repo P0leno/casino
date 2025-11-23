@@ -18,3 +18,6 @@ DB_PATH = "users.db"
 API_ID = os.getenv("API_ID")
 API_HASH = os.getenv("API_HASH")
 SESSION_STRING = os.getenv("SESSION_STRING")
+
+# TON Payments
+TON_MERCHANT_ADDRESS = os.getenv("TON_MERCHANT_ADDRESS", "UQA3XG-IIuVK9VetB8iUft4aavAT1OSyBmoT9ipWh9PUCN5Y")

@@ -1,0 +1,15 @@
+[Unit]
+Description=TON Transaction Checker
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/shell/server
+Environment="PATH=/opt/shell/venv/bin"
+ExecStart=/opt/shell/venv/bin/python3 -m app.ton_checker
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

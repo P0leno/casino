@@ -106,22 +106,26 @@ async def create_payment(request: CreatePaymentRequest):
         cursor = conn.cursor()
         
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS ton_payments (
+            CREATE TABLE IF NOT EXISTS ton_invoices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 payment_code TEXT UNIQUE NOT NULL,
                 amount_ton REAL NOT NULL,
-                amount_stars INTEGER NOT NULL,
+                amount_stars_expected INTEGER NOT NULL,
                 status TEXT DEFAULT 'pending',
                 created_at TEXT NOT NULL,
                 confirmed_at TEXT,
-                tx_hash TEXT
+                amount_received REAL,
+                amount_stars_actual INTEGER,
+                tx_hash TEXT,
+                tx_lt TEXT,
+                tx_timestamp INTEGER
             )
         """)
         
         cursor.execute(
-            """INSERT INTO ton_payments 
-               (user_id, payment_code, amount_ton, amount_stars, created_at)
+            """INSERT INTO ton_invoices 
+               (user_id, payment_code, amount_ton, amount_stars_expected, created_at)
                VALUES (?, ?, ?, ?, ?)""",
             (user_id, payment_code, ton_amount, stars_amount, datetime.now().isoformat())
         )
