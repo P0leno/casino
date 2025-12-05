@@ -112,10 +112,8 @@ async def force_gift_parse_handler(callback: CallbackQuery):
         
         # Обновляем сообщение с результатом
         result_text = f"{callback.message.text.split('⏳')[0].strip()}\n\n"
-        result_text += f"✅ <b>Принудительный парсинг завершен</b>\n\n"
-        result_text += f"Новых подарков: <b>{result['added']}</b>\n"
-        result_text += f"Удалено подарков: <b>{result['deleted']}</b>\n"
-        result_text += f"Обновлено цен: <b>{result['prices_updated']}</b>"
+        result_text += f"✅ <b>Принудительное обновление цен завершено</b>\n\n"
+        result_text += f"Обновлено цен в TON: <b>{result['prices_updated']}</b>"
         
         await callback.message.edit_text(result_text, parse_mode="HTML")
         
