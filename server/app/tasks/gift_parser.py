@@ -459,17 +459,27 @@ async def full_sync_with_prices():
     global last_full_sync_time
     
     from app.tasks.price_updater import search_tonnel_resale, update_gift_ton_price
+    from app.tasks.external_gifts_parser import parse_external_gifts
     
     print("=" * 80)
     print(f"🔄 ПОЛНАЯ СИНХРОНИЗАЦИЯ (каждый час)")
     print("=" * 80)
     
-    # 1. Сначала обновляем существующие подарки
+    # 1. Сначала обновляем существующие подарки через Telegram (быстро, полная инфа)
     print("\n1️⃣  Обновление существующих подарков через Telegram...")
     parse_result = await parse_gifts(send_log=False)  # Не отправляем лог отдельно
     
-    # 2. Затем синхронизируем (добавляем новые, удаляем старые, обновляем цены с Tonnel)
-    print("\n2️⃣  Синхронизация с Tonnel (новые/удаленные + цены)...")
+    # 2. Дополняем недостающие подарки через changes.tg API
+    print("\n2️⃣  Дополнение недостающих подарков через changes.tg API...")
+    try:
+        external_result = await parse_external_gifts()
+        print(f"   Добавлено через API: {external_result['added']}")
+    except Exception as e:
+        print(f"   ⚠️  Ошибка парсинга через API: {e}")
+        external_result = {"added": 0, "skipped": 0}
+    
+    # 3. Затем синхронизируем (добавляем новые, удаляем старые, обновляем цены с Tonnel)
+    print("\n3️⃣  Синхронизация с Tonnel (новые/удаленные + цены)...")
     sync_result = await force_parse_and_sync(search_tonnel_resale, update_gift_ton_price)
     
     # Инвалидируем кэш магазина (цены в звездах пересчитаются автоматически)
@@ -478,7 +488,8 @@ async def full_sync_with_prices():
     
     # Отправляем краткий отчет в канал
     message = f"✅ <b>Парсинг завершен</b>\n\n"
-    message += f"📦 Подарков обновлено: <b>{parse_result['updated']}</b>\n"
+    message += f"📦 Подарков обновлено (Telegram): <b>{parse_result['updated']}</b>\n"
+    message += f"🌐 Добавлено (changes.tg API): <b>{external_result['added']}</b>\n"
     message += f"💰 Цен в TON обновлено: <b>{sync_result['prices_updated']}</b>\n"
     message += f"🔄 Кэш магазина инвалидирован"
     
