@@ -7,7 +7,7 @@ import asyncio
 import json
 import sqlite3
 from datetime import datetime
-import aiohttp
+import httpx
 from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 
 async def send_log_to_channel(message):
@@ -54,7 +54,7 @@ def get_headers():
         "user-agent": get_ua()
     }
 
-async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries=10):
+async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries=3):
     """Поиск подарка на Tonnel маркетплейсе с retry логикой"""
     
     # Базовый фильтр
@@ -89,39 +89,45 @@ async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries
         'user_auth': '',
     }
     
-    # Retry логика - до 10 попыток
+    # Retry логика
     for attempt in range(1, max_retries + 1):
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
+            # Запускаем синхронный запрос в executor (httpx sync)
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: httpx.post(
                     'https://gifts2.tonnel.network/api/pageGifts',
                     json=json_data,
                     headers=get_headers(),
-                    timeout=aiohttp.ClientTimeout(total=10)
-                ) as response:
-                    
-                    if response.status == 200:
-                        data = await response.json()
-                        if isinstance(data, list) and len(data) > 0:
-                            if attempt > 1:
-                                print(f"   ✅ Успешно на попытке #{attempt}")
-                            return data[0].get('price')
-                        return None
-                    elif response.status == 403:
-                        if attempt < max_retries:
-                            wait_time = attempt * 2  # Прогрессивная задержка: 2, 4, 6, 8...
-                            print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time}с...")
-                            await asyncio.sleep(wait_time)
-                            continue
-                        else:
-                            print(f"   ❌ HTTP 403 после {max_retries} попыток")
-                            return None
-                    else:
-                        print(f"   ⚠️  HTTP {response.status} на попытке #{attempt}")
-                        if attempt < max_retries:
-                            await asyncio.sleep(2)
-                            continue
-                        return None
+                    timeout=10,
+                    # ВАЖНО: имитация браузера Chrome для обхода защиты
+                    extensions={"impersonate": "chrome"}
+                )
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list) and len(data) > 0:
+                    if attempt > 1:
+                        print(f"   ✅ Успешно на попытке #{attempt}")
+                    return data[0].get('price')
+                return None
+            elif response.status_code == 403:
+                if attempt < max_retries:
+                    wait_time = attempt * 3
+                    print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time}с...")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    print(f"   ❌ HTTP 403 после {max_retries} попыток")
+                    return None
+            else:
+                print(f"   ⚠️  HTTP {response.status_code} на попытке #{attempt}")
+                if attempt < max_retries:
+                    await asyncio.sleep(2)
+                    continue
+                return None
                 
         except Exception as e:
             if attempt < max_retries:
