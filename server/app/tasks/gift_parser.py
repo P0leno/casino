@@ -86,15 +86,17 @@ async def parse_gifts(send_log=True):
         skipped_count = 0
         
         try:
-            # Получаем все доступные подарки в магазине Telegram
-            available_gifts = await app.get_available_gifts()
-            
-            for gift in available_gifts:
-                # ВАЖНО: Сохраняем только LIMITED NFT подарки (которые можно перепродать)
-                is_limited = getattr(gift, 'is_limited', False)
+            # Получаем подарки с аккаунта (с полной информацией: title, attributes, transfer_price)
+            # exclude_unlimited=True - только LIMITED подарки
+            async for gift in app.get_chat_gifts(
+                chat_id=me.id,
+                exclude_unlimited=True
+            ):
+                # ВАЖНО: Сохраняем только подарки с transfer_price (LIMITED NFT, которые можно перепродать)
+                transfer_price = getattr(gift, 'transfer_price', None)
                 
-                if not is_limited:
-                    # Игнорируем обычные unlimited подарки
+                if not transfer_price:
+                    # Игнорируем подарки без возможности перепродажи
                     skipped_count += 1
                     continue
                 
@@ -214,25 +216,25 @@ async def parse_gifts(send_log=True):
             if send_log:
                 print(f"✅ Обновлено подарков в магазине: {gifts_count}")
                 if skipped_count > 0:
-                    print(f"⏭️  Пропущено unlimited подарков: {skipped_count}")
+                    print(f"⏭️  Пропущено подарков без transfer_price: {skipped_count}")
                 
-                message = f"✅ <b>Gift Parser</b>\nОбновлено LIMITED подарков: <b>{gifts_count}</b>"
+                message = f"✅ <b>Gift Parser</b>\nОбновлено подарков: <b>{gifts_count}</b>"
                 if skipped_count > 0:
-                    message += f"\nПропущено unlimited: {skipped_count}"
+                    message += f"\nПропущено без transfer_price: {skipped_count}"
                 await send_log_to_channel_with_button(message)
             else:
                 # При старте - краткий лог
                 if skipped_count > 0:
-                    print(f"⏭️  Пропущено unlimited подарков: {skipped_count}")
+                    print(f"⏭️  Пропущено подарков без transfer_price: {skipped_count}")
         else:
             if send_log:
                 print("ℹ️  Нет новых подарков для обновления")
                 if skipped_count > 0:
-                    print(f"⏭️  Пропущено unlimited подарков: {skipped_count}")
+                    print(f"⏭️  Пропущено подарков без transfer_price: {skipped_count}")
                 
                 message = "ℹ️ <b>Gift Parser</b>\nНет новых подарков для обновления"
                 if skipped_count > 0:
-                    message += f"\nПропущено unlimited: {skipped_count}"
+                    message += f"\nПропущено без transfer_price: {skipped_count}"
                 await send_log_to_channel_with_button(message)
         
         return {"updated": gifts_count, "skipped": skipped_count}
@@ -289,13 +291,11 @@ async def force_parse_and_sync(search_tonnel_resale_func, update_gift_ton_price_
         db_gifts = {row[0]: {"title": row[1], "model": row[2], "backdrop": row[3]} for row in cursor.fetchall()}
         db_gift_ids = set(db_gifts.keys())
         
-        # Получаем все доступные подарки в магазине Telegram
+        # Получаем подарки с аккаунта
         tg_gifts = {}
-        available_gifts = await app.get_available_gifts()
-        
-        for gift in available_gifts:
-            is_limited = getattr(gift, 'is_limited', False)
-            if not is_limited:
+        async for gift in app.get_chat_gifts(chat_id=me.id, exclude_unlimited=True):
+            transfer_price = getattr(gift, 'transfer_price', None)
+            if not transfer_price:
                 continue
             
             gift_id = str(gift.id)
