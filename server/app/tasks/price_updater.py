@@ -37,21 +37,18 @@ SPECIAL_BACKDROPS = ["Onyx Black", "Black", "Ivory White", "Midnight Blue"]
 
 def get_headers():
     return {
-        "authority": "gifts2.tonnel.network",
-        "accept": "*/*",
-        "accept-encoding": "gzip, deflate, br, zstd",
-        "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        "content-type": "application/json",
-        "origin": "https://market.tonnel.network",
-        "priority": "u=1, i",
-        "referer": "https://market.tonnel.network/",
-        "sec-ch-ua": '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Windows"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "user-agent": get_ua()
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Content-Type": "application/json",
+        "Origin": "https://market.tonnel.network",
+        "Referer": "https://market.tonnel.network/",
+        "User-Agent": get_ua(),
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site"
     }
 
 async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries=3):
@@ -101,8 +98,7 @@ async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries
                     json=json_data,
                     headers=get_headers(),
                     timeout=10,
-                    # ВАЖНО: имитация браузера Chrome для обхода защиты
-                    extensions={"impersonate": "chrome"}
+                    follow_redirects=True
                 )
             )
             
