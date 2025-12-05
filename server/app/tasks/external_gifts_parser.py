@@ -81,8 +81,10 @@ async def parse_external_gifts():
     skipped_count = 0
     
     # 4. Для каждого нового подарка получаем модели и добавляем в БД
-    for gift_name in new_gifts[:10]:  # Ограничим первыми 10 для теста
-        print(f"🔍 Обработка: {gift_name}")
+    print(f"🔄 Обработка {len(new_gifts)} новых подарков...")
+    
+    for i, gift_name in enumerate(new_gifts, 1):
+        print(f"🔍 [{i}/{len(new_gifts)}] {gift_name}")
         
         # Получаем модели
         models = await fetch_gift_models(gift_name)
