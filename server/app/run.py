@@ -80,14 +80,10 @@ async def lifespan(app: FastAPI):
     
     print()
     print("2️⃣  Полная синхронизация подарков (Telegram + Tonnel + пересчет цен)...")
+    print("   ⏭️  Пропущено - будет выполнено в фоновом режиме через минуту")
     
-    try:
-        # Запускаем полную синхронизацию сразу при старте
-        await full_sync_with_prices()
-    except Exception as e:
-        print(f"⚠️  Ошибка полной синхронизации: {e}")
-        import traceback
-        traceback.print_exc()
+    # НЕ запускаем синхронизацию при старте - слишком долго (20 минут)
+    # Будет выполнена автоматически фоновой задачей
     
     print()
     print("=" * 80)
