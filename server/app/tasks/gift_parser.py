@@ -373,6 +373,18 @@ async def gift_parser_loop():
     
     print("[GIFT_PARSER] 🔄 Цикл запущен: полная синхронизация каждый час")
     
+    # Первая синхронизация через 1 минуту после старта
+    print("[GIFT_PARSER] ⏳ Первая синхронизация через 1 минуту...")
+    await asyncio.sleep(60)  # 1 минута
+    
+    try:
+        await full_sync_with_prices()
+        print("[GIFT_PARSER] ✅ Первая синхронизация завершена успешно")
+    except Exception as e:
+        print(f"[GIFT_PARSER] ❌ Ошибка первой синхронизации: {e}")
+        import traceback
+        traceback.print_exc()
+    
     # Цикл полной синхронизации
     while True:
         # Задержка 1 час
