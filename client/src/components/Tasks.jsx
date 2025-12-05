@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import './Home.css'
 import './Tasks.css'
+import './PromoCodeModal.css'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
+import { useBalance } from '../contexts/BalanceContext'
 import LottieAnimation from './LottieAnimation'
 import starAnim from '../assets/star.json'
 import pawAnim from '../assets/paw.json'
 
 function Tasks({ onNavigateToTopUp }) {
+  const { updateBalance } = useBalance()
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [completingTask, setCompletingTask] = useState(null)
   const [removingTaskId, setRemovingTaskId] = useState(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [selectedTask, setSelectedTask] = useState(null)
   
   const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
                    window.Telegram?.WebApp?.platform === 'ios'
@@ -35,7 +40,7 @@ function Tasks({ onNavigateToTopUp }) {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/tasks/available`, {
+      const response = await fetch(`${apiUrl}/api/tasks/list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
@@ -147,6 +152,7 @@ function Tasks({ onNavigateToTopUp }) {
       const data = await response.json()
       
       if (data.success) {
+        updateBalance(data)
         // Запускаем анимацию удаления без уведомлений
         setRemovingTaskId(taskId)
         
@@ -199,19 +205,69 @@ function Tasks({ onNavigateToTopUp }) {
                     />
                     <span className="task-reward-amount">{task.award}</span>
                   </div>
-                  <button
-                    className={`task-start-btn ${completingTask === task.id ? 'disabled' : ''}`}
-                    onClick={() => handleStartTask(task)}
-                    disabled={completingTask === task.id}
-                  >
-                    {completingTask === task.id ? 'Проверка...' : 'Начать'}
-                  </button>
+                  <div className="task-actions">
+                    {task.type === 'subscribe' && (
+                      <button
+                        className="task-details-btn"
+                        onClick={() => {
+                          setSelectedTask(task)
+                          setShowDetailsModal(true)
+                        }}
+                      >
+                        Подробнее
+                      </button>
+                    )}
+                    <button
+                      className={`task-start-btn ${completingTask === task.id ? 'disabled' : ''}`}
+                      onClick={() => handleStartTask(task)}
+                      disabled={completingTask === task.id}
+                    >
+                      {completingTask === task.id ? 'Проверка...' : 'Начать'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {showDetailsModal && selectedTask && (
+        <>
+          <div className="promo-modal-backdrop" onClick={() => setShowDetailsModal(false)} />
+          <div className="promo-modal-sheet task-details-modal">
+            <button className="promo-close-btn" onClick={() => setShowDetailsModal(false)}>×</button>
+            
+            <div className="promo-modal-content">
+              <h2 className="promo-modal-title">Подробности задания</h2>
+              
+              <div className="task-detail-section">
+                <div className="task-detail-label">Канал/Группа:</div>
+                <div className="task-detail-value">{selectedTask.target}</div>
+              </div>
+
+              <div className="task-detail-section">
+                <div className="task-detail-label">Награда:</div>
+                <div className="task-detail-reward">
+                  <LottieAnimation 
+                    animationData={selectedTask.currency === 'paws' ? pawAnim : starAnim}
+                    width={24}
+                    height={24}
+                  />
+                  <span>{selectedTask.award} {selectedTask.currency === 'paws' ? '🐾' : '⭐'}</span>
+                </div>
+              </div>
+
+              <button 
+                className="promo-modal-action-btn"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

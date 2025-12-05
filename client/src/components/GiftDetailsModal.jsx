@@ -216,17 +216,19 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
             // Кнопки для инвентаря
             <div className="modal-buttons-column">
               {gift.is_regular_gift ? (
-                // Обычный подарок - Вывести и Продать
+                // Обычный подарок - только Продать с текстом о выводе
                 <>
+                  <div className="withdraw-info-text">
+                    <span className="withdraw-info-regular">Этот подарок можно </span>
+                    <span 
+                      className="withdraw-info-link" 
+                      onClick={handleWithdraw}
+                    >
+                      вывести
+                    </span>
+                  </div>
                   <button 
-                    className="modal-withdraw-button" 
-                    onClick={handleWithdraw}
-                    disabled={withdrawing}
-                  >
-                    {withdrawing ? 'Вывод...' : 'Вывести'}
-                  </button>
-                  <button 
-                    className="spin-button-fixed modal-sell-button" 
+                    className="spin-button-fixed modal-sell-button-full" 
                     onClick={handleSell}
                     disabled={selling}
                   >

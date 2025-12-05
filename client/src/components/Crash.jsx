@@ -3,9 +3,11 @@ import './Crash.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
+import { useBalance } from '../contexts/BalanceContext'
 import crashAnim from '../assets/crash.json'
 
 function Crash({ onNavigateToTopUp }) {
+  const { updateBalance } = useBalance()
   const [multiplier, setMultiplier] = useState(1.00)
   const [isRunning, setIsRunning] = useState(false)
   const [history, setHistory] = useState([])
@@ -125,6 +127,7 @@ function Crash({ onNavigateToTopUp }) {
       const data = await response.json()
       
       if (response.ok) {
+        updateBalance(data)
         setShowBetModal(false)
       } else {
         if (tg) {
@@ -162,6 +165,8 @@ function Crash({ onNavigateToTopUp }) {
         if (tg) {
           tg.showAlert(data.error || 'Ошибка')
         }
+      } else {
+        updateBalance(data)
       }
     } catch (error) {
       console.error('Error cashing out:', error)

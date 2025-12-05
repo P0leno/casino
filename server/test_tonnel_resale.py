@@ -4,7 +4,7 @@
 """
 import json
 import sqlite3
-from curl_cffi import requests
+import httpx
 
 # Попробуем импортировать fake_useragent, если нет - используем дефолтный UA
 try:

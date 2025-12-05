@@ -63,43 +63,46 @@ async def validate(request: ValidateRequest):
             print(f"[VALIDATE] DB_PATH: {DB_PATH}")
             
             # Проверяем maintenance_mode
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            
-            # Сначала проверим что таблица существует
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")
-            table_exists = cursor.fetchone()
-            print(f"[VALIDATE] Settings table exists: {table_exists is not None}")
-            
-            if table_exists:
-                cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
-                maintenance_result = cursor.fetchone()
-                print(f"[VALIDATE] Maintenance result from DB: {maintenance_result}")
+            conn = None
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
                 
-                conn.close()
+                # Сначала проверим что таблица существует
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")
+                table_exists = cursor.fetchone()
+                print(f"[VALIDATE] Settings table exists: {table_exists is not None}")
                 
-                is_admin = user_id in ADMIN_IDS
-                print(f"[VALIDATE] user_id={user_id}, maintenance_value={maintenance_result[0] if maintenance_result else 'None'}, is_admin={is_admin}")
-                
-                # Если режим включен и пользователь не админ - блокируем
-                if maintenance_result and maintenance_result[0] == '1':
-                    if not is_admin:
-                        print(f"[MAINTENANCE] ⛔ User {user_id} BLOCKED during maintenance - returning 503")
-                        return JSONResponse(
-                            status_code=503,
-                            content={
-                                "detail": "Технические работы",
-                                "message": "Ведутся технические работы. Попробуйте позже.",
-                                "maintenance": True
-                            }
-                        )
+                if table_exists:
+                    cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+                    maintenance_result = cursor.fetchone()
+                    print(f"[VALIDATE] Maintenance result from DB: {maintenance_result}")
+                    
+                    is_admin = user_id in ADMIN_IDS
+                    print(f"[VALIDATE] user_id={user_id}, maintenance_value={maintenance_result[0] if maintenance_result else 'None'}, is_admin={is_admin}")
+                    
+                    # Если режим включен и пользователь не админ - блокируем
+                    if maintenance_result and maintenance_result[0] == '1':
+                        if not is_admin:
+                            print(f"[MAINTENANCE] ⛔ User {user_id} BLOCKED during maintenance - returning 503")
+                            return JSONResponse(
+                                status_code=503,
+                                content={
+                                    "detail": "Технические работы",
+                                    "message": "Ведутся технические работы. Попробуйте позже.",
+                                    "maintenance": True
+                                }
+                            )
+                        else:
+                            print(f"[MAINTENANCE] ✅ Admin {user_id} ALLOWED during maintenance")
                     else:
-                        print(f"[MAINTENANCE] ✅ Admin {user_id} ALLOWED during maintenance")
+                        print(f"[VALIDATE] Maintenance is OFF or not found, continuing...")
                 else:
-                    print(f"[VALIDATE] Maintenance is OFF or not found, continuing...")
-            else:
-                print(f"[VALIDATE] WARNING: settings table does not exist!")
-                conn.close()
+                    print(f"[VALIDATE] WARNING: settings table does not exist!")
+            finally:
+                if conn:
+                    conn.close()
+                    print(f"[VALIDATE] Maintenance DB connection closed")
         else:
             print(f"[VALIDATE] No user data in initData")
     except Exception as e:
@@ -148,7 +151,10 @@ async def validate(request: ValidateRequest):
         conn.close()
         
         return {"valid": True, "isBanned": is_banned}
-    except Exception:
+    except Exception as e:
+        print(f"[VALIDATE] ❌ ERROR in main validation logic: {e}")
+        import traceback
+        traceback.print_exc()
         return {"valid": False, "isBanned": False}
 
 @router.post("/check-admin")

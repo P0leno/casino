@@ -6,6 +6,9 @@ import os
 import json
 from datetime import datetime
 from app.routers.auth import verify_init_data
+from app.utils.rate_limit import buy_gift_rate_limiter, get_shop_gifts_rate_limiter
+from app.utils.balance import get_user_balance
+from app.utils.shop_cache import get_cached_shop_gifts, invalidate_shop_cache
 
 router = APIRouter(prefix="/api", tags=["shop"])
 
@@ -33,9 +36,8 @@ def sanitize_error(error: Exception) -> str:
     return str(error)
 
 class ShopGift(BaseModel):
-    id: int
     gift_id: str
-    slug: Optional[str]
+    slug: Optional[str]  # Нужен для покупки и отображения
     title: str
     model_name: Optional[str]
     model_path: Optional[str]
@@ -43,10 +45,6 @@ class ShopGift(BaseModel):
     backdrop_name: Optional[str]
     center_color: Optional[str]
     edge_color: Optional[str]
-    pattern_color: Optional[str]
-    text_color: Optional[str]
-    available_amount: int
-    total_amount: int
     price: int
     rarity_model: Optional[int]
     rarity_symbol: Optional[int]
@@ -71,46 +69,40 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
     
     user_id = user_data['id']
     
+    # Rate limiting: 10 запросов в 20 секунд
+    allowed, remaining_time = get_shop_gifts_rate_limiter.is_allowed(user_id)
+    if not allowed:
+        raise HTTPException(
+            status_code=429, 
+            detail=f"Слишком частые запросы. Попробуйте через {remaining_time} секунд"
+        )
+    
     try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
         # Получаем инвентарь пользователя
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
         cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
         user_result = cursor.fetchone()
+        conn.close()
         
         inventory_slugs = []
-        if user_result and user_result['inventory']:
+        if user_result and user_result[0]:
             try:
-                inventory_slugs = json.loads(user_result['inventory'])
+                inventory_slugs = json.loads(user_result[0])
             except:
                 inventory_slugs = []
         
-        # Получаем все подарки (кроме тех, что в инвентаре)
-        if inventory_slugs:
-            placeholders = ','.join(['?'] * len(inventory_slugs))
-            query = f"""
-                SELECT * FROM shop_gifts 
-                WHERE available_amount > 0 
-                  AND slug NOT IN ({placeholders})
-                ORDER BY price ASC
-            """
-            cursor.execute(query, inventory_slugs)
-        else:
-            cursor.execute("""
-                SELECT * FROM shop_gifts 
-                WHERE available_amount > 0
-                ORDER BY price ASC
-            """)
+        # Получаем подарки с ценами из кэша (ton_price из SQLite, stars_price пересчитана)
+        all_gifts = get_cached_shop_gifts()
         
-        rows = cursor.fetchall()
-        conn.close()
-        
+        # Фильтруем: убираем те, что в инвентаре
         gifts = []
-        for row in rows:
-            gift_dict = dict(row)
-            gifts.append(ShopGift(**gift_dict))
+        for gift in all_gifts:
+            if gift['slug'] and gift['slug'] in inventory_slugs:
+                continue  # Пропускаем подарки из инвентаря
+            
+            if gift['available_amount'] > 0:
+                gifts.append(ShopGift(**gift))
         
         return gifts
         

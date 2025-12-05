@@ -9,6 +9,7 @@ import random
 from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import spin_rate_limiter
+from app.utils.balance import get_user_balance
 from app.pyrogram_client import get_pyrogram
 from app.utils.gift_sender import send_gift_async
 from aiogram import Bot
@@ -32,6 +33,11 @@ class ManualWithdrawRequest(BaseModel):
     initData: str
     giftName: str
     index: int
+
+class WithdrawNFTGiftRequest(BaseModel):
+    initData: str
+    slug: str
+    messageId: int
 
 @router.post("/test-notification")
 async def test_notification(request: ValidateRequest):
@@ -184,7 +190,15 @@ async def spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
-            return {"success": True, "gift": selected_gift, "paw_count": paw_count}
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            return {
+                "success": True, 
+                "gift": selected_gift, 
+                "paw_count": paw_count,
+                **user_balance
+            }
         # Проверяем является ли это звездой
         elif selected_gift == "star":
             # Получаем диапазон звезд для этого подарка
@@ -208,7 +222,15 @@ async def spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
-            return {"success": True, "gift": selected_gift, "star_count": star_count}
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            return {
+                "success": True, 
+                "gift": selected_gift, 
+                "star_count": star_count,
+                **user_balance
+            }
         else:
             # Для остальных подарков - добавляем в инвентарь
             cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
@@ -224,16 +246,23 @@ async def spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
-            return {"success": True, "gift": selected_gift}
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            return {
+                "success": True, 
+                "gift": selected_gift,
+                **user_balance
+            }
     except Exception as e:
         print(f"Error in spin: {e}")
         return {"success": False, "message": "Ошибка сервера"}
 
-@router.post("/paid-spin")
-async def paid_spin(request: ValidateRequest):
-    print(f"[PAID-SPIN] Request received")
+@router.post("/bazmin-spin")
+async def bazmin_spin(request: ValidateRequest):
+    print(f"[BAZMIN-SPIN] Request received")
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
-    print(f"[PAID-SPIN] Validation result: {is_valid}")
+    print(f"[BAZMIN-SPIN] Validation result: {is_valid}")
     
     if not is_valid:
         return {"success": False, "message": "Invalid initData"}
@@ -253,7 +282,7 @@ async def paid_spin(request: ValidateRequest):
         if not allowed:
             return {"success": False, "message": f"Попробуйте через {remaining_time}с"}
         
-        print(f"[PAID-SPIN] User ID: {user_id}")
+        print(f"[BAZMIN-SPIN] User ID: {user_id}")
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -264,28 +293,28 @@ async def paid_spin(request: ValidateRequest):
         
         if not result:
             conn.close()
-            print(f"[PAID-SPIN] User {user_id} not found in database")
+            print(f"[BAZMIN-SPIN] User {user_id} not found in database")
             return {"success": False, "message": "User not found"}
         
         balance = result[0] or 0
-        print(f"[PAID-SPIN] User {user_id} balance: {balance}")
+        print(f"[BAZMIN-SPIN] User {user_id} balance: {balance}")
         
         # Проверяем хватает ли звезд
         if balance < 5:
             conn.close()
-            print(f"[PAID-SPIN] Insufficient balance: {balance} < 5")
+            print(f"[BAZMIN-SPIN] Insufficient balance: {balance} < 5")
             return {"success": False, "message": "Недостаточно звезд", "needTopUp": True}
         
         # Списываем 5 звезд сразу
         new_balance = balance - 5
-        print(f"[PAID-SPIN] Deducting 5 stars, new balance: {new_balance}")
+        print(f"[BAZMIN-SPIN] Deducting 5 stars, new balance: {new_balance}")
         cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
         conn.commit()
         
-        # Получаем шансы из таблицы gift_chances для режима bomzcase
-        cursor.execute("SELECT gift_name, real_chance FROM gift_chances WHERE mode = 'bomzcase'")
+        # Получаем шансы из таблицы gift_chances для режима bazmin
+        cursor.execute("SELECT gift_name, real_chance FROM gift_chances WHERE mode = 'bazmin'")
         chances = cursor.fetchall()
-        print(f"[PAID-SPIN] Found {len(chances)} gifts for bomzcase")
+        print(f"[BAZMIN-SPIN] Found {len(chances)} gifts for bazmin")
         
         total = sum(chance[1] for chance in chances)
         rand = random.uniform(0, total)
@@ -300,7 +329,7 @@ async def paid_spin(request: ValidateRequest):
         
         # Проверяем является ли это лапкой
         if selected_gift == "paw":
-            cursor.execute("SELECT paw_min, paw_max FROM gift_chances WHERE gift_name = ? AND mode = 'bomzcase'", (selected_gift,))
+            cursor.execute("SELECT paw_min, paw_max FROM gift_chances WHERE gift_name = ? AND mode = 'bazmin'", (selected_gift,))
             paw_range = cursor.fetchone()
             paw_min = paw_range[0] if paw_range and paw_range[0] else 1
             paw_max = paw_range[1] if paw_range and paw_range[1] else 10
@@ -316,12 +345,20 @@ async def paid_spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
-            print(f"[PAID-SPIN] User {user_id} won {paw_count} paws, new bonus_balance: {new_bonus}")
-            return {"success": True, "gift": selected_gift, "paw_count": paw_count}
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            print(f"[BAZMIN-SPIN] User {user_id} won {paw_count} paws, new bonus_balance: {new_bonus}")
+            return {
+                "success": True, 
+                "gift": selected_gift, 
+                "paw_count": paw_count,
+                **user_balance
+            }
         
         # Проверяем является ли это звездой
         elif selected_gift == "star":
-            cursor.execute("SELECT star_min, star_max FROM gift_chances WHERE gift_name = ? AND mode = 'bomzcase'", (selected_gift,))
+            cursor.execute("SELECT star_min, star_max FROM gift_chances WHERE gift_name = ? AND mode = 'bazmin'", (selected_gift,))
             star_range = cursor.fetchone()
             star_min = star_range[0] if star_range and star_range[0] else 1
             star_max = star_range[1] if star_range and star_range[1] else 5
@@ -335,8 +372,16 @@ async def paid_spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
-            print(f"[PAID-SPIN] User {user_id} won {star_count} stars, new balance: {final_balance}")
-            return {"success": True, "gift": selected_gift, "star_count": star_count}
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            print(f"[BAZMIN-SPIN] User {user_id} won {star_count} stars, new balance: {final_balance}")
+            return {
+                "success": True, 
+                "gift": selected_gift, 
+                "star_count": star_count,
+                **user_balance
+            }
         
         else:
             # Для остальных подарков - добавляем в инвентарь
@@ -352,7 +397,128 @@ async def paid_spin(request: ValidateRequest):
             
             return {"success": True, "gift": selected_gift}
     except Exception as e:
-        print(f"Error in paid-spin: {e}")
+        print(f"Error in bazmin-spin: {e}")
+        return {"success": False, "message": "Ошибка сервера"}
+
+@router.post("/lapik-spin")
+async def lapik_spin(request: ValidateRequest):
+    print(f"[LAPIK-SPIN] Request received")
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    print(f"[LAPIK-SPIN] Validation result: {is_valid}")
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        # Rate limit: 1 запрос в 5 секунд
+        allowed, remaining_time = spin_rate_limiter.is_allowed(user_id)
+        if not allowed:
+            return {"success": False, "message": f"Попробуйте через {remaining_time}с"}
+        
+        print(f"[LAPIK-SPIN] User ID: {user_id}")
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Проверяем баланс лапок - колонка bonus_balance
+        cursor.execute("SELECT bonus_balance FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            conn.close()
+            print(f"[LAPIK-SPIN] User {user_id} not found in database")
+            return {"success": False, "message": "User not found"}
+        
+        bonus_balance = result[0] or 0
+        print(f"[LAPIK-SPIN] User {user_id} bonus_balance: {bonus_balance}")
+        
+        # Проверяем хватает ли лапок
+        if bonus_balance < 10:
+            conn.close()
+            print(f"[LAPIK-SPIN] Insufficient bonus_balance: {bonus_balance} < 10")
+            return {"success": False, "message": "Недостаточно лапок"}
+        
+        # Списываем 10 лапок сразу
+        new_bonus_balance = bonus_balance - 10
+        print(f"[LAPIK-SPIN] Deducting 10 paws, new bonus_balance: {new_bonus_balance}")
+        cursor.execute("UPDATE users SET bonus_balance = ? WHERE id = ?", (new_bonus_balance, user_id))
+        conn.commit()
+        
+        # Получаем шансы из таблицы gift_chances для режима lapik
+        cursor.execute("SELECT gift_name, real_chance FROM gift_chances WHERE mode = 'lapik'")
+        chances = cursor.fetchall()
+        print(f"[LAPIK-SPIN] Found {len(chances)} gifts for lapik")
+        
+        total = sum(chance[1] for chance in chances)
+        rand = random.uniform(0, total)
+        cumulative = 0
+        selected_gift = None
+        
+        for gift_name, chance in chances:
+            cumulative += chance
+            if rand <= cumulative:
+                selected_gift = gift_name
+                break
+        
+        # Проверяем является ли это звездой
+        if selected_gift == "star":
+            cursor.execute("SELECT star_min, star_max FROM gift_chances WHERE gift_name = ? AND mode = 'lapik'", (selected_gift,))
+            star_range = cursor.fetchone()
+            star_min = star_range[0] if star_range and star_range[0] else 1
+            star_max = star_range[1] if star_range and star_range[1] else 4
+            
+            star_count = random.randint(star_min, star_max)
+            
+            # Добавляем звезды
+            cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
+            current_balance = cursor.fetchone()[0] or 0
+            final_balance = current_balance + star_count
+            cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (final_balance, user_id))
+            conn.commit()
+            conn.close()
+            
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            print(f"[LAPIK-SPIN] User {user_id} won {star_count} stars, new balance: {final_balance}")
+            return {
+                "success": True, 
+                "gift": selected_gift, 
+                "star_count": star_count,
+                **user_balance
+            }
+        
+        else:
+            # Добавляем подарок в инвентарь
+            cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
+            inv_result = cursor.fetchone()
+            inventory = json.loads(inv_result[0]) if inv_result and inv_result[0] else []
+            
+            inventory.append(selected_gift)
+            
+            cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory), user_id))
+            conn.commit()
+            conn.close()
+            
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            
+            return {
+                "success": True, 
+                "gift": selected_gift,
+                **user_balance
+            }
+    except Exception as e:
+        print(f"Error in lapik-spin: {e}")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/get-inventory")
@@ -444,38 +610,19 @@ async def sell_gift(request: SellGiftRequest):
         conn.commit()
         conn.close()
         
-        return {"success": True, "newBalance": new_balance, "price": price}
+        # Получаем обновленный баланс
+        user_balance = get_user_balance(user_id)
+        
+        return {
+            "success": True, 
+            "newBalance": new_balance, 
+            "price": price,
+            **user_balance
+        }
     except Exception as e:
         return {"success": False, "message": str(e)}
 
-@router.post("/get-balance")
-async def get_balance(request: ValidateRequest):
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
-    
-    if not is_valid:
-        return {"valid": False, "balance": 0, "bonusBalance": 0}
-    
-    try:
-        parsed = parse_qs(request.initData)
-        user_data = parsed.get('user', [''])[0]
-        
-        if not user_data:
-            return {"valid": False, "balance": 0, "bonusBalance": 0}
-        
-        user = json.loads(user_data)
-        user_id = user.get('id')
-        
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT balance, bonus_balance FROM users WHERE id = ?", (user_id,))
-        result = cursor.fetchone()
-        conn.close()
-        
-        balance = result[0] if result and result[0] is not None else 0
-        bonus_balance = result[1] if result and result[1] is not None else 0
-        return {"valid": True, "balance": balance, "bonusBalance": bonus_balance}
-    except Exception as e:
-        return {"valid": False, "balance": 0, "bonusBalance": 0}
+# ENDPOINT УДАЛЕН - баланс теперь возвращается во всех операциях через get_user_balance()
 
 @router.post("/get-prices")
 async def get_prices(request: ValidateRequest):
@@ -820,3 +967,131 @@ async def get_nft_gifts(request: ValidateRequest):
         import traceback
         traceback.print_exc()
         return {"valid": True, "gifts": []}
+
+@router.post("/withdraw-nft-gift")
+async def withdraw_nft_gift(request: WithdrawNFTGiftRequest):
+    """Вывод NFT подарка через Client.transfer_gift()"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        
+        if not user_data:
+            return {"success": False, "message": "User data not found"}
+        
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        username = user.get('username', '')
+        first_name = user.get('first_name', 'User')
+        
+        # Проверяем доступность Pyrogram
+        pyrogram_app = get_pyrogram()
+        if pyrogram_app is None:
+            return {"success": False, "message": "Вывод подарков временно недоступен"}
+        
+        # Получаем подарок через Pyrogram для проверки владельца
+        gift_found = False
+        gift_title = "Unknown"
+        
+        try:
+            async for gift in pyrogram_app.get_chat_gifts(
+                chat_id=user_id,
+                exclude_unlimited=True,
+                limit=100
+            ):
+                # Проверяем что это нужный подарок по slug
+                gift_slug = getattr(gift, 'name', None)
+                gift_msg_id = getattr(gift, 'message_id', None)
+                
+                if gift_slug == request.slug and gift_msg_id == request.messageId:
+                    gift_found = True
+                    gift_title = gift.title
+                    
+                    # Проверяем что подарок принадлежит пользователю
+                    owner = getattr(gift, 'owner', None)
+                    if owner and hasattr(owner, 'id'):
+                        if owner.id != user_id:
+                            return {
+                                "success": False, 
+                                "message": "Этот подарок вам не принадлежит"
+                            }
+                    break
+            
+            if not gift_found:
+                return {"success": False, "message": "Подарок не найден в вашем аккаунте"}
+            
+        except Exception as e:
+            print(f"Error checking gift ownership: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": "Ошибка проверки владения подарком"}
+        
+        # Пробуем отправить подарок обратно владельцу через transfer_gift
+        try:
+            await pyrogram_app.transfer_gift(
+                message_id=request.messageId,
+                to_chat_id=user_id
+            )
+            
+            return {"success": True, "message": "Подарок успешно отправлен!"}
+            
+        except Exception as transfer_error:
+            error_msg = str(transfer_error)
+            print(f"Error transferring NFT gift: {error_msg}")
+            import traceback
+            traceback.print_exc()
+            
+            # Отправляем запрос администрации на ручную выдачу
+            if LOG_BOT_TOKEN and LOGS_ID:
+                try:
+                    log_bot = Bot(token=LOG_BOT_TOKEN)
+                    
+                    user_link = f"@{username}" if username else first_name
+                    user_mention = f'<a href="tg://user?id={user_id}">{user_link}</a>'
+                    
+                    text = f"""🎁 <b>Ошибка вывода NFT подарка</b>
+
+👤 Пользователь: {user_mention}
+🆔 ID: <code>{user_id}</code>
+🎁 Подарок: {gift_title}
+🔖 Slug: <code>{request.slug}</code>
+💬 Message ID: <code>{request.messageId}</code>
+
+❌ Ошибка: <code>{error_msg[:200]}</code>
+
+<i>Требуется ручная отправка подарка пользователю</i>"""
+                    
+                    await log_bot.send_message(LOGS_ID, text, parse_mode="HTML")
+                    await log_bot.session.close()
+                    
+                    # Уведомляем пользователя
+                    try:
+                        main_bot = Bot(token=BOT_TOKEN)
+                        await main_bot.send_message(
+                            user_id, 
+                            "⚠️ Возникла ошибка при автоматической отправке подарка.\n\n"
+                            "Ваш запрос отправлен администрации. Подарок будет отправлен вручную в течение 24 часов."
+                        )
+                        await main_bot.session.close()
+                    except Exception as notify_error:
+                        print(f"Failed to send notification to user {user_id}: {notify_error}")
+                    
+                except Exception as log_error:
+                    print(f"Failed to send log message: {log_error}")
+            
+            return {
+                "success": False, 
+                "message": "Не удалось автоматически отправить подарок. Запрос отправлен администрации.",
+                "error": error_msg,
+                "needsManual": True
+            }
+            
+    except Exception as e:
+        print(f"Error in withdraw_nft_gift: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "message": "Ошибка сервера", "error": str(e)}

@@ -13,10 +13,13 @@ from app.pyrogram_client import start_pyrogram, stop_pyrogram
 from app.tasks.spin_notifications import spin_notification_loop
 from app.tasks.ton_transaction_checker import ton_transaction_loop
 from app.tasks.gift_parser import gift_parser_loop
-from app.tasks.price_updater import price_update_loop
 from app.tasks.ton_price_updater import ton_price_loop
+from app.tasks.gift_models_checker import gift_models_checker_loop
 from app.crash_game import start_crash_game_loop
 from app.support_bot import start_support_bot
+from app.tasks.redis_sync import start_redis_sync, stop_redis_sync
+from app.utils.redis_client import cache, redis_client
+from app.restart_monitor import start_restart_monitor, stop_restart_monitor
 
 bot_task = None
 pyrogram_task = None
@@ -24,14 +27,16 @@ notification_task = None
 crash_task = None
 ton_checker_task = None
 gift_parser_task = None
-price_updater_task = None
 ton_price_task = None
+gift_models_task = None
 support_bot_task = None
 cryptobot_checker_task = None
+redis_sync_task = None
+restart_monitor_task = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, price_updater_task, ton_price_task, support_bot_task, cryptobot_checker_task
+    global bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, ton_price_task, gift_models_task, support_bot_task, cryptobot_checker_task, redis_sync_task, restart_monitor_task
     
     # Инициализация БД
     init_db()
@@ -61,33 +66,28 @@ async def lifespan(app: FastAPI):
     # ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА ДАННЫХ (при старте)
     # ========================================
     
-    # 1. Парсинг подарков через Pyrogram (получаем LIMITED NFT)
-    from app.tasks.gift_parser import parse_gifts
+    from app.tasks.gift_parser import full_sync_with_prices
     from app.tasks.ton_price_updater import update_ton_price, recalculate_gift_prices
-    from app.tasks.price_updater import update_all_prices
     
     print("=" * 80)
     print("🚀 ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА ДАННЫХ")
     print("=" * 80)
     print()
     
-    print("1️⃣  Парсинг подарков через Pyrogram...")
-    try:
-        await parse_gifts()
-    except Exception as e:
-        print(f"⚠️  Ошибка парсинга подарков: {e}")
-    
-    print()
-    print("2️⃣  Обновление цены TON с CoinMarketCap...")
+    # 1. Обновляем курс TON сначала
+    print("1️⃣  Обновление цены TON с CoinMarketCap...")
     await update_ton_price()
     
     print()
-    print("3️⃣  Обновление цен LIMITED NFT с Tonnel...")
-    await update_all_prices()
+    print("2️⃣  Полная синхронизация подарков (Telegram + Tonnel + пересчет цен)...")
     
-    print()
-    print("4️⃣  Пересчет цен подарков в звезды...")
-    await recalculate_gift_prices()
+    try:
+        # Запускаем полную синхронизацию сразу при старте
+        await full_sync_with_prices()
+    except Exception as e:
+        print(f"⚠️  Ошибка полной синхронизации: {e}")
+        import traceback
+        traceback.print_exc()
     
     print()
     print("=" * 80)
@@ -99,17 +99,17 @@ async def lifespan(app: FastAPI):
     # ЗАПУСК ЦИКЛИЧЕСКИХ ЗАДАЧ
     # ========================================
     
-    # Парсер подарков (каждые 5 минут)
+    # Полная синхронизация подарков (каждый час): parse_gifts + Tonnel + новые/удаленные
     gift_parser_task = asyncio.create_task(gift_parser_loop())
-    print("✅ Запущен парсер подарков (каждые 5 минут)")
+    print("✅ Запущена полная синхронизация подарков (каждый час)")
     
     # Обновление цены TON + пересчет (каждые 5 минут)
     ton_price_task = asyncio.create_task(ton_price_loop())
     print("✅ Запущено обновление цены TON + пересчет (каждые 5 минут)")
     
-    # Обновление цен с Tonnel (каждый час)
-    price_updater_task = asyncio.create_task(price_update_loop())
-    print("✅ Запущено обновление цен с Tonnel (каждый час)")
+    # Мониторинг моделей подарков (каждый час)
+    gift_models_task = asyncio.create_task(gift_models_checker_loop())
+    print("✅ Запущен мониторинг моделей подарков (каждый час)")
     
     # Бот поддержки (polling mode)
     support_bot_task = asyncio.create_task(start_support_bot())
@@ -120,10 +120,43 @@ async def lifespan(app: FastAPI):
     cryptobot_checker_task = asyncio.create_task(cryptobot_checker_loop())
     print("✅ Запущен CryptoBot Invoice Checker (каждые 30 секунд)")
     
+    # Запуск Redis синхронизации
+    if cache.is_available():
+        await start_redis_sync()
+        print("✅ Redis синхронизация запущена (каждые 5 минут)")
+        redis_info = cache.get_info()
+        print(f"   📊 Redis: {redis_info.get('keys', 0)} keys, {redis_info.get('memory_used', 'N/A')}")
+    else:
+        print("⚠️  Redis недоступен, работаем только с SQLite")
+    
+    # Запуск мониторинга перезапуска через канал логов
+    await start_restart_monitor()
+    print("✅ Мониторинг перезапуска запущен (команда: 'рестарт' в канале логов)")
+    
     yield
     
     # Graceful shutdown
     print("🛑 Начинается остановка сервисов...")
+    
+    # Останавливаем restart monitor
+    if restart_monitor_task:
+        print("🛑 Останавливаем мониторинг перезапуска...")
+        await stop_restart_monitor()
+        print("✅ Мониторинг перезапуска остановлен")
+    
+    # КРИТИЧНО: Останавливаем Redis sync ПЕРВЫМ (сохраняем данные)
+    if redis_sync_task:
+        print("💾 Сохранение данных из Redis...")
+        await stop_redis_sync()
+        print("✅ Redis синхронизация остановлена")
+    
+    # Закрываем Redis connection pool
+    if redis_client:
+        try:
+            redis_client.close()
+            print("✅ Redis connections closed")
+        except Exception as e:
+            print(f"⚠️  Redis close error: {e}")
     
     # Останавливаем CryptoBot checker
     if cryptobot_checker_task:
@@ -165,16 +198,6 @@ async def lifespan(app: FastAPI):
         except asyncio.CancelledError:
             pass
     
-    # Останавливаем price updater
-    if price_updater_task:
-        price_updater_task.cancel()
-        try:
-            await asyncio.wait_for(price_updater_task, timeout=2.0)
-        except asyncio.TimeoutError:
-            print("⚠️  Price updater task не завершился")
-        except asyncio.CancelledError:
-            pass
-    
     # Останавливаем TON price updater
     if ton_price_task:
         ton_price_task.cancel()
@@ -182,6 +205,16 @@ async def lifespan(app: FastAPI):
             await asyncio.wait_for(ton_price_task, timeout=2.0)
         except asyncio.TimeoutError:
             print("⚠️  TON price task не завершился")
+        except asyncio.CancelledError:
+            pass
+    
+    # Останавливаем gift models checker
+    if gift_models_task:
+        gift_models_task.cancel()
+        try:
+            await asyncio.wait_for(gift_models_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            print("⚠️  Gift models task не завершился")
         except asyncio.CancelledError:
             pass
     
@@ -240,11 +273,13 @@ def create_app():
     
     # Middleware для проверки бана
     from app.middlewares.ban_check import ban_check_middleware
+    from app.middlewares.maintenance import maintenance_middleware
     
     # Middleware проверки бана
     app.middleware("http")(ban_check_middleware)
     
-    # Maintenance проверяется в эндпоинте /api/validate, не в middleware
+    # Middleware для проверки технических работ
+    app.middleware("http")(maintenance_middleware)
 
     app.include_router(auth.router)
     app.include_router(game.router)

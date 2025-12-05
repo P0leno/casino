@@ -9,6 +9,7 @@ from datetime import datetime
 from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import balance_rate_limiter
+from app.utils.balance import get_user_balance
 
 router = APIRouter(prefix="/api/promocode", tags=["promocode"])
 
@@ -141,10 +142,14 @@ async def activate_promocode(request: ActivateRequest):
         
         conn.commit()
         
+        # Получаем обновленный баланс
+        user_balance = get_user_balance(user_id)
+        
         return {
             "success": True,
             "reward": reward,
-            "message": f"Промокод активирован! Получено {reward} звезд"
+            "message": f"Промокод активирован! Получено {reward} звезд",
+            **user_balance
         }
         
     except Exception as e:

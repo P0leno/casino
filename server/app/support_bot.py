@@ -1747,8 +1747,10 @@ async def get_group_members() -> list:
 async def start_support_bot():
     """Запуск бота поддержки"""
     if not SUPPORT_BOT_TOKEN:
-        print("⚠️  SUPPORT_BOT_TOKEN не настроен - бот поддержки отключен")
+        print("[SUPPORT_BOT] ⚠️  SUPPORT_BOT_TOKEN не настроен - бот поддержки отключен")
         return
+    
+    print("[SUPPORT_BOT] Запуск бота поддержки...")
     
     if not SUPPORT_GROUP_ID:
         print("⚠️  SUPPORT_GROUP_ID не настроен - бот поддержки отключен")
@@ -1769,6 +1771,6 @@ async def start_support_bot():
             allowed_updates=["message", "callback_query", "pre_checkout_query", "message_reaction"]
         )
     except Exception as e:
-        print(f"❌ Ошибка бота поддержки: {e}")
+        print(f"[SUPPORT_BOT] ❌ Ошибка: {e}")
     finally:
         print("🛑 Бот поддержки остановлен")

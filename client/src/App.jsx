@@ -10,6 +10,7 @@ import Spin from './components/Spin'
 import SpinSelection from './components/SpinSelection'
 import FreeSpin from './components/FreeSpin'
 import PaidSpin from './components/PaidSpin'
+import LapikSpin from './components/LapikSpin'
 import Crash from './components/Crash'
 import Profile from './components/Profile'
 import TopUp from './components/TopUp'
@@ -17,6 +18,7 @@ import Tasks from './components/Tasks'
 import TabBar from './components/TabBar'
 import BannedScreen from './components/BannedScreen'
 import Maintenance from './components/Maintenance'
+import { BalanceProvider } from './contexts/BalanceContext'
 
 function App() {
   const [error, setError] = useState(null)
@@ -226,64 +228,92 @@ function App() {
     )
   }
 
+  // Показываем экран технических работ если режим включен
+  if (maintenanceMode) {
+    return <Maintenance />
+  }
+
   // Если путь /spins - показываем SpinSelection без TabBar
   if (currentPath === '/spins') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
-        <SpinSelection onNavigateToTopUp={setActiveTab} />
-      </div>
+      <BalanceProvider>
+        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <SpinSelection onNavigateToTopUp={setActiveTab} />
+        </div>
+      </BalanceProvider>
     )
   }
 
   // Если путь /spins/free - показываем FreeSpin без TabBar
   if (currentPath === '/spins/free') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
-        <FreeSpin onNavigateToTopUp={setActiveTab} />
-      </div>
+      <BalanceProvider>
+        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <FreeSpin onNavigateToTopUp={setActiveTab} />
+        </div>
+      </BalanceProvider>
     )
   }
 
   // Если путь /spins/paid - показываем PaidSpin без TabBar
   if (currentPath === '/spins/paid') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
-        <PaidSpin onNavigateToTopUp={setActiveTab} />
-      </div>
+      <BalanceProvider>
+        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <PaidSpin onNavigateToTopUp={setActiveTab} />
+        </div>
+      </BalanceProvider>
+    )
+  }
+
+  // Если путь /spins/lapik - показываем LapikSpin без TabBar
+  if (currentPath === '/spins/lapik') {
+    return (
+      <BalanceProvider>
+        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <LapikSpin onNavigateToTopUp={setActiveTab} />
+        </div>
+      </BalanceProvider>
     )
   }
 
   // Если путь /crash - показываем Crash без TabBar
   if (currentPath === '/crash') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
-        <Crash onNavigateToTopUp={setActiveTab} />
-      </div>
+      <BalanceProvider>
+        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <Crash onNavigateToTopUp={setActiveTab} />
+        </div>
+      </BalanceProvider>
     )
   }
 
   // Если путь /spin - показываем Spin без TabBar
   if (currentPath === '/spin') {
     return (
-      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
-        <Spin onNavigateToTopUp={setActiveTab} />
-      </div>
+      <BalanceProvider>
+        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <Spin onNavigateToTopUp={setActiveTab} />
+        </div>
+      </BalanceProvider>
     )
   }
 
   return (
-    <div 
-      className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
-      style={{ '--safe-area-top': `${safeAreaTop}px` }}
-    >
-      {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
-      {activeTab === 'shop' && <Shop onNavigateToTopUp={setActiveTab} />}
-      {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
-      {activeTab === 'tasks' && <Tasks onNavigateToTopUp={setActiveTab} />}
-      {activeTab === 'profile' && <Profile />}
-      {activeTab === 'topup' && <TopUp onNavigateBack={setActiveTab} />}
-      {activeTab !== 'topup' && <TabBar activeTab={activeTab} onTabChange={setActiveTab} />}
-    </div>
+    <BalanceProvider>
+      <div 
+        className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
+        style={{ '--safe-area-top': `${safeAreaTop}px` }}
+      >
+        {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
+        {activeTab === 'shop' && <Shop onNavigateToTopUp={setActiveTab} />}
+        {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
+        {activeTab === 'tasks' && <Tasks onNavigateToTopUp={setActiveTab} />}
+        {activeTab === 'profile' && <Profile />}
+        {activeTab === 'topup' && <TopUp onNavigateBack={setActiveTab} />}
+        {activeTab !== 'topup' && <TabBar activeTab={activeTab} onTabChange={setActiveTab} />}
+      </div>
+    </BalanceProvider>
   )
 }
 

@@ -1,10 +1,15 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-dotenv==1.0.0
-aiogram==3.22
-pyrofork==2.3.68
-tgcrypto==1.2.5
-qrcode==7.4.2
-Pillow==10.1.0
-aiohttp==3.9.1
-aiocryptopay==0.4.8
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+python-dotenv>=1.0.0
+aiogram>=3.22
+pyrofork>=2.3.68
+tgcrypto>=1.2.5
+qrcode>=7.4.2
+Pillow>=10.1.0
+aiohttp>=3.9.1
+aiocryptopay>=0.4.8
+# curl-cffi>=0.7.4  # Закомментировано из-за конфликта с aiocryptopay (certifi version)
+httpx>=0.25.0  # Замена curl-cffi
+fake-useragent>=1.4.0
+redis>=5.0.1
+hiredis>=2.3.2

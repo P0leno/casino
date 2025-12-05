@@ -3,7 +3,7 @@ import './Spin.css'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import freeSpinBanner from '../assets/freespin.svg'
-import paidSpinBanner from '../assets/paidspin.svg'
+import bazminBanner from '../assets/bazmin.svg'
 
 function SpinVirtual({ onNavigateToTopUp }) {
   const handleFreeSpin = () => {
@@ -29,7 +29,7 @@ function SpinVirtual({ onNavigateToTopUp }) {
             onClick={handleFreeSpin}
           />
           <img 
-            src={paidSpinBanner} 
+            src={bazminBanner} 
             alt="Бомж Кейс" 
             className="spin-banner"
             onClick={handlePaidSpin}

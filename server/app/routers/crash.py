@@ -4,6 +4,7 @@ from app.crash_game import crash_game
 import sqlite3
 from app.config import DB_PATH, BOT_TOKEN
 from app.utils.validate import validate_init_data
+from app.utils.balance import get_user_balance
 from urllib.parse import parse_qs
 import json
 
@@ -75,6 +76,11 @@ async def place_bet(bet: BetRequest):
         
         # Размещаем ставку
         result = crash_game.place_bet(user_id, bet.amount, username, avatar)
+        
+        # Получаем обновленный баланс
+        user_balance = get_user_balance(user_id)
+        result.update(user_balance)
+        
         return result
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
@@ -109,6 +115,10 @@ async def cashout(request: CashoutRequest):
             cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
             conn.commit()
             conn.close()
+            
+            # Получаем обновленный баланс
+            user_balance = get_user_balance(user_id)
+            result.update(user_balance)
         except sqlite3.Error as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     

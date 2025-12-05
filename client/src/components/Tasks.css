@@ -94,6 +94,30 @@
   font-weight: 700;
 }
 
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-details-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 16px;
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.task-details-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .task-start-btn {
   background: #1C404A;
   border: 1px solid rgba(15, 188, 224, 0.3);
@@ -121,6 +145,46 @@
   opacity: 0.6;
 }
 
+/* Модальное окно деталей задания */
+.task-details-modal {
+  max-height: 60vh;
+}
+
+.task-detail-section {
+  margin-bottom: 24px;
+}
+
+.task-detail-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.task-detail-value {
+  font-size: 16px;
+  color: #0FBCE0;
+  font-weight: 600;
+  background: rgba(15, 188, 224, 0.1);
+  border: 1px solid rgba(15, 188, 224, 0.2);
+  padding: 12px 16px;
+  border-radius: 12px;
+  word-break: break-all;
+}
+
+.task-detail-reward {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  color: #0FBCE0;
+  font-weight: 700;
+  background: rgba(15, 188, 224, 0.1);
+  border: 1px solid rgba(15, 188, 224, 0.2);
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
 @media (max-width: 600px) {
   .task-card {
     flex-direction: column;
@@ -132,7 +196,16 @@
     justify-content: space-between;
   }
 
+  .task-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .task-start-btn {
+    flex-shrink: 0;
+  }
+  
+  .task-details-btn {
     flex-shrink: 0;
   }
 }

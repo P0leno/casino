@@ -18,6 +18,7 @@ function Shop({ onNavigateToTopUp }) {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [appliedFilters, setAppliedFilters] = useState([])
   const [filterCategory, setFilterCategory] = useState(null) // Категория для которой применены фильтры
+  const [modelsList, setModelsList] = useState({}) // Список всех моделей из models_list.json
   
   const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
                    window.Telegram?.WebApp?.platform === 'ios'
@@ -36,10 +37,23 @@ function Shop({ onNavigateToTopUp }) {
     { id: 'symbol', label: 'Символ' }
   ]
 
-  // Загрузка подарков с сервера
+  // Загрузка подарков с сервера и списка моделей
   useEffect(() => {
     loadGifts()
+    loadModelsList()
   }, [])
+
+  const loadModelsList = async () => {
+    try {
+      const response = await fetch(MODELS_LIST_URL)
+      if (response.ok) {
+        const data = await response.json()
+        setModelsList(data)
+      }
+    } catch (error) {
+      console.error('Error loading models list:', error)
+    }
+  }
 
   const loadGifts = async () => {
     try {
@@ -160,12 +174,9 @@ function Shop({ onNavigateToTopUp }) {
               className={`category-btn ${activeCategory === category.id ? 'active' : ''}`}
               onClick={() => {
                 setActiveCategory(category.id)
-                if (category.id !== 'symbol') {
+                // Открываем фильтр при нажатии на "Подарок"
+                if (category.id === 'gift') {
                   setShowFilterModal(true)
-                } else {
-                  // Для символов очищаем фильтры
-                  setAppliedFilters([])
-                  setFilterCategory(null)
                 }
               }}
             >
@@ -183,7 +194,7 @@ function Shop({ onNavigateToTopUp }) {
           ) : (
             getFilteredGifts().map(gift => (
               <div 
-                key={gift.id} 
+                key={gift.gift_id} 
                 className="shop-item-card"
                 onClick={() => handleGiftClick(gift)}
               >
@@ -230,6 +241,7 @@ function Shop({ onNavigateToTopUp }) {
         <ShopFilterModal 
           category={activeCategory}
           currentFilters={filterCategory === activeCategory ? appliedFilters : []} // Передаем фильтры только если категория совпадает
+          modelsList={modelsList} // Передаем список моделей
           onClose={() => setShowFilterModal(false)}
           onApplyFilter={(filters) => {
             setAppliedFilters(filters)

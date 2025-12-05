@@ -1,0 +1,57 @@
+.model-card {
+  background: transparent;
+  backdrop-filter: blur(1.25rem);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 1px 1px 0.5px rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+}
+
+/* Убираем hover эффект */
+.model-card:active {
+  transform: scale(0.98);
+}
+
+.model-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.model-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  text-align: center;
+}
+
+.model-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Адаптив */
+@media (max-width: 380px) {
+  .model-card {
+    padding: 6px;
+  }
+  
+  .model-name {
+    font-size: 11px;
+  }
+}

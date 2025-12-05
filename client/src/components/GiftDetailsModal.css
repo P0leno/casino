@@ -213,7 +213,7 @@
 
 .modal-buy-button {
   width: calc(100% - 32px);
-  margin: 24px 16px 16px;
+  margin: 24px auto calc(10px + env(safe-area-inset-bottom));
   padding: 16px;
   background: #1C404A;
   color: #0FBCE0;
@@ -371,4 +371,34 @@
 .modal-sell-button-full:active:not(:disabled) {
   transform: scale(0.98);
   box-shadow: 0 2px 8px rgba(15, 188, 224, 0.3);
+}
+
+/* Текст для вывода обычного подарка */
+.withdraw-info-text {
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.withdraw-info-regular {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.withdraw-info-link {
+  color: #0FBCE0;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: all 0.3s ease;
+}
+
+.withdraw-info-link:hover {
+  color: #0da8c9;
+  text-decoration: none;
+}
+
+.withdraw-info-link:active {
+  transform: scale(0.98);
 }

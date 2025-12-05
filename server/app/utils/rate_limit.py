@@ -47,3 +47,15 @@ balance_rate_limiter = RateLimiter(max_requests=1, time_window=3)
 
 # Rate limiter для спинов: 1 запрос в 5 секунд
 spin_rate_limiter = RateLimiter(max_requests=1, time_window=5)
+
+# Rate limiter для покупки подарка: 1 запрос в 20 секунд
+buy_gift_rate_limiter = RateLimiter(max_requests=1, time_window=20)
+
+# Rate limiter для получения инвентаря: 10 запросов в 200 секунд
+get_inventory_rate_limiter = RateLimiter(max_requests=10, time_window=200)
+
+# Rate limiter для заданий: 5 запросов в 100 секунд
+tasks_rate_limiter = RateLimiter(max_requests=5, time_window=100)
+
+# Rate limiter для получения списка подарков: 10 запросов в 20 секунд
+get_shop_gifts_rate_limiter = RateLimiter(max_requests=10, time_window=20)

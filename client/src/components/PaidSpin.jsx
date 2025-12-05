@@ -3,6 +3,7 @@ import './Spin.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
+import { useBalance } from '../contexts/BalanceContext'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
 
@@ -19,6 +20,7 @@ const ITEM_WIDTH = 120
 const GIFTS_COUNT = 6
 
 function PaidSpin({ onNavigateToTopUp }) {
+  const { updateBalance } = useBalance()
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
   const [pawAmount, setPawAmount] = useState(0)
@@ -125,9 +127,9 @@ function PaidSpin({ onNavigateToTopUp }) {
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
       
-      console.log('Sending paid-spin request to:', `${apiUrl}/api/paid-spin`)
+      console.log('Sending bazmin-spin request to:', `${apiUrl}/api/bazmin-spin`)
       
-      const response = await fetch(`${apiUrl}/api/paid-spin`, {
+      const response = await fetch(`${apiUrl}/api/bazmin-spin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
@@ -138,6 +140,7 @@ function PaidSpin({ onNavigateToTopUp }) {
       console.log('Response data:', data)
       
       if (data.success) {
+        updateBalance(data)
         const winIndex = gifts.findIndex(g => g.name === data.gift)
         
         if (winIndex === -1) {

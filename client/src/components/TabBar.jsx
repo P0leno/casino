@@ -1,7 +1,6 @@
 import './TabBar.css'
 import { useEffect, useState, useRef } from 'react'
 import shopIcon from '../assets/shop.svg'
-import inventoryIcon from '../assets/inventory.svg'
 import homeIcon from '../assets/home.svg'
 import tasksIcon from '../assets/tasks.svg'
 

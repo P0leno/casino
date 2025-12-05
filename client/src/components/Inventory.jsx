@@ -1,17 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import './Inventory.css'
+import './PromoCodeModal.css'
 import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
+import { useBalance } from '../contexts/BalanceContext'
 import GiftDetailsModal from './GiftDetailsModal'
 import starStaticIcon from '../assets/star_static.svg'
 
 function Inventory({ onNavigateToTopUp }) {
+  const { updateBalance } = useBalance()
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedGift, setSelectedGift] = useState(null)
   const [showGiftDetails, setShowGiftDetails] = useState(false)
   const [sellingGift, setSellingGift] = useState(null)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorData, setErrorData] = useState(null)
   const gridRef = useRef(null)
   const observerRef = useRef(null)
 
@@ -124,11 +129,22 @@ function Inventory({ onNavigateToTopUp }) {
         loadInventory()
         setShowGiftDetails(false)
       } else {
-        const errorMsg = data.message || 'Не удалось отправить подарок'
-        if (tg?.showAlert) {
-          tg.showAlert(errorMsg)
+        // Проверяем нужна ли ручная отправка (PeerIdInvalid)
+        if (data.needsManual || (data.error && data.error.includes('PeerIdInvalid'))) {
+          setErrorData({
+            gift: gift,
+            error: data.error || data.message,
+            type: 'withdraw'
+          })
+          setShowErrorModal(true)
+          setShowGiftDetails(false)
         } else {
-          alert(errorMsg)
+          const errorMsg = data.message || 'Не удалось отправить подарок'
+          if (tg?.showAlert) {
+            tg.showAlert(errorMsg)
+          } else {
+            alert(errorMsg)
+          }
         }
       }
     } catch (error) {
@@ -183,6 +199,70 @@ function Inventory({ onNavigateToTopUp }) {
     }
   }
 
+  // Вывод NFT подарков
+  const handleWithdrawNFT = async (gift) => {
+    const tg = window.Telegram?.WebApp
+    const initData = tg?.initData
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    
+    // Подтверждение
+    const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
+    const confirmed = tg?.showConfirm 
+      ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
+      : window.confirm(confirmMessage)
+    
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`${apiUrl}/api/withdraw-nft-gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          initData, 
+          slug: gift.slug,
+          messageId: gift.message_id
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        if (tg?.showAlert) {
+          tg.showAlert('✅ Подарок успешно отправлен!')
+        } else {
+          alert('✅ Подарок успешно отправлен!')
+        }
+        loadInventory()
+        setShowGiftDetails(false)
+      } else {
+        // Проверяем нужна ли ручная отправка (PeerIdInvalid)
+        if (data.needsManual || (data.error && data.error.includes('PeerIdInvalid'))) {
+          setErrorData({
+            gift: gift,
+            error: data.error || data.message,
+            type: 'withdrawNFT'
+          })
+          setShowErrorModal(true)
+          setShowGiftDetails(false)
+        } else {
+          const errorMsg = data.message || 'Не удалось отправить подарок'
+          if (tg?.showAlert) {
+            tg.showAlert(errorMsg)
+          } else {
+            alert(errorMsg)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Withdraw NFT error:', error)
+      if (tg?.showAlert) {
+        tg.showAlert('Ошибка соединения с сервером')
+      } else {
+        alert('Ошибка соединения с сервером')
+      }
+    }
+  }
+
   // Продажа NFT подарков
   const handleSellNFT = async (gift) => {
     if (sellingGift) return
@@ -194,21 +274,13 @@ function Inventory({ onNavigateToTopUp }) {
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     
     try {
-      // Получаем цену продажи
-      const priceResponse = await fetch(`${apiUrl}/api/inventory/get-sell-price`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, slug: gift.slug })
-      })
-
-      const priceData = await priceResponse.json()
-
-      if (!priceResponse.ok) {
-        throw new Error(priceData.detail || 'Не удалось определить цену')
+      // Проверяем что есть sell_price
+      if (!gift.sell_price || gift.sell_price <= 0) {
+        throw new Error('Цена продажи не установлена')
       }
 
-      // Диалоговое окно подтверждения
-      const confirmMessage = `Продать "${gift.title}"?\n\nЦена на Tonnel: ${priceData.ton_price} TON\nКомиссия: ${priceData.commission_percent}%\nВы получите: ${priceData.stars_price}⭐`
+      // Диалоговое окно подтверждения (sell_price уже рассчитан с комиссией)
+      const confirmMessage = `Продать "${gift.title}"?\n\nВы получите: ${gift.sell_price}⭐`
       
       const confirmed = tg?.showConfirm 
         ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
@@ -231,6 +303,9 @@ function Inventory({ onNavigateToTopUp }) {
       if (!sellResponse.ok) {
         throw new Error(sellData.detail || 'Ошибка продажи')
       }
+
+      // Обновляем баланс
+      updateBalance(sellData)
 
       if (tg?.showAlert) {
         tg.showAlert(`${sellData.message}\n+${sellData.stars_earned}⭐`)
@@ -311,8 +386,69 @@ function Inventory({ onNavigateToTopUp }) {
             setSelectedGift(null)
           }}
           onSell={selectedGift.is_regular_gift ? handleSellRegular : handleSellNFT}
-          onWithdraw={selectedGift.is_regular_gift ? handleWithdrawRegular : null}
+          onWithdraw={selectedGift.is_regular_gift ? handleWithdrawRegular : handleWithdrawNFT}
         />
+      )}
+
+      {showErrorModal && errorData && (
+        <>
+          <div className="promo-modal-backdrop" onClick={() => setShowErrorModal(false)} />
+          <div className="promo-modal-sheet" style={{ paddingBottom: `${20}px` }}>
+            <button className="promo-close-btn" onClick={() => setShowErrorModal(false)}>×</button>
+            
+            <div className="promo-modal-content">
+              <h2 className="promo-modal-title">Ошибка отправки</h2>
+              
+              <div className="error-message-section">
+                <div className="error-label">Произошла ошибка:</div>
+                <div className="error-value">{errorData.error}</div>
+              </div>
+
+              <div className="error-instruction">
+                <p>Убедитесь, что вы начали чат с ботом</p>
+                <a 
+                  href="https://t.me/shellrelayer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bot-link"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const tg = window.Telegram?.WebApp
+                    tg?.openTelegramLink('https://t.me/shellrelayer')
+                  }}
+                >
+                  @shellrelayer
+                </a>
+              </div>
+
+              <div className="error-buttons">
+                <button 
+                  className="error-btn retry-btn"
+                  onClick={async () => {
+                    setShowErrorModal(false)
+                    if (errorData.type === 'withdraw') {
+                      await handleWithdrawRegular(errorData.gift)
+                    } else if (errorData.type === 'withdrawNFT') {
+                      await handleWithdrawNFT(errorData.gift)
+                    }
+                  }}
+                >
+                  Повторить
+                </button>
+                <button 
+                  className="error-btn help-btn"
+                  onClick={() => {
+                    const tg = window.Telegram?.WebApp
+                    tg?.openTelegramLink('https://t.me/ShellSupport_bot')
+                    setShowErrorModal(false)
+                  }}
+                >
+                  Помощь
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

@@ -175,6 +175,18 @@ def init_db():
     
     print("✅ Таблица settings создана/проверена")
     
+    # Таблица моделей подарков (для синхронизации с Telegram Gift API)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gift_models (
+            gift_name TEXT PRIMARY KEY,
+            models TEXT NOT NULL,
+            last_check TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            folder_exists INTEGER DEFAULT 0
+        )
+    """)
+    
+    print("✅ Таблица gift_models создана/проверена")
+    
     # Таблица для CryptoBot счетов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cryptobot_invoices (
@@ -393,18 +405,32 @@ def init_db():
     
     # Данные для платного спина (бомж кейс) за 5 звезд
     # star_min/star_max - только для 'star', paw_min/paw_max - только для 'paw'
-    bomzcase_gifts = [
+    bazmin_gifts = [
         ('bear', 10.0, 1.0, 0, 0, 0, 0),
         ('heart', 10.0, 1.0, 0, 0, 0, 0),
         ('rose', 10.0, 0.0, 0, 0, 0, 0),
         ('gift', 10.0, 0.01, 0, 0, 0, 0),
-        ('paw', 10.0, 90.0, 1, 7, 0, 0),
-        ('star', 20.0, 7.0, 0, 0, 1, 4)
+        ('star', 20.0, 98.0, 0, 0, 1, 4)  # Увеличили шанс star с 7.0 до 98.0 (забрали у paw)
     ]
     
-    for gift_name, visible, real, paw_min, paw_max, star_min, star_max in bomzcase_gifts:
+    for gift_name, visible, real, paw_min, paw_max, star_min, star_max in bazmin_gifts:
         cursor.execute(
-            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, mode, paw_min, paw_max, star_min, star_max) VALUES (?, ?, ?, 'bomzcase', ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, mode, paw_min, paw_max, star_min, star_max) VALUES (?, ?, ?, 'bazmin', ?, ?, ?, ?)",
+            (gift_name, visible, real, paw_min, paw_max, star_min, star_max)
+        )
+    
+    # Данные для lapik спина (за 10 лапок)
+    lapik_gifts = [
+        ('bear', 10.0, 10.0, 0, 0, 0, 0),
+        ('gift', 10.0, 10.0, 0, 0, 0, 0),
+        ('heart', 10.0, 10.0, 0, 0, 0, 0),
+        ('rose', 10.0, 10.0, 0, 0, 0, 0),
+        ('star', 10.0, 10.0, 0, 0, 1, 4)
+    ]
+    
+    for gift_name, visible, real, paw_min, paw_max, star_min, star_max in lapik_gifts:
+        cursor.execute(
+            "INSERT OR IGNORE INTO gift_chances (gift_name, visible_chance, real_chance, mode, paw_min, paw_max, star_min, star_max) VALUES (?, ?, ?, 'lapik', ?, ?, ?, ?)",
             (gift_name, visible, real, paw_min, paw_max, star_min, star_max)
         )
     

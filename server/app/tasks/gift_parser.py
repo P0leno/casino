@@ -256,230 +256,90 @@ async def parse_gifts(send_log=True):
             print(f"⚠️  Ошибка при остановке Pyrogram: {e}")
 
 async def force_parse_and_sync(search_tonnel_resale_func, update_gift_ton_price_func):
-    """Принудительный парсинг с синхронизацией: добавление новых, удаление старых, обновление цен"""
+    """Обновление цен через Tonnel для существующих подарков"""
     if not SESSION_STRING or not API_ID or not API_HASH:
-        return {"added": 0, "deleted": 0, "prices_updated": 0}
+        return {"prices_updated": 0}
     
-    try:
-        from pyrogram import Client
-    except Exception as e:
-        print(f"⚠️  Не удалось импортировать pyrogram: {e}")
-        return {"added": 0, "deleted": 0, "prices_updated": 0}
-    
-    app = Client(
-        "gift_parser",
-        api_id=int(API_ID),
-        api_hash=API_HASH,
-        session_string=SESSION_STRING,
-        in_memory=True,
-        no_updates=True
-    )
-    
-    added_count = 0
-    deleted_count = 0
     prices_updated = 0
     
     try:
-        await app.start()
-        me = await app.get_me()
-        
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        # Получаем текущие подарки из БД
+        # Получаем все подарки из БД для обновления цен
         cursor.execute("SELECT gift_id, title, model_name, backdrop_name FROM shop_gifts")
-        db_gifts = {row[0]: {"title": row[1], "model": row[2], "backdrop": row[3]} for row in cursor.fetchall()}
-        db_gift_ids = set(db_gifts.keys())
+        gifts = cursor.fetchall()
         
-        # Получаем подарки с аккаунта
-        tg_gifts = {}
-        async for gift in app.get_chat_gifts(chat_id=me.id, exclude_unlimited=True):
-            transfer_price = getattr(gift, 'transfer_price', None)
-            if not transfer_price:
+        print(f"💰 Обновление цен для {len(gifts)} подарков...")
+        
+        # Обновляем цены через Tonnel для каждого подарка
+        for gift_id, title, model_name, backdrop_name in gifts:
+            if not model_name:
                 continue
             
-            gift_id = str(gift.id)
-            tg_gifts[gift_id] = gift
-        
-        tg_gift_ids = set(tg_gifts.keys())
-        
-        # Находим новые подарки (есть в Telegram, нет в БД)
-        new_gift_ids = tg_gift_ids - db_gift_ids
-        
-        # Находим удаленные подарки (есть в БД, нет в Telegram)
-        deleted_gift_ids = db_gift_ids - tg_gift_ids
-        
-        print(f"🔍 Найдено новых подарков: {len(new_gift_ids)}")
-        print(f"🗑️  Найдено удаленных подарков: {len(deleted_gift_ids)}")
-        
-        # Добавляем новые подарки
-        for gift_id in new_gift_ids:
-            gift = tg_gifts[gift_id]
+            print(f"  🔍 {title} ({model_name})")
             
-            # Парсим данные подарка
-            slug = getattr(gift, 'name', None)
-            title = gift.title
-            model_name = None
-            model_path = None
-            symbol_name = None
-            backdrop_name = None
-            center_color = None
-            edge_color = None
-            pattern_color = None
-            text_color = None
-            rarity_model = None
-            rarity_symbol = None
-            rarity_backdrop = None
+            # Определяем специальные фоны
+            SPECIAL_BACKDROPS = ["Onyx Black", "Black", "Ivory White", "Midnight Blue"]
+            search_by_backdrop = backdrop_name and backdrop_name in SPECIAL_BACKDROPS
             
-            if hasattr(gift, 'attributes') and gift.attributes:
-                for attr in gift.attributes:
-                    if hasattr(attr, '__dict__'):
-                        attr_dict = attr.__dict__
-                    elif isinstance(attr, dict):
-                        attr_dict = attr
-                    else:
-                        continue
-                    
-                    attr_name = attr_dict.get('name', '')
-                    attr_type = str(attr_dict.get('type', ''))
-                    
-                    if 'MODEL' in attr_type or (hasattr(attr, 'sticker') and hasattr(attr, 'name') and not hasattr(attr, 'center_color')):
-                        model_name = attr_name
-                        rarity_model = attr_dict.get('rarity', 0)
-                        if model_name:
-                            model_path = f"/gifts/models/{title}/{model_name}.json"
-                    
-                    elif 'SYMBOL' in attr_type:
-                        symbol_name = attr_name
-                        rarity_symbol = attr_dict.get('rarity', 0)
-                    
-                    elif hasattr(attr, 'center_color') or 'BACKDROP' in attr_type:
-                        backdrop_name = attr_name
-                        rarity_backdrop = attr_dict.get('rarity', 0)
-                        
-                        if hasattr(attr, 'center_color') and attr.center_color is not None:
-                            center_color = int_to_hex_color(attr.center_color)
-                        if hasattr(attr, 'edge_color') and attr.edge_color is not None:
-                            edge_color = int_to_hex_color(attr.edge_color)
-                        if hasattr(attr, 'pattern_color') and attr.pattern_color is not None:
-                            pattern_color = int_to_hex_color(attr.pattern_color)
-                        if hasattr(attr, 'text_color') and attr.text_color is not None:
-                            text_color = int_to_hex_color(attr.text_color)
+            # Парсим цену с Tonnel
+            if search_by_backdrop:
+                min_ton_price = await search_tonnel_resale_func(
+                    title,
+                    model_name,
+                    backdrop_name
+                )
+            else:
+                min_ton_price = await search_tonnel_resale_func(
+                    title,
+                    model_name
+                )
             
-            available_amount = getattr(gift, 'available_amount', 0)
-            total_amount = getattr(gift, 'total_amount', 0)
-            
-            # Вставляем в БД
-            cursor.execute("""
-                INSERT INTO shop_gifts 
-                (gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
-                 center_color, edge_color, pattern_color, text_color,
-                 available_amount, total_amount, price,
-                 rarity_model, rarity_symbol, rarity_backdrop, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)
-            """, (
-                gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
-                center_color, edge_color, pattern_color, text_color,
-                available_amount, total_amount,
-                rarity_model, rarity_symbol, rarity_backdrop
-            ))
-            
-            print(f"  ➕ Добавлен: {title} ({model_name})")
-            added_count += 1
-            
-            # Парсим цену с Tonnel для нового подарка
-            if model_name:
-                print(f"     🔍 Парсинг цены с Tonnel ({title}, модель: {model_name}, фон: {backdrop_name})...")
-                await asyncio.sleep(3)  # Задержка между запросами
-                
-                # Определяем специальные фоны
-                SPECIAL_BACKDROPS = ["Onyx Black", "Black", "Ivory White", "Midnight Blue"]
-                search_by_backdrop = backdrop_name and backdrop_name in SPECIAL_BACKDROPS
-                
-                # search_tonnel_resale теперь асинхронная функция
-                if search_by_backdrop:
-                    min_ton_price = await search_tonnel_resale_func(
-                        title,
-                        model_name,
-                        backdrop_name
-                    )
+            if min_ton_price is not None and min_ton_price > 0:
+                if update_gift_ton_price_func(gift_id, min_ton_price):
+                    print(f"     ✅ Цена: {min_ton_price} TON")
+                    prices_updated += 1
                 else:
-                    min_ton_price = await search_tonnel_resale_func(
-                        title,
-                        model_name
-                    )
-                
-                print(f"     💰 Результат поиска: {min_ton_price} TON")
-                
-                if min_ton_price is not None and min_ton_price > 0:
-                    if update_gift_ton_price_func(gift_id, min_ton_price):
-                        print(f"     ✅ Цена установлена: {min_ton_price} TON")
-                        prices_updated += 1
-                    else:
-                        print(f"     ⚠️  Не удалось установить цену в БД")
-                else:
-                    print(f"     ⚠️  Цена не найдена на Tonnel")
-        
-        # Удаляем старые подарки
-        for gift_id in deleted_gift_ids:
-            gift_info = db_gifts[gift_id]
-            cursor.execute("DELETE FROM shop_gifts WHERE gift_id = ?", (gift_id,))
-            print(f"  ➖ Удален: {gift_info['title']} ({gift_info['model']})")
-            deleted_count += 1
+                    print(f"     ⚠️  Не удалось обновить цену")
+            else:
+                print(f"     ⚠️  Цена не найдена на Tonnel")
+            
+            # Задержка между запросами
+            await asyncio.sleep(3)
         
         conn.commit()
         conn.close()
         
-        print(f"✅ Синхронизация завершена: +{added_count} -{deleted_count} 💰{prices_updated}")
+        print(f"✅ Обновление цен завершено: {prices_updated}/{len(gifts)}")
         
-        return {
-            "added": added_count,
-            "deleted": deleted_count,
-            "prices_updated": prices_updated
-        }
+        return {"prices_updated": prices_updated}
         
     except Exception as e:
-        print(f"❌ Ошибка принудительного парсинга: {e}")
+        print(f"❌ Ошибка обновления цен: {e}")
         import traceback
         traceback.print_exc()
-        return {"added": 0, "deleted": 0, "prices_updated": 0}
-    
-    finally:
-        try:
-            if app.is_connected:
-                await app.stop()
-        except Exception as e:
-            print(f"⚠️  Ошибка при остановке Pyrogram: {e}")
+        return {"prices_updated": 0}
 
 # Глобальная переменная для управления таймером
 last_full_sync_time = None
 
 async def full_sync_with_prices():
-    """Полная синхронизация: parse_gifts + добавление новых + удаление старых + парсинг цен (раз в час)"""
+    """Полная синхронизация: parse_gifts через pyrogram + обновление цен через Tonnel"""
     global last_full_sync_time
     
     from app.tasks.price_updater import search_tonnel_resale, update_gift_ton_price
-    from app.tasks.external_gifts_parser import parse_external_gifts
     
     print("=" * 80)
     print(f"🔄 ПОЛНАЯ СИНХРОНИЗАЦИЯ (каждый час)")
     print("=" * 80)
     
-    # 1. Сначала обновляем существующие подарки через Telegram (быстро, полная инфа)
-    print("\n1️⃣  Обновление существующих подарков через Telegram...")
+    # 1. Парсим подарки через pyrogram (только с аккаунта)
+    print("\n1️⃣  Обновление подарков через Telegram (pyrogram)...")
     parse_result = await parse_gifts(send_log=False)  # Не отправляем лог отдельно
     
-    # 2. Дополняем недостающие подарки через changes.tg API
-    print("\n2️⃣  Дополнение недостающих подарков через changes.tg API...")
-    try:
-        external_result = await parse_external_gifts()
-        print(f"   Добавлено через API: {external_result['added']}")
-    except Exception as e:
-        print(f"   ⚠️  Ошибка парсинга через API: {e}")
-        external_result = {"added": 0, "skipped": 0}
-    
-    # 3. Затем синхронизируем (добавляем новые, удаляем старые, обновляем цены с Tonnel)
-    print("\n3️⃣  Синхронизация с Tonnel (новые/удаленные + цены)...")
+    # 2. Обновляем цены в TON через Tonnel
+    print("\n2️⃣  Обновление цен в TON через Tonnel...")
     sync_result = await force_parse_and_sync(search_tonnel_resale, update_gift_ton_price)
     
     # Инвалидируем кэш магазина (цены в звездах пересчитаются автоматически)
@@ -488,9 +348,8 @@ async def full_sync_with_prices():
     
     # Отправляем краткий отчет в канал
     message = f"✅ <b>Парсинг завершен</b>\n\n"
-    message += f"📦 Подарков обновлено (Telegram): <b>{parse_result['updated']}</b>\n"
-    message += f"🌐 Добавлено (changes.tg API): <b>{external_result['added']}</b>\n"
-    message += f"💰 Цен в TON обновлено: <b>{sync_result['prices_updated']}</b>\n"
+    message += f"📦 Подарков обновлено (pyrogram): <b>{parse_result['updated']}</b>\n"
+    message += f"💰 Цен в TON обновлено (Tonnel): <b>{sync_result['prices_updated']}</b>\n"
     message += f"🔄 Кэш магазина инвалидирован"
     
     await send_log_to_channel_with_button(message)

@@ -3,7 +3,8 @@ import './SpinSelection.css'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import freeSpinBanner from '../assets/freespin.svg'
-import paidSpinBanner from '../assets/paidspin.svg'
+import bazminBanner from '../assets/bazmin.svg'
+import lapikBanner from '../assets/lapik.svg'
 
 function SpinSelection({ onNavigateToTopUp }) {
   useEffect(() => {
@@ -34,6 +35,11 @@ function SpinSelection({ onNavigateToTopUp }) {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
+  const handleNavigateToLapikSpin = () => {
+    window.history.pushState({}, '', '/spins/lapik')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
   return (
     <div className="home-page">
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
@@ -44,7 +50,11 @@ function SpinSelection({ onNavigateToTopUp }) {
         </div>
         
         <div className="spin-banner-item" onClick={handleNavigateToPaidSpin}>
-          <img src={paidSpinBanner} alt="Paid Spin" className="spin-banner-image" />
+          <img src={bazminBanner} alt="Bazmin" className="spin-banner-image" />
+        </div>
+        
+        <div className="spin-banner-item" onClick={handleNavigateToLapikSpin}>
+          <img src={lapikBanner} alt="Lapik" className="spin-banner-image" />
         </div>
       </div>
     </div>

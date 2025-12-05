@@ -25,7 +25,7 @@ const GIFT_MODELS = [
   'Westside Sign', 'Whip Cupcake', 'Winter Wreath', 'Witch Hat', 'Xmas Stocking'
 ]
 
-function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = [] }) {
+function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = [], modelsList = {} }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilters, setSelectedFilters] = useState(currentFilters) // Инициализируем текущими фильтрами
   const [backdrops, setBackdrops] = useState([])
@@ -64,7 +64,8 @@ function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = []
 
   const getFilterItems = () => {
     if (category === 'gift') {
-      return GIFT_MODELS
+      // Динамически берем список подарков из modelsList
+      return Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
     } else if (category === 'background') {
       return backdrops.map(b => b.name)
     } else if (category === 'model') {
@@ -72,7 +73,8 @@ function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = []
       if (selectedGift) {
         return giftModels
       } else {
-        return GIFT_MODELS
+        // Динамически берем список подарков из modelsList
+        return Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
       }
     } else if (category === 'symbol') {
       return [] // Пока без сортировки
@@ -87,7 +89,8 @@ function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = []
 
   const toggleFilter = (item) => {
     // Для моделей - если выбираем подарок первый раз, загружаем его модели
-    if (category === 'model' && !selectedGift && GIFT_MODELS.includes(item)) {
+    const giftsList = Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
+    if (category === 'model' && !selectedGift && giftsList.includes(item)) {
       loadGiftModels(item)
       return
     }

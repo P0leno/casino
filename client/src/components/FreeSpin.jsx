@@ -5,6 +5,7 @@ import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
+import { useBalance } from '../contexts/BalanceContext'
 
 const gifts = [
   { name: 'bear', animation: '/gifts/bear.json' },
@@ -25,6 +26,7 @@ const ITEM_WIDTH = 120
 const GIFTS_COUNT = 12
 
 function FreeSpin({ onNavigateToTopUp }) {
+  const { updateBalance } = useBalance()
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
   const [pawAmount, setPawAmount] = useState(0)
@@ -163,6 +165,9 @@ function FreeSpin({ onNavigateToTopUp }) {
 
       const data = await response.json()
       if (data.success) {
+        // Обновляем баланс из ответа API
+        updateBalance(data)
+        
         const winIndex = gifts.findIndex(g => g.name === data.gift)
         
         if (winIndex === -1) {

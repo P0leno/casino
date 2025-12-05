@@ -13,11 +13,16 @@ router = APIRouter(prefix="/api", tags=["admin"])
 class ValidateRequest(BaseModel):
     initData: str
 
+class GetChancesRequest(BaseModel):
+    initData: str
+    mode: str = 'free_spin'  # free_spin, bazmin, lapik, nistart, promik
+
 class UpdateChanceRequest(BaseModel):
     initData: str
     giftName: str
     visibleChance: float
     realChance: float
+    mode: str = 'free_spin'  # free_spin, bazmin, lapik, nistart, promik
     pawMin: int = 0
     pawMax: int = 0
     starMin: int = 1
@@ -49,7 +54,7 @@ class UpdateSettingRequest(BaseModel):
     value: str
 
 @router.post("/get-chances")
-async def get_chances(request: ValidateRequest):
+async def get_chances(request: GetChancesRequest):
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
     
     if not is_valid:
@@ -70,7 +75,7 @@ async def get_chances(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'free_spin'")
+        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = ?", (request.mode,))
         results = cursor.fetchall()
         conn.close()
         
@@ -117,8 +122,8 @@ async def update_chances(request: UpdateChanceRequest):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = 'free_spin'",
-            (request.visibleChance, request.realChance, paw_min, paw_max, star_min, star_max, request.giftName)
+            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = ?",
+            (request.visibleChance, request.realChance, paw_min, paw_max, star_min, star_max, request.giftName, request.mode)
         )
         conn.commit()
         conn.close()
@@ -150,7 +155,7 @@ async def get_paid_chances(request: ValidateRequest):
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'bomzcase'")
+        cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'bazmin'")
         results = cursor.fetchall()
         conn.close()
         
@@ -197,7 +202,7 @@ async def update_paid_chances(request: UpdatePaidChanceRequest):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = 'bomzcase'",
+            "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = 'bazmin'",
             (request.visibleChance, request.realChance, paw_min, paw_max, star_min, star_max, request.giftName)
         )
         conn.commit()
