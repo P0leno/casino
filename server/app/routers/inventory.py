@@ -5,6 +5,9 @@ import json
 import os
 from datetime import datetime
 from app.routers.auth import verify_init_data
+from app.utils.rate_limit import get_inventory_rate_limiter
+from app.utils.balance import get_user_balance
+from app.tasks.price_updater import search_tonnel_resale
 
 router = APIRouter(prefix="/api", tags=["inventory"])
 
@@ -42,97 +45,6 @@ def sanitize_error(error: Exception) -> str:
     
     return str(error)
 
-def get_headers():
-    return {
-        "authority": "gifts2.tonnel.network",
-        "accept": "*/*",
-        "accept-encoding": "gzip, deflate, br, zstd",
-        "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        "content-type": "application/json",
-        "origin": "https://market.tonnel.network",
-        "priority": "u=1, i",
-        "referer": "https://market.tonnel.network/",
-        "sec-ch-ua": '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Windows"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
-    }
-
-def search_tonnel_resale(gift_name, model=None, backdrop=None):
-    """Поиск подарка на Tonnel маркетплейсе"""
-    try:
-        from curl_cffi import requests
-    except ImportError:
-        import requests
-    
-    # Базовый фильтр
-    filter_data = {
-        "price": {"$exists": True},
-        "refunded": {"$ne": True},
-        "buyer": {"$exists": False},
-        "export_at": {"$exists": True},
-        "gift_name": gift_name,
-        "asset": "TON"
-    }
-    
-    # Если фон специальный - ищем по фону + модели
-    if backdrop and backdrop in SPECIAL_BACKDROPS and model:
-        filter_data["backdrop"] = {"$regex": f"^{backdrop} \\("}
-        filter_data["model"] = {"$regex": f"^{model} \\("}
-    # Иначе только по модели
-    elif model:
-        filter_data["model"] = {"$regex": f"^{model} \\("}
-    
-    sort_data = {
-        'price': 1,  # Сортировка по цене (от дешевых)
-        'message_post_time': -1
-    }
-    
-    json_data = {
-        'page': 1,
-        'limit': 1,  # Нужна только минимальная цена
-        'sort': json.dumps(sort_data),
-        'filter': json.dumps(filter_data),
-        'price_range': None,
-        'user_auth': '',
-    }
-    
-    try:
-        # Пытаемся использовать curl_cffi
-        try:
-            from curl_cffi import requests as curl_requests
-            response = curl_requests.post(
-                'https://gifts2.tonnel.network/api/pageGifts',
-                json=json_data,
-                headers=get_headers(),
-                impersonate="chrome",
-                timeout=10
-            )
-        except ImportError:
-            # Fallback на обычный requests
-            response = requests.post(
-                'https://gifts2.tonnel.network/api/pageGifts',
-                json=json_data,
-                headers=get_headers(),
-                timeout=10
-            )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                return data[0].get('price')
-            return None
-        else:
-            print(f"⚠️  Tonnel API error: HTTP {response.status_code}")
-            return None
-            
-    except Exception as e:
-        print(f"⚠️  Error fetching from Tonnel: {e}")
-        return None
-
 def get_ton_to_stars_rate():
     """Получить курс конвертации TON в Stars"""
     try:
@@ -167,6 +79,14 @@ async def get_inventory(request: GetInventoryRequest):
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     user_id = user_data['id']
+    
+    # Rate limiting: 10 запросов в 200 секунд
+    allowed, remaining_time = get_inventory_rate_limiter.is_allowed(user_id)
+    if not allowed:
+        raise HTTPException(
+            status_code=429, 
+            detail=f"Слишком частые запросы. Попробуйте через {remaining_time} секунд"
+        )
     
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -226,6 +146,11 @@ async def get_inventory(request: GetInventoryRequest):
                     'is_regular_gift': True
                 })
         
+        # Получаем комиссию на продажу для расчета sell_price
+        cursor.execute("SELECT value FROM settings WHERE key = 'sell_commission'")
+        commission_result = cursor.fetchone()
+        sell_commission = float(commission_result[0]) if commission_result else 10.0
+        
         # Получаем NFT подарки из shop_gifts
         if nft_slugs:
             placeholders = ','.join(['?'] * len(nft_slugs))
@@ -234,7 +159,7 @@ async def get_inventory(request: GetInventoryRequest):
                     gift_id, slug, title, model_name, model_path,
                     symbol_name, backdrop_name, center_color, edge_color,
                     pattern_color, text_color, rarity_model, rarity_symbol,
-                    rarity_backdrop, ton_price
+                    rarity_backdrop, ton_price, price
                 FROM shop_gifts
                 WHERE slug IN ({placeholders})
             """, nft_slugs)
@@ -242,7 +167,15 @@ async def get_inventory(request: GetInventoryRequest):
             for row in cursor.fetchall():
                 gift_dict = dict(row)
                 gift_dict['is_regular_gift'] = False
-                gift_dict['price'] = None
+                
+                # Рассчитываем sell_price с комиссией
+                if gift_dict['price']:
+                    # Применяем комиссию к цене в звездах
+                    sell_price = int(gift_dict['price'] * (1 - sell_commission / 100))
+                    gift_dict['sell_price'] = sell_price
+                else:
+                    gift_dict['sell_price'] = None
+                
                 inventory_gifts.append(gift_dict)
         
         conn.close()
@@ -309,9 +242,9 @@ async def get_sell_price(request: GetSellPriceRequest):
         search_by_backdrop = backdrop_name and backdrop_name in SPECIAL_BACKDROPS
         
         if search_by_backdrop:
-            min_ton_price = search_tonnel_resale(title, model=model_name, backdrop=backdrop_name)
+            min_ton_price = await search_tonnel_resale(title, model=model_name, backdrop=backdrop_name)
         else:
-            min_ton_price = search_tonnel_resale(title, model=model_name)
+            min_ton_price = await search_tonnel_resale(title, model=model_name)
         
         # Если не нашли на Tonnel - используем кешированную цену
         if min_ton_price is None:
@@ -374,9 +307,9 @@ async def sell_gift(request: SellGiftRequest):
             conn.close()
             raise HTTPException(status_code=400, detail="Подарок не найден в инвентаре")
         
-        # Получаем информацию о подарке
+        # Получаем АКТУАЛЬНУЮ информацию о подарке из БД
         cursor.execute("""
-            SELECT gift_id, title, model_name, backdrop_name, ton_price
+            SELECT gift_id, title, price
             FROM shop_gifts
             WHERE slug = ?
         """, (request.slug,))
@@ -387,36 +320,19 @@ async def sell_gift(request: SellGiftRequest):
             conn.close()
             raise HTTPException(status_code=404, detail="Подарок не найден в базе")
         
-        gift_id, title, model_name, backdrop_name, cached_ton_price = gift
+        gift_id, title, current_price = gift
         
-        # Получаем комиссию
+        if not current_price or current_price <= 0:
+            conn.close()
+            raise HTTPException(status_code=400, detail="Цена подарка не установлена")
+        
+        # Получаем АКТУАЛЬНУЮ комиссию из настроек
         cursor.execute("SELECT value FROM settings WHERE key = 'sell_commission'")
         commission_result = cursor.fetchone()
         sell_commission = float(commission_result[0]) if commission_result else 10.0
         
-        # Получаем актуальную цену с Tonnel
-        print(f"🔍 Продажа: {title} (модель: {model_name}, фон: {backdrop_name})")
-        
-        search_by_backdrop = backdrop_name and backdrop_name in SPECIAL_BACKDROPS
-        
-        if search_by_backdrop:
-            min_ton_price = search_tonnel_resale(title, model=model_name, backdrop=backdrop_name)
-        else:
-            min_ton_price = search_tonnel_resale(title, model=model_name)
-        
-        # Если не нашли - используем кешированную
-        if min_ton_price is None:
-            if cached_ton_price:
-                min_ton_price = cached_ton_price
-                print(f"⚠️  Используем кешированную цену: {cached_ton_price} TON")
-            else:
-                conn.close()
-                raise HTTPException(status_code=400, detail="Не удалось определить цену подарка")
-        
-        # Вычисляем цену со всеми комиссиями
-        price_after_commission = min_ton_price * (1 - sell_commission / 100)
-        stars_per_ton = get_ton_to_stars_rate()
-        stars_price = int(price_after_commission * stars_per_ton)
+        # Вычисляем цену продажи с комиссией
+        stars_price = int(current_price * (1 - sell_commission / 100))
         
         # Удаляем подарок из инвентаря (только первое вхождение)
         inventory.remove(request.slug)
@@ -432,13 +348,17 @@ async def sell_gift(request: SellGiftRequest):
         conn.commit()
         conn.close()
         
-        print(f"✅ Продан подарок {title} за {stars_price}⭐")
+        # Получаем обновленный баланс
+        user_balance = get_user_balance(user_id)
+        
+        print(f"✅ Продан подарок {title} за {stars_price}⭐ (цена: {current_price}⭐, комиссия: {sell_commission}%)")
         
         return {
             "success": True,
             "message": f"Подарок \"{title}\" продан!",
             "stars_earned": stars_price,
-            "new_balance": new_balance
+            "new_balance": new_balance,
+            **user_balance
         }
         
     except HTTPException:

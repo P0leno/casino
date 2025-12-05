@@ -7,7 +7,30 @@ import asyncio
 import json
 import sqlite3
 from datetime import datetime
-from app.config import DB_PATH
+import aiohttp
+from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
+
+async def send_log_to_channel(message):
+    """Отправляет сообщение в канал логов"""
+    if not LOG_BOT_TOKEN or not LOGS_ID:
+        return
+    
+    try:
+        from aiogram import Bot
+        async with Bot(token=LOG_BOT_TOKEN) as log_bot:
+            await log_bot.send_message(LOGS_ID, message, parse_mode="HTML")
+    except Exception as e:
+        print(f"⚠️  Не удалось отправить лог в канал: {e}")
+
+# Попробуем импортировать fake_useragent, если нет - используем дефолтный UA
+try:
+    from fake_useragent import UserAgent
+    ua = UserAgent()
+    def get_ua():
+        return ua.random
+except ImportError:
+    def get_ua():
+        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
 
 # Фоны для которых ищем по подарку + фону + модели
 SPECIAL_BACKDROPS = ["Onyx Black", "Black", "Ivory White", "Midnight Blue"]
@@ -28,15 +51,11 @@ def get_headers():
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        "user-agent": get_ua()
     }
 
-def search_tonnel_resale(gift_name, model=None, backdrop=None):
-    """Поиск подарка на Tonnel маркетплейсе"""
-    try:
-        from curl_cffi import requests
-    except ImportError:
-        import requests
+async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries=10):
+    """Поиск подарка на Tonnel маркетплейсе с retry логикой"""
     
     # Базовый фильтр
     filter_data = {
@@ -70,38 +89,52 @@ def search_tonnel_resale(gift_name, model=None, backdrop=None):
         'user_auth': '',
     }
     
-    try:
-        # Пытаемся использовать curl_cffi
+    # Retry логика - до 10 попыток
+    for attempt in range(1, max_retries + 1):
         try:
-            from curl_cffi import requests as curl_requests
-            response = curl_requests.post(
-                'https://gifts2.tonnel.network/api/pageGifts',
-                json=json_data,
-                headers=get_headers(),
-                impersonate="chrome",
-                timeout=10
-            )
-        except ImportError:
-            # Fallback на обычный requests
-            response = requests.post(
-                'https://gifts2.tonnel.network/api/pageGifts',
-                json=json_data,
-                headers=get_headers(),
-                timeout=10
-            )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                return data[0].get('price')
-            return None
-        else:
-            print(f"⚠️  Tonnel API error: HTTP {response.status_code}")
-            return None
-            
-    except Exception as e:
-        print(f"⚠️  Error fetching from Tonnel: {e}")
-        return None
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    'https://gifts2.tonnel.network/api/pageGifts',
+                    json=json_data,
+                    headers=get_headers(),
+                    timeout=aiohttp.ClientTimeout(total=10)
+                ) as response:
+                    
+                    if response.status == 200:
+                        data = await response.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            if attempt > 1:
+                                print(f"   ✅ Успешно на попытке #{attempt}")
+                            return data[0].get('price')
+                        return None
+                    elif response.status == 403:
+                        if attempt < max_retries:
+                            wait_time = attempt * 2  # Прогрессивная задержка: 2, 4, 6, 8...
+                            print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time}с...")
+                            await asyncio.sleep(wait_time)
+                            continue
+                        else:
+                            print(f"   ❌ HTTP 403 после {max_retries} попыток")
+                            return None
+                    else:
+                        print(f"   ⚠️  HTTP {response.status} на попытке #{attempt}")
+                        if attempt < max_retries:
+                            await asyncio.sleep(2)
+                            continue
+                        return None
+                
+        except Exception as e:
+            if attempt < max_retries:
+                print(f"   ⚠️  Ошибка на попытке #{attempt}: {e}")
+                await asyncio.sleep(2)
+                continue
+            else:
+                print(f"   ❌ Ошибка после {max_retries} попыток: {e}")
+                import traceback
+                traceback.print_exc()
+                return None
+    
+    return None
 
 def update_gift_ton_price(gift_id, ton_price):
     """Обновить цену подарка в TON (с Tonnel)"""
@@ -122,7 +155,7 @@ def update_gift_ton_price(gift_id, ton_price):
         print(f"❌ Error updating TON price for {gift_id}: {e}")
         return False
 
-async def update_all_prices():
+async def update_all_prices(send_log=True):
     """Обновить цены в TON с Tonnel маркетплейса"""
     print("=" * 80)
     print(f"🔄 ОБНОВЛЕНИЕ ЦЕН С TONNEL МАРКЕТПЛЕЙСА - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -145,7 +178,9 @@ async def update_all_prices():
         conn.close()
         
         if not gifts:
+            message = "ℹ️ <b>Price Updater</b>\nНет LIMITED NFT подарков для обновления"
             print("ℹ️  Нет LIMITED NFT подарков для обновления")
+            await send_log_to_channel(message)
             return
         
         print(f"📦 Найдено подарков: {len(gifts)}")
@@ -166,10 +201,10 @@ async def update_all_prices():
             
             if search_by_backdrop:
                 print(f"   → Поиск по фону + модели...")
-                min_ton_price = search_tonnel_resale(title, model=model, backdrop=backdrop)
+                min_ton_price = await search_tonnel_resale(title, model=model, backdrop=backdrop)
             else:
                 print(f"   → Поиск по модели...")
-                min_ton_price = search_tonnel_resale(title, model=model)
+                min_ton_price = await search_tonnel_resale(title, model=model)
             
             if min_ton_price is not None:
                 print(f"   ✅ Найдена минимальная цена: {min_ton_price} TON")
@@ -196,8 +231,8 @@ async def update_all_prices():
             
             print()
             
-            # Задержка между запросами
-            await asyncio.sleep(2)
+            # Увеличенная задержка между запросами к разным подаркам
+            await asyncio.sleep(5)
         
         print("=" * 80)
         print(f"✅ Обновление завершено")
@@ -205,8 +240,23 @@ async def update_all_prices():
         print(f"   Пропущено: {failed_count}")
         print("=" * 80)
         
+        # Отправляем итоговый отчет (только если send_log=True)
+        if send_log:
+            message = f"✅ <b>Price Updater</b>\n\nОбновлено подарков: <b>{updated_count}</b>"
+            if failed_count > 0:
+                message += f"\nПропущено: {failed_count}"
+            message += f"\n\nВсего обработано: {len(gifts)}"
+            await send_log_to_channel(message)
+        
+        return {"updated": updated_count, "failed": failed_count, "total": len(gifts)}
+        
     except Exception as e:
+        error_message = f"❌ <b>Price Updater Error</b>\n\n<code>{str(e)}</code>"
         print(f"❌ Критическая ошибка обновления цен: {e}")
+        import traceback
+        traceback.print_exc()
+        await send_log_to_channel(error_message)
+        return {"updated": 0, "failed": 0, "total": 0}
 
 async def price_update_loop():
     """Бесконечный цикл обновления цен каждый час"""
