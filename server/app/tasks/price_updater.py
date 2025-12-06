@@ -6,9 +6,8 @@
 import asyncio
 import json
 import sqlite3
-import random
 from datetime import datetime
-import httpx
+import aiohttp
 from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 
 async def send_log_to_channel(message):
@@ -56,30 +55,8 @@ def get_headers():
         "user-agent": get_ua()
     }
 
-def _sync_search_tonnel(json_data, headers):
-    """Синхронная функция для httpx (как в рабочем скрипте)"""
-    try:
-        response = httpx.post(
-            'https://gifts2.tonnel.network/api/pageGifts',
-            json=json_data,
-            headers=headers,
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                return {'success': True, 'price': data[0].get('price')}
-            return {'success': True, 'price': None}
-        else:
-            return {'success': False, 'status': response.status_code}
-            
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
-
-
 async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries=3):
-    """Поиск подарка на Tonnel маркетплейсе (как в рабочем скрипте)"""
+    """Поиск подарка на Tonnel маркетплейсе через aiohttp"""
     
     # Базовый фильтр
     filter_data = {
@@ -116,36 +93,36 @@ async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries
     # Retry логика
     for attempt in range(1, max_retries + 1):
         try:
-            # Запускаем синхронный httpx в executor
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                _sync_search_tonnel,
-                json_data,
-                get_headers()
-            )
-            
-            if result.get('success'):
-                if attempt > 1:
-                    print(f"   ✅ Успешно на попытке #{attempt}")
-                return result.get('price')
-            elif result.get('status') == 403:
-                if attempt < max_retries:
-                    wait_time = attempt * 2
-                    print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time}с...")
-                    await asyncio.sleep(wait_time)
-                    continue
-                else:
-                    print(f"   ❌ HTTP 403 после {max_retries} попыток")
-                    return None
-            else:
-                status = result.get('status', 'unknown')
-                error = result.get('error', '')
-                print(f"   ⚠️  Ошибка на попытке #{attempt}: HTTP {status} {error}")
-                if attempt < max_retries:
-                    await asyncio.sleep(2)
-                    continue
-                return None
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    'https://gifts2.tonnel.network/api/pageGifts',
+                    json=json_data,
+                    headers=get_headers(),
+                    timeout=aiohttp.ClientTimeout(total=10)
+                ) as response:
+                    
+                    if response.status == 200:
+                        data = await response.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            if attempt > 1:
+                                print(f"   ✅ Успешно на попытке #{attempt}")
+                            return data[0].get('price')
+                        return None
+                    elif response.status == 403:
+                        if attempt < max_retries:
+                            wait_time = attempt * 2
+                            print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time}с...")
+                            await asyncio.sleep(wait_time)
+                            continue
+                        else:
+                            print(f"   ❌ HTTP 403 после {max_retries} попыток")
+                            return None
+                    else:
+                        print(f"   ⚠️  HTTP {response.status} на попытке #{attempt}")
+                        if attempt < max_retries:
+                            await asyncio.sleep(2)
+                            continue
+                        return None
                 
         except Exception as e:
             if attempt < max_retries:
