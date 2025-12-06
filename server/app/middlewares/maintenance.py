@@ -45,16 +45,45 @@ async def maintenance_middleware(request: Request, call_next):
         '/api/get-maintenance',
         '/api/toggle-maintenance',
         '/api/health',
-        '/api/crash/ws',  # WebSocket для краш игры
         '/'
     ]
     
     # Если путь разрешен или не API - пропускаем
-    # Также пропускаем все WebSocket запросы (любые /ws пути)
-    if (request.url.path in allowed_paths or 
-        not request.url.path.startswith('/api/') or 
-        '/ws' in request.url.path):
+    if request.url.path in allowed_paths or not request.url.path.startswith('/api/'):
         return await call_next(request)
+    
+    # Для WebSocket запросов проверяем initData в query параметрах
+    if '/ws' in request.url.path:
+        query_params = dict(request.query_params)
+        init_data = query_params.get('initData')
+        
+        if init_data:
+            try:
+                from urllib.parse import parse_qs
+                import json
+                
+                parsed = parse_qs(init_data)
+                user_data_str = parsed.get('user', [''])[0]
+                
+                if user_data_str:
+                    user_obj = json.loads(user_data_str)
+                    user_id = int(user_obj.get('id'))
+                    
+                    if user_id in ADMIN_IDS:
+                        print(f"[MAINTENANCE] ✅ WebSocket: ADMIN {user_id} allowed")
+                        return await call_next(request)
+            except Exception as e:
+                print(f"[MAINTENANCE] ❌ WebSocket auth error: {e}")
+        
+        # WebSocket без валидной авторизации - блокируем
+        print(f"[MAINTENANCE] ❌ WebSocket blocked: no valid auth")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Технические работы",
+                "maintenance": True
+            }
+        )
     
     # Проверяем режим технических работ
     maintenance_enabled = is_maintenance_mode()

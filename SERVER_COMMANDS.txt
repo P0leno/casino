@@ -1,0 +1,61 @@
+# ===============================================
+# КОМАНДЫ ДЛЯ СЕРВЕРА (скопируй по порядку)
+# ===============================================
+
+# 1. Проверь что в /var/www/shelloch/ загружены файлы
+ls -la /var/www/shelloch/
+
+# 2. Проверь какой JS файл сейчас на сервере
+ls -lh /var/www/shelloch/assets/index-*.js
+
+# 3. Проверь что в JS файле - старый или новый URL
+grep -o 'ws/crash\|api/crash/ws' /var/www/shelloch/assets/index-*.js | head -3
+
+# Если показывает "ws/crash" - значит старый файл
+# Если показывает "api/crash/ws" - значит новый файл
+
+# 4. Если старый файл - нужно загрузить новый билд
+# Скачай файл с локальной машины:
+# На локальной машине:
+#   cd /Users/macbook/Documents/shell/client/dist
+#   tar -czf frontend.tar.gz *
+#   scp frontend.tar.gz root@wonderfulhot.aeza.network:/tmp/
+
+# 5. Распакуй новый билд (на сервере)
+cd /tmp
+sudo tar -xzf frontend.tar.gz -C /var/www/shelloch/
+sudo chown -R www-data:www-data /var/www/shelloch/
+
+# 6. Проверь что файл обновился
+ls -lh /var/www/shelloch/assets/index-*.js
+# Должна измениться дата
+
+# 7. Проверь содержимое
+grep -o 'api/crash/ws' /var/www/shelloch/assets/index-*.js | head -1
+# Должно показать: api/crash/ws
+
+# 8. Перезапусти nginx (на всякий случай)
+sudo systemctl reload nginx
+
+# 9. В браузере очисти кэш
+# Ctrl+Shift+R или Cmd+Shift+R
+
+# ===============================================
+# ПРОВЕРКА ПОСЛЕ ОБНОВЛЕНИЯ
+# ===============================================
+
+# Смотри логи бэкенда
+sudo journalctl -u shelloch-backend -f
+
+# Должно появиться при подключении клиента:
+# 🔌 WebSocket подключен. Всего: 1
+
+# В браузере консоль должна показать:
+# 🔌 WebSocket connected to crash game
+
+# Если всё ещё 404:
+# - Проверь что бэкенд имеет WebSocket endpoint
+grep "@router.websocket" ~/shelloch/server/app/routers/crash.py
+
+# - Проверь что фронтенд обновлен
+grep "api/crash/ws" /var/www/shelloch/assets/index-*.js

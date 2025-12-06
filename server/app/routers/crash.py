@@ -193,8 +193,9 @@ async def cancel_bet(request: CancelBetRequest):
     return result
 
 @router.websocket("/ws")
-async def websocket_crash(websocket: WebSocket):
+async def websocket_crash(websocket: WebSocket, initData: str = None):
     """WebSocket endpoint для краш игры"""
+    # initData передается как query параметр для авторизации
     await manager.connect(websocket)
     
     try:

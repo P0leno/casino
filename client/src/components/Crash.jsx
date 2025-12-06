@@ -69,7 +69,10 @@ function Crash({ onNavigateToTopUp }) {
     
     const connectWebSocket = () => {
       try {
-        const ws = new WebSocket(`${wsUrl}/api/crash/ws`)
+        // Добавляем initData как query параметр для авторизации
+        const initData = window.Telegram?.WebApp?.initData || ''
+        const wsUrlWithAuth = `${wsUrl}/api/crash/ws?initData=${encodeURIComponent(initData)}`
+        const ws = new WebSocket(wsUrlWithAuth)
         wsRef.current = ws
 
         ws.onopen = () => {

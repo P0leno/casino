@@ -1,0 +1,34 @@
+# ===================================
+# КОМАНДЫ ДЛЯ СЕРВЕРА (скопируй в SSH)
+# ===================================
+
+# 1. Остановить бэкенд
+sudo systemctl stop shelloch-backend
+
+# 2. Обновить код
+cd ~/shelloch/server  # или твой путь к проекту
+git pull origin main
+
+# 3. Проверить что WebSocket endpoint есть
+grep -A 5 "@router.websocket" app/routers/crash.py
+
+# Должно показать:
+# @router.websocket("/ws")
+# async def websocket_crash(websocket: WebSocket):
+
+# 4. Проверить импорт в run.py
+grep "from app.routers import" app/run.py | grep crash
+
+# Должно показать: from app.routers import ... crash ...
+
+# 5. Запустить бэкенд
+sudo systemctl start shelloch-backend
+
+# 6. Проверить статус
+sudo systemctl status shelloch-backend
+
+# 7. Смотреть логи
+sudo journalctl -u shelloch-backend -f
+
+# Ожидаем увидеть при подключении клиента:
+# 🔌 WebSocket подключен. Всего: 1
