@@ -8,7 +8,7 @@ import json
 import sqlite3
 import random
 from datetime import datetime
-import aiohttp
+import httpx
 from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 
 async def send_log_to_channel(message):
@@ -36,46 +36,50 @@ except ImportError:
 # Фоны для которых ищем по подарку + фону + модели
 SPECIAL_BACKDROPS = ["Onyx Black", "Black", "Ivory White", "Midnight Blue"]
 
-def get_headers(page=1):
-    """Генерирует заголовки с вариациями для имитации браузера"""
-    # Случайный порядок accept-language
-    langs = [
-        "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        "ru,en-US;q=0.9,en;q=0.8",
-        "ru-RU,ru;q=0.8,en-US;q=0.7,en;q=0.6"
-    ]
-    
-    headers = {
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": random.choice(langs),
-        "Content-Type": "application/json",
-        "Origin": "https://market.tonnel.network",
-        "Referer": f"https://market.tonnel.network/?page={page}",
-        "User-Agent": get_ua(),
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-site"
+def get_headers():
+    """Заголовки как в рабочем скрипте"""
+    return {
+        "authority": "gifts2.tonnel.network",
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+        "content-type": "application/json",
+        "origin": "https://market.tonnel.network",
+        "priority": "u=1, i",
+        "referer": "https://market.tonnel.network/",
+        "sec-ch-ua": '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "user-agent": get_ua()
     }
-    
-    # Случайно добавляем дополнительные заголовки
-    if random.random() > 0.5:
-        headers["DNT"] = "1"
-    
-    if random.random() > 0.3:
-        headers["Sec-CH-UA"] = '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"'
-        headers["Sec-CH-UA-Mobile"] = "?0"
-        headers["Sec-CH-UA-Platform"] = '"Windows"'
-    
-    return headers
+
+def _sync_search_tonnel(json_data, headers):
+    """Синхронная функция для httpx (как в рабочем скрипте)"""
+    try:
+        response = httpx.post(
+            'https://gifts2.tonnel.network/api/pageGifts',
+            json=json_data,
+            headers=headers,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                return {'success': True, 'price': data[0].get('price')}
+            return {'success': True, 'price': None}
+        else:
+            return {'success': False, 'status': response.status_code}
+            
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
 
 async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries=3):
-    """Поиск подарка на Tonnel маркетплейсе с retry логикой и имитацией браузера"""
-    
-    # Случайная задержка перед запросом (имитация человека)
-    await asyncio.sleep(random.uniform(0.3, 0.8))
+    """Поиск подарка на Tonnel маркетплейсе (как в рабочем скрипте)"""
     
     # Базовый фильтр
     filter_data = {
@@ -100,12 +104,9 @@ async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries
         'message_post_time': -1
     }
     
-    # Случайная страница (имитация браузинга)
-    page = random.randint(1, 1)
-    
     json_data = {
-        'page': page,
-        'limit': random.choice([1, 2, 3]),  # Варьируем лимит
+        'page': 1,
+        'limit': 1,
         'sort': json.dumps(sort_data),
         'filter': json.dumps(filter_data),
         'price_range': None,
@@ -115,65 +116,44 @@ async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries
     # Retry логика
     for attempt in range(1, max_retries + 1):
         try:
-            # Создаем connector с keep-alive
-            connector = aiohttp.TCPConnector(
-                ssl=False,
-                ttl_dns_cache=300,
-                limit=10,
-                limit_per_host=3
+            # Запускаем синхронный httpx в executor
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                _sync_search_tonnel,
+                json_data,
+                get_headers()
             )
             
-            # Timeout с вариацией
-            timeout = aiohttp.ClientTimeout(
-                total=random.uniform(8, 12),
-                connect=5,
-                sock_read=5
-            )
-            
-            async with aiohttp.ClientSession(connector=connector) as session:
-                async with session.post(
-                    'https://gifts2.tonnel.network/api/pageGifts',
-                    json=json_data,
-                    headers=get_headers(page),
-                    timeout=timeout,
-                    allow_redirects=True
-                ) as response:
-                    
-                    if response.status == 200:
-                        data = await response.json()
-                        if isinstance(data, list) and len(data) > 0:
-                            if attempt > 1:
-                                print(f"   ✅ Успешно на попытке #{attempt}")
-                            return data[0].get('price')
-                        return None
-                    elif response.status == 403:
-                        if attempt < max_retries:
-                            # Экспоненциальная задержка с джиттером
-                            wait_time = (attempt ** 2) + random.uniform(1, 3)
-                            print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time:.1f}с...")
-                            await asyncio.sleep(wait_time)
-                            continue
-                        else:
-                            print(f"   ❌ HTTP 403 после {max_retries} попыток")
-                            return None
-                    else:
-                        print(f"   ⚠️  HTTP {response.status} на попытке #{attempt}")
-                        if attempt < max_retries:
-                            await asyncio.sleep(random.uniform(1.5, 3))
-                            continue
-                        return None
-            
-            await connector.close()
+            if result.get('success'):
+                if attempt > 1:
+                    print(f"   ✅ Успешно на попытке #{attempt}")
+                return result.get('price')
+            elif result.get('status') == 403:
+                if attempt < max_retries:
+                    wait_time = attempt * 2
+                    print(f"   ⚠️  HTTP 403 на попытке #{attempt}/{max_retries}, ожидание {wait_time}с...")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    print(f"   ❌ HTTP 403 после {max_retries} попыток")
+                    return None
+            else:
+                status = result.get('status', 'unknown')
+                error = result.get('error', '')
+                print(f"   ⚠️  Ошибка на попытке #{attempt}: HTTP {status} {error}")
+                if attempt < max_retries:
+                    await asyncio.sleep(2)
+                    continue
+                return None
                 
         except Exception as e:
             if attempt < max_retries:
                 print(f"   ⚠️  Ошибка на попытке #{attempt}: {e}")
-                await asyncio.sleep(random.uniform(2, 4))
+                await asyncio.sleep(2)
                 continue
             else:
                 print(f"   ❌ Ошибка после {max_retries} попыток: {e}")
-                import traceback
-                traceback.print_exc()
                 return None
     
     return None
