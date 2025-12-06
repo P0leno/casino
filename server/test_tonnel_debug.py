@@ -156,7 +156,9 @@ async def parse_gifts_from_telegram():
         
         # Парсим подарки
         print("🎁 Парсинг подарков через get_chat_gifts()...")
-        gifts = await app.get_chat_gifts(chat_id=me.id, exclude_unlimited=True)
+        gifts = []
+        async for gift in app.get_chat_gifts(chat_id=me.id, exclude_unlimited=True):
+            gifts.append(gift)
         
         print(f"✅ Получено LIMITED подарков: {len(gifts)}")
         print()
