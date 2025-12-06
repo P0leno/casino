@@ -49,7 +49,10 @@ async def maintenance_middleware(request: Request, call_next):
     ]
     
     # Если путь разрешен или не API - пропускаем
-    if request.url.path in allowed_paths or not request.url.path.startswith('/api/'):
+    # Также разрешаем все /api/crash/* пути
+    if (request.url.path in allowed_paths or 
+        not request.url.path.startswith('/api/') or
+        request.url.path.startswith('/api/crash/')):
         return await call_next(request)
     
     # Для WebSocket запросов проверяем initData в query параметрах

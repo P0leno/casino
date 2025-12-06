@@ -41,31 +41,10 @@ function Crash({ onNavigateToTopUp }) {
     }
   }, [])
 
-  // WebSocket подключение с fallback на polling
+  // WebSocket подключение (без polling fallback)
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://')
-    let reconnectAttempts = 0
-    let pollingInterval = null
-    
-    const startPolling = () => {
-      console.log('⚠️ WebSocket недоступен, используем polling')
-      
-      const fetchGameState = async () => {
-        try {
-          const response = await fetch(`${apiUrl}/api/crash/state`)
-          if (response.ok) {
-            const data = await response.json()
-            handleGameStateUpdate(data)
-          }
-        } catch (error) {
-          console.error('Error fetching game state:', error)
-        }
-      }
-      
-      fetchGameState() // Первый запрос сразу
-      pollingInterval = setInterval(fetchGameState, 200) // Каждые 200ms
-    }
     
     const connectWebSocket = () => {
       try {
@@ -77,12 +56,6 @@ function Crash({ onNavigateToTopUp }) {
 
         ws.onopen = () => {
           console.log('🔌 WebSocket connected to crash game')
-          reconnectAttempts = 0
-          // Останавливаем polling если был запущен
-          if (pollingInterval) {
-            clearInterval(pollingInterval)
-            pollingInterval = null
-          }
         }
 
         ws.onmessage = (event) => {
@@ -98,38 +71,23 @@ function Crash({ onNavigateToTopUp }) {
           console.error('WebSocket error:', error)
         }
 
-        ws.onclose = (event) => {
-          console.log('🔌 WebSocket disconnected')
-          reconnectAttempts++
-          
-          // После 3 попыток переключаемся на polling
-          if (reconnectAttempts >= 3) {
-            console.log('❌ WebSocket недоступен после 3 попыток, переключение на polling')
-            startPolling()
-          } else {
-            // Пытаемся переподключиться
-            setTimeout(connectWebSocket, 2000)
-          }
+        ws.onclose = () => {
+          console.log('🔌 WebSocket disconnected, reconnecting in 3s...')
+          // Переподключение через 3 секунды
+          setTimeout(connectWebSocket, 3000)
         }
       } catch (error) {
         console.error('WebSocket creation error:', error)
-        startPolling()
+        // Переподключение через 3 секунды
+        setTimeout(connectWebSocket, 3000)
       }
     }
 
-    // Проверяем поддержку WebSocket
-    if (typeof WebSocket !== 'undefined') {
-      connectWebSocket()
-    } else {
-      startPolling()
-    }
+    connectWebSocket()
 
     return () => {
       if (wsRef.current) {
         wsRef.current.close()
-      }
-      if (pollingInterval) {
-        clearInterval(pollingInterval)
       }
     }
   }, [])
