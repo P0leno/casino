@@ -69,7 +69,7 @@ function Crash({ onNavigateToTopUp }) {
     
     const connectWebSocket = () => {
       try {
-        const ws = new WebSocket(`${wsUrl}/ws/crash`)
+        const ws = new WebSocket(`${wsUrl}/api/crash/ws`)
         wsRef.current = ws
 
         ws.onopen = () => {
