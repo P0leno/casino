@@ -241,8 +241,13 @@ function Crash({ onNavigateToTopUp }) {
       <BonusBalanceBar />
 
       <div className="crash-game-area">
-        {/* Сеточка фона */}
-        <div className={`crash-grid ${isRunning ? 'running' : ''} ${crashed ? 'crashed' : ''}`}>
+        {/* Сеточка фона - интенсивность зависит от коэффициента */}
+        <div 
+          className={`crash-grid ${isRunning ? 'running' : ''} ${crashed ? 'crashed' : ''}`}
+          style={{
+            animationDuration: isRunning ? `${Math.max(0.5, 3 - (multiplier * 0.2))}s` : '3s'
+          }}
+        >
           <div className="grid-lines-horizontal">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="grid-line"></div>
@@ -255,22 +260,40 @@ function Crash({ onNavigateToTopUp }) {
           </div>
         </div>
 
+        {/* Ракета на фоне */}
+        {isRunning && (
+          <div className="crash-rocket-center">
+            <LottieAnimation 
+              animationData={crashAnim} 
+              width={80} 
+              height={80}
+              loop={true}
+              autoplay={true}
+              rotation={2}
+            />
+          </div>
+        )}
+
         {/* Большая цифра по центру */}
         <div className="crash-multiplier-big" style={{ color: getMultiplierColor() }}>
           {crashed ? '💥' : multiplier.toFixed(2)}
         </div>
       </div>
 
-      {/* История коэффициентов */}
+      {/* История коэффициентов или "Ожидание" */}
       <div className="crash-history-row">
-        {[...history].reverse().slice(0, 10).map((mult, idx) => (
-          <div 
-            key={idx} 
-            className={`crash-history-item ${mult >= 10 ? 'mega' : mult >= 2 ? 'high' : 'low'}`}
-          >
-            x{mult.toFixed(2)}
-          </div>
-        ))}
+        {!isRunning && history.length === 0 ? (
+          <div className="crash-waiting-text">Ожидание</div>
+        ) : (
+          [...history].reverse().slice(0, 10).map((mult, idx) => (
+            <div 
+              key={idx} 
+              className={`crash-history-item ${mult >= 10 ? 'mega' : mult >= 2 ? 'high' : 'low'}`}
+            >
+              x{mult.toFixed(2)}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Ставки пока нет - панель с текстом */}
@@ -280,14 +303,8 @@ function Crash({ onNavigateToTopUp }) {
         </div>
       )}
 
-      {/* Онлайн и "Об игре" */}
-      <div className="crash-info-row">
-        <span className="crash-online">Онлайн: {bets.length}</span>
-        <button className="crash-about-btn">Об игре</button>
-      </div>
-
       {/* Кнопки внизу */}
-      <div className="crash-controls" style={{ bottom: `calc(5px + ${safeAreaBottom}px)` }}>
+      <div className="crash-controls" style={{ bottom: `calc(10px + ${safeAreaBottom}px)` }}>
         {userBet && isRunning && !userBet.cashoutAt ? (
           <button className="spin-button-fixed crash-cashout-btn" onClick={handleCashout}>
             <span className="button-main-text">Забрать</span>
