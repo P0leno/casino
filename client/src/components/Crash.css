@@ -1,21 +1,25 @@
+@import './Spin.css';
+
 .crash-page {
   width: 100%;
-  min-height: calc(100vh - 70px);
-  padding-bottom: 70px;
+  min-height: 100vh;
+  padding-bottom: 150px;
+  padding-top: 70px;
   display: flex;
   flex-direction: column;
+  background: #000000;
 }
 
 .crash-game-area {
   position: relative;
   width: 100%;
-  height: 400px;
-  background: #0a0a0a;
+  flex: 1;
+  min-height: 50vh;
+  background: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Сеточка фона */
@@ -132,19 +136,19 @@
   }
 }
 
-.crash-multiplier-display {
+/* Большая цифра по центру */
+.crash-multiplier-big {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 72px;
+  font-size: 120px;
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
-  animation: pulse 1s ease-in-out infinite;
+  text-shadow: 0 0 40px currentColor;
   transition: color 0.3s ease;
-  z-index: 5;
-  opacity: 0.3;
+  z-index: 100;
+  color: #ffffff;
 }
 
 @keyframes pulse {
@@ -181,188 +185,112 @@
   }
 }
 
-.crash-history-row {
+
+
+/* Быстрые множители */
+.crash-quick-multipliers {
   display: flex;
   gap: 8px;
   padding: 12px 20px;
   overflow-x: auto;
   scrollbar-width: none;
-  background: #000000;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.crash-history-row::-webkit-scrollbar {
+.crash-quick-multipliers::-webkit-scrollbar {
   display: none;
 }
 
-.crash-history-item {
+.quick-multiplier-btn {
   flex-shrink: 0;
-  padding: 6px 12px;
+  padding: 10px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  transition: all 0.3s ease;
-}
-
-.crash-history-item.low {
-  background: #4a5568;
   color: #ffffff;
-}
-
-.crash-history-item.high {
-  background: #10b981;
-  color: #ffffff;
-}
-
-.crash-history-item.mega {
-  background: #f59e0b;
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-}
-
-.crash-bet-button {
-  width: calc(100% - 40px);
-  margin: 20px;
-  padding: 18px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
-.crash-bet-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+.quick-multiplier-btn.waiting {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: default;
 }
 
-.crash-bet-button:active {
-  transform: translateY(0);
+.quick-multiplier-btn.active {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
 }
 
-.crash-bet-button.cashout {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-  animation: cashoutPulse 1s ease-in-out infinite;
+.quick-multiplier-btn:not(.waiting):active {
+  transform: scale(0.95);
+}
+
+/* Панель "Ставок еще нет" */
+.crash-no-bet-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 40px 20px;
+}
+
+/* Онлайн и Об игре */
+.crash-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #000000;
+}
+
+.crash-online {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.crash-about-btn {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Контролы внизу */
+.crash-controls {
+  position: fixed;
+  left: 20px;
+  right: 20px;
+  z-index: 98;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crash-cashout-btn {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.55) 0%, rgba(5, 150, 105, 0.55) 50%, rgba(4, 120, 87, 0.55) 100%) !important;
+  animation: cashoutPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes cashoutPulse {
   0%, 100% {
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
   50% {
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.8);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
 }
 
-.crash-bets-list {
-  flex: 1;
-  padding: 0 20px 20px 20px;
-  overflow-y: auto;
-}
 
-.crash-bet-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
-}
-
-.crash-bet-item.my-bet {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.crash-bet-item.waiting {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.bet-user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-}
-
-.bet-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.bet-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.bet-username {
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.bet-amount {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.bet-waiting-text {
-  font-size: 12px;
-  color: #f59e0b;
-  font-weight: 500;
-}
-
-.bet-result {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.bet-cashout {
-  color: #10b981;
-}
-
-.bet-multiplier {
-  color: #3b82f6;
-  animation: multiplierPulse 0.5s ease-in-out infinite;
-}
-
-@keyframes multiplierPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-.bet-cancel-button {
-  padding: 8px 16px;
-  background: #ef4444;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.bet-cancel-button:hover {
-  background: #dc2626;
-}
 
 /* Модалка ставки */
 .crash-bet-modal {
@@ -447,12 +375,4 @@
   transform: translateY(-2px);
 }
 
-.platform-mobile .crash-page {
-  min-height: calc(100vh - 85px);
-  padding-bottom: 85px;
-  padding-top: 105px;
-}
 
-.crash-page {
-  padding-top: 70px;
-}

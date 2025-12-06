@@ -16,6 +16,7 @@ function Crash({ onNavigateToTopUp }) {
   const [userBet, setUserBet] = useState(null)
   const [showBetModal, setShowBetModal] = useState(false)
   const [betAmount, setBetAmount] = useState(25)
+  const [targetMultiplier, setTargetMultiplier] = useState(null) // x1.01, x10.00 и т.д.
   
   const previousIsRunning = useRef(false)
   const crashedTimeoutRef = useRef(null)
@@ -202,32 +203,16 @@ function Crash({ onNavigateToTopUp }) {
     }
   }
 
-  const renderBetButton = () => {
-    // Если есть ставка и она в ожидании
-    if (userBet && userBet.waiting) {
-      return null // Кнопка не показывается, т.к. отменить можно из списка
-    }
+  const quickMultipliers = [
+    { label: 'Ожидание', value: null, waiting: true },
+    { label: 'x1.01', value: 1.01 },
+    { label: 'x1.01', value: 1.01 },
+    { label: 'x10.00', value: 10.00 }
+  ]
 
-    // Если есть активная ставка в раунде
-    if (userBet && isRunning && !userBet.cashoutAt) {
-      return (
-        <button className="crash-bet-button cashout" onClick={handleCashout}>
-          Забрать
-        </button>
-      )
-    }
-
-    // Если ставки нет - показываем кнопку сделать ставку
-    if (!userBet) {
-      return (
-        <button className="crash-bet-button" onClick={() => setShowBetModal(true)}>
-          Сделать ставку
-        </button>
-      )
-    }
-
-    return null
-  }
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
+                   window.Telegram?.WebApp?.platform === 'ios'
+  const safeAreaBottom = tg?.safeAreaInset?.bottom || tg?.contentSafeAreaInset?.bottom || 0
 
   return (
     <div className="crash-page">
@@ -249,82 +234,49 @@ function Crash({ onNavigateToTopUp }) {
           </div>
         </div>
 
-        {/* Линия траектории */}
-        {isRunning && (
-          <div className="crash-trajectory-line" style={{
-            width: `${Math.min((multiplier - 1) * 80, 90)}%`
-          }}></div>
-        )}
-
-        <div className="crash-rocket-center">
-          <LottieAnimation 
-            animationData={crashAnim} 
-            width={80} 
-            height={80}
-            loop={true}
-            autoplay={true}
-            rotation={2}
-          />
+        {/* Большая цифра по центру */}
+        <div className="crash-multiplier-big" style={{ color: getMultiplierColor() }}>
+          {crashed ? '💥' : multiplier.toFixed(2)}
         </div>
-
-        {crashed ? (
-          <div className="crash-crashed-text">КРАШ</div>
-        ) : (
-          <div className="crash-multiplier-display" style={{ color: getMultiplierColor() }}>
-            x{multiplier.toFixed(2)}
-          </div>
-        )}
       </div>
 
-      <div className="crash-history-row">
-        {[...history].reverse().map((mult, idx) => (
-          <div 
-            key={idx} 
-            className={`crash-history-item ${mult >= 10 ? 'mega' : mult >= 2 ? 'high' : 'low'}`}
+      {/* Быстрые множители */}
+      <div className="crash-quick-multipliers">
+        {quickMultipliers.map((item, idx) => (
+          <button
+            key={idx}
+            className={`quick-multiplier-btn ${item.waiting ? 'waiting' : ''} ${targetMultiplier === item.value ? 'active' : ''}`}
+            onClick={() => !item.waiting && setTargetMultiplier(item.value)}
           >
-            {mult.toFixed(2)}
-          </div>
+            {item.label}
+          </button>
         ))}
       </div>
 
-      {renderBetButton()}
+      {/* Ставки пока нет - панель с текстом */}
+      {!userBet && (
+        <div className="crash-no-bet-panel">
+          Ставок еще нет
+        </div>
+      )}
 
-      <div className="crash-bets-list">
-        {/* Своя ставка всегда сверху если в ожидании */}
-        {userBet && userBet.waiting && (
-          <div className="crash-bet-item my-bet waiting">
-            <div className="bet-user-info">
-              {userBet.avatar && <img src={userBet.avatar} alt="" className="bet-avatar" />}
-              <div className="bet-details">
-                <div className="bet-username">{userBet.username}</div>
-                <div className="bet-waiting-text">Ожидание след раунда</div>
-              </div>
-            </div>
-            <button className="bet-cancel-button" onClick={handleCancelBet}>
-              Отменить
-            </button>
-          </div>
+      {/* Онлайн и "Об игре" */}
+      <div className="crash-info-row">
+        <span className="crash-online">Онлайн: {bets.length}</span>
+        <button className="crash-about-btn">Об игре</button>
+      </div>
+
+      {/* Кнопки внизу */}
+      <div className="crash-controls" style={{ bottom: `calc(5px + ${safeAreaBottom}px)` }}>
+        {userBet && isRunning && !userBet.cashoutAt ? (
+          <button className="spin-button-fixed crash-cashout-btn" onClick={handleCashout}>
+            <span className="button-main-text">Забрать</span>
+          </button>
+        ) : (
+          <button className="spin-button-fixed" onClick={() => setShowBetModal(true)}>
+            <span className="button-main-text">Сделать ставку</span>
+          </button>
         )}
-
-        {/* Остальные ставки */}
-        {bets.filter(b => !b.waiting).map((bet, idx) => (
-          <div key={idx} className={`crash-bet-item ${bet.userId === user?.id ? 'my-bet' : ''}`}>
-            <div className="bet-user-info">
-              {bet.avatar && <img src={bet.avatar} alt="" className="bet-avatar" />}
-              <div className="bet-details">
-                <div className="bet-username">{bet.username}</div>
-                <div className="bet-amount">{bet.amount} ⭐️</div>
-              </div>
-            </div>
-            <div className="bet-result">
-              {bet.cashoutAt ? (
-                <span className="bet-cashout">x{bet.cashoutAt.toFixed(2)}</span>
-              ) : isRunning ? (
-                <span className="bet-multiplier">x{multiplier.toFixed(2)}</span>
-              ) : null}
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Модалка ставки */}
