@@ -187,47 +187,46 @@
 
 
 
-/* Быстрые множители */
-.crash-quick-multipliers {
+/* История раундов */
+.crash-history-row {
   display: flex;
   gap: 8px;
   padding: 12px 20px;
   overflow-x: auto;
   scrollbar-width: none;
+  background: #000000;
 }
 
-.crash-quick-multipliers::-webkit-scrollbar {
+.crash-history-row::-webkit-scrollbar {
   display: none;
 }
 
-.quick-multiplier-btn {
+.crash-history-item {
   flex-shrink: 0;
-  padding: 10px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
   border-radius: 20px;
-  color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
-.quick-multiplier-btn.waiting {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  cursor: default;
+.crash-history-item.low {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.quick-multiplier-btn.active {
-  background: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
+.crash-history-item.high {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.quick-multiplier-btn:not(.waiting):active {
-  transform: scale(0.95);
+.crash-history-item.mega {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }
 
 /* Панель "Ставок еще нет" */

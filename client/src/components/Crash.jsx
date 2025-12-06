@@ -16,10 +16,10 @@ function Crash({ onNavigateToTopUp }) {
   const [userBet, setUserBet] = useState(null)
   const [showBetModal, setShowBetModal] = useState(false)
   const [betAmount, setBetAmount] = useState(25)
-  const [targetMultiplier, setTargetMultiplier] = useState(null) // x1.01, x10.00 и т.д.
   
   const previousIsRunning = useRef(false)
   const crashedTimeoutRef = useRef(null)
+  const wsRef = useRef(null)
 
   const tg = window.Telegram?.WebApp
   const user = tg?.initDataUnsafe?.user
@@ -41,59 +41,87 @@ function Crash({ onNavigateToTopUp }) {
     }
   }, [])
 
+  // WebSocket подключение вместо polling
   useEffect(() => {
-    fetchGameState()
-    const interval = setInterval(fetchGameState, 100)
-    return () => clearInterval(interval)
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://')
+    
+    const connectWebSocket = () => {
+      const ws = new WebSocket(`${wsUrl}/ws/crash`)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        console.log('🔌 WebSocket connected to crash game')
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          handleGameStateUpdate(data)
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error)
+        }
+      }
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error)
+      }
+
+      ws.onclose = () => {
+        console.log('🔌 WebSocket disconnected, reconnecting...')
+        // Переподключение через 3 секунды
+        setTimeout(connectWebSocket, 3000)
+      }
+    }
+
+    connectWebSocket()
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
   }, [])
 
-  const fetchGameState = async () => {
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/crash/state`)
-      const data = await response.json()
+  const handleGameStateUpdate = (data) => {
+    setMultiplier(data.currentMultiplier)
+    setHistory(data.history)
+    setBets(data.bets || [])
+    
+    // Находим ставку текущего пользователя
+    if (user) {
+      const myBet = data.bets?.find(b => b.userId === user.id)
+      setUserBet(myBet || null)
+    }
+    
+    // Определяем краш: переход из running в stopped
+    if (previousIsRunning.current && !data.isRunning) {
+      console.log('КРАШ ОБНАРУЖЕН! Multiplier:', data.currentMultiplier)
+      setCrashed(true)
       
-      setMultiplier(data.currentMultiplier)
-      setHistory(data.history)
-      setBets(data.bets || [])
-      
-      // Находим ставку текущего пользователя
-      if (user) {
-        const myBet = data.bets?.find(b => b.userId === user.id)
-        setUserBet(myBet || null)
+      // Вибрация при краше (3 раза)
+      if (tg?.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('heavy')
+        setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 100)
+        setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 200)
       }
       
-      // Определяем краш: переход из running в stopped
-      if (previousIsRunning.current && !data.isRunning) {
-        console.log('КРАШ ОБНАРУЖЕН! Multiplier:', data.currentMultiplier)
-        setCrashed(true)
-        
-        // Вибрация при краше (3 раза)
-        if (tg?.HapticFeedback) {
-          tg.HapticFeedback.impactOccurred('heavy')
-          setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 100)
-          setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 200)
-        }
-        
-        // Сбрасываем crashed через 3 секунды (только один раз)
-        if (crashedTimeoutRef.current) {
-          clearTimeout(crashedTimeoutRef.current)
-        }
-        crashedTimeoutRef.current = setTimeout(() => {
-          setCrashed(false)
-        }, 3000)
+      // Сбрасываем crashed через 3 секунды
+      if (crashedTimeoutRef.current) {
+        clearTimeout(crashedTimeoutRef.current)
       }
-      
-      // Обновляем состояние isRunning и сохраняем предыдущее
-      previousIsRunning.current = data.isRunning
-      setIsRunning(data.isRunning)
-      
-      // Если начался новый раунд - сбрасываем crashed
-      if (data.isRunning && crashed) {
+      crashedTimeoutRef.current = setTimeout(() => {
         setCrashed(false)
-      }
-    } catch (error) {
-      console.error('Error fetching game state:', error)
+      }, 3000)
+    }
+    
+    // Обновляем состояние isRunning и сохраняем предыдущее
+    previousIsRunning.current = data.isRunning
+    setIsRunning(data.isRunning)
+    
+    // Если начался новый раунд - сбрасываем crashed
+    if (data.isRunning && crashed) {
+      setCrashed(false)
     }
   }
 
@@ -203,13 +231,6 @@ function Crash({ onNavigateToTopUp }) {
     }
   }
 
-  const quickMultipliers = [
-    { label: 'Ожидание', value: null, waiting: true },
-    { label: 'x1.01', value: 1.01 },
-    { label: 'x1.01', value: 1.01 },
-    { label: 'x10.00', value: 10.00 }
-  ]
-
   const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
                    window.Telegram?.WebApp?.platform === 'ios'
   const safeAreaBottom = tg?.safeAreaInset?.bottom || tg?.contentSafeAreaInset?.bottom || 0
@@ -240,16 +261,15 @@ function Crash({ onNavigateToTopUp }) {
         </div>
       </div>
 
-      {/* Быстрые множители */}
-      <div className="crash-quick-multipliers">
-        {quickMultipliers.map((item, idx) => (
-          <button
-            key={idx}
-            className={`quick-multiplier-btn ${item.waiting ? 'waiting' : ''} ${targetMultiplier === item.value ? 'active' : ''}`}
-            onClick={() => !item.waiting && setTargetMultiplier(item.value)}
+      {/* История коэффициентов */}
+      <div className="crash-history-row">
+        {[...history].reverse().slice(0, 10).map((mult, idx) => (
+          <div 
+            key={idx} 
+            className={`crash-history-item ${mult >= 10 ? 'mega' : mult >= 2 ? 'high' : 'low'}`}
           >
-            {item.label}
-          </button>
+            x{mult.toFixed(2)}
+          </div>
         ))}
       </div>
 
