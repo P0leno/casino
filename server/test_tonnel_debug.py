@@ -175,18 +175,11 @@ async def parse_gifts_from_telegram():
             
             # Основная информация
             print(f"   ID: {gift.id}")
+            print(f"   Name (slug): {gift.name}")
             print(f"   Title: {gift.title}")
-            
-            # Показываем все доступные атрибуты для отладки
-            gift_attrs = [attr for attr in dir(gift) if not attr.startswith('_')]
-            print(f"   Available attributes: {', '.join(gift_attrs[:10])}")
-            
-            if hasattr(gift, 'total_count'):
-                print(f"   Total: {gift.total_count}")
-            if hasattr(gift, 'available_count'):
-                print(f"   Available: {gift.available_count}")
-            elif hasattr(gift, 'remaining_count'):
-                print(f"   Remaining: {gift.remaining_count}")
+            print(f"   Collectible ID: #{gift.collectible_id}")
+            print(f"   Total: {gift.total_amount}")
+            print(f"   Available: {gift.available_amount}")
             
             # Transfer price (LIMITED NFT признак)
             if hasattr(gift, 'transfer_price') and gift.transfer_price:
@@ -198,30 +191,31 @@ async def parse_gifts_from_telegram():
             # Attributes для модели
             model_name = None
             backdrop_name = None
+            symbol_name = None
             
             if hasattr(gift, 'attributes') and gift.attributes:
                 print(f"\n   📊 Атрибуты ({len(gift.attributes)} шт):")
                 for attr in gift.attributes:
                     attr_name = attr.name if hasattr(attr, 'name') else 'unknown'
-                    print(f"      - {attr_name}")
+                    attr_type = str(attr.type) if hasattr(attr, 'type') else 'unknown'
+                    attr_rarity = attr.rarity if hasattr(attr, 'rarity') else 0
+                    
+                    print(f"      - {attr_name} ({attr_type}, rarity: {attr_rarity})")
                     
                     # Ищем MODEL
-                    if attr_name == "MODEL":
-                        if hasattr(attr, 'document') and attr.document:
-                            doc = attr.document
-                            if hasattr(doc, 'file_name'):
-                                # "Giant Crab.tgs" -> "Giant Crab"
-                                model_name = doc.file_name.replace('.tgs', '')
-                                print(f"        ✅ Model: {model_name}")
+                    if 'MODEL' in attr_type:
+                        model_name = attr_name
+                        print(f"        ✅ Model: {model_name}")
                     
                     # Ищем BACKDROP
-                    elif attr_name == "BACKDROP":
-                        if hasattr(attr, 'document') and attr.document:
-                            doc = attr.document
-                            if hasattr(doc, 'file_name'):
-                                # "Red (1).tgs" -> "Red"
-                                backdrop_name = doc.file_name.replace('.tgs', '').split('(')[0].strip()
-                                print(f"        ✅ Backdrop: {backdrop_name}")
+                    elif 'BACKDROP' in attr_type:
+                        backdrop_name = attr_name
+                        print(f"        ✅ Backdrop: {backdrop_name}")
+                    
+                    # Ищем SYMBOL
+                    elif 'SYMBOL' in attr_type:
+                        symbol_name = attr_name
+                        print(f"        ✅ Symbol: {symbol_name}")
             
             # Поиск на Tonnel
             print(f"\n   🔍 Поиск на Tonnel маркетплейсе...")
