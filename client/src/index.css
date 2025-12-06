@@ -2,6 +2,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 580;
 }
 
 html, body {
@@ -11,7 +13,8 @@ html, body {
 }
 
 body {
-  font-family: Gilroy, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
+  font-weight: 580;
   background-color: #1a1a1a;
   color: #ffffff;
   -webkit-font-smoothing: antialiased;
