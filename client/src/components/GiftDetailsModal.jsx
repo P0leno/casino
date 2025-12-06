@@ -1,7 +1,10 @@
 import './GiftDetailsModal.css'
 import LottieAnimation from './LottieAnimation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import starAnim from '../assets/star.json'
+
+const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
+const BACKDROPS_URL = 'https://shelloch.xyz/gifts/backdrops.json'
 
 function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInventory = false }) {
   if (!gift) return null
@@ -9,6 +12,48 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
   const [purchasing, setPurchasing] = useState(false)
   const [selling, setSelling] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
+  const [modelsExpanded, setModelsExpanded] = useState(false)
+  const [availableModels, setAvailableModels] = useState([])
+  const [showBackdropModal, setShowBackdropModal] = useState(false)
+  const [backdrops, setBackdrops] = useState([])
+  
+  // Загрузка списка моделей для этого подарка
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const response = await fetch(MODELS_LIST_URL)
+        if (response.ok) {
+          const data = await response.json()
+          // Находим модели для текущего подарка
+          const models = data[gift.title]?.models || []
+          setAvailableModels(models)
+        }
+      } catch (error) {
+        console.error('Error loading models:', error)
+      }
+    }
+    
+    if (gift.title) {
+      loadModels()
+    }
+  }, [gift.title])
+  
+  // Загрузка списка фонов
+  useEffect(() => {
+    const loadBackdrops = async () => {
+      try {
+        const response = await fetch(BACKDROPS_URL)
+        if (response.ok) {
+          const data = await response.json()
+          setBackdrops(data)
+        }
+      } catch (error) {
+        console.error('Error loading backdrops:', error)
+      }
+    }
+    
+    loadBackdrops()
+  }, [])
 
   // Определяем тип подарка: NFT или Shop
   const isNFTGift = gift.collectible_id !== undefined
@@ -170,42 +215,60 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
             </div>
           )}
 
-          {/* Атрибуты подарка (только для NFT) */}
+          {/* Атрибуты подарка */}
           {!gift.is_regular_gift && (
             <div className="info-section">
-              {gift.model_name && (
-                <div className="info-row">
-                  <span className="info-label">Модель</span>
-                  <span className="info-value">
-                    {gift.model_name}
-                    {gift.rarity_model && (
-                      <span className="rarity-percent">{(gift.rarity_model / 10).toFixed(1)}%</span>
-                    )}
-                  </span>
+              {/* Модели - expandable полоса */}
+              {availableModels.length > 0 && (
+                <div className="attribute-expandable">
+                  <div 
+                    className="attribute-header"
+                    onClick={() => setModelsExpanded(!modelsExpanded)}
+                  >
+                    <div className="attribute-main">
+                      <span className="attribute-label">Модель</span>
+                      {gift.model_name && (
+                        <span className="attribute-value">
+                          {gift.model_name}
+                          {gift.rarity_model && (
+                            <span className="rarity-percent">{(gift.rarity_model / 10).toFixed(1)}%</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`attribute-arrow ${modelsExpanded ? 'expanded' : ''}`}>›</span>
+                  </div>
+                  {modelsExpanded && (
+                    <div className="attribute-list">
+                      {availableModels.map((model, index) => (
+                        <div 
+                          key={index} 
+                          className={`attribute-item ${gift.model_name === model ? 'current' : ''}`}
+                        >
+                          {model}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {gift.symbol_name && (
-                <div className="info-row">
-                  <span className="info-label">Узор</span>
-                  <span className="info-value">
-                    {gift.symbol_name}
-                    {gift.rarity_symbol && (
-                      <span className="rarity-percent">{(gift.rarity_symbol / 10).toFixed(1)}%</span>
-                    )}
-                  </span>
-                </div>
-              )}
-
+              {/* Фон - кнопка открывающая модальное окно */}
               {gift.backdrop_name && (
-                <div className="info-row">
-                  <span className="info-label">Фон</span>
-                  <span className="info-value">
-                    {gift.backdrop_name}
-                    {gift.rarity_backdrop && (
-                      <span className="rarity-percent">{(gift.rarity_backdrop / 10).toFixed(1)}%</span>
-                    )}
-                  </span>
+                <div 
+                  className="attribute-button"
+                  onClick={() => setShowBackdropModal(true)}
+                >
+                  <div className="attribute-main">
+                    <span className="attribute-label">Фон</span>
+                    <span className="attribute-value">
+                      {gift.backdrop_name}
+                      {gift.rarity_backdrop && (
+                        <span className="rarity-percent">{(gift.rarity_backdrop / 10).toFixed(1)}%</span>
+                      )}
+                    </span>
+                  </div>
+                  <span className="attribute-arrow">›</span>
                 </div>
               )}
             </div>
@@ -281,6 +344,37 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
           )}
         </div>
       </div>
+      
+      {/* Модальное окно с фонами */}
+      {showBackdropModal && (
+        <div className="backdrop-modal-overlay" onClick={() => setShowBackdropModal(false)}>
+          <div className="backdrop-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="backdrop-modal-header">
+              <h3>Фоны</h3>
+              <button className="backdrop-modal-close" onClick={() => setShowBackdropModal(false)}>✕</button>
+            </div>
+            <div className="backdrop-modal-grid">
+              {backdrops.map((backdrop, index) => (
+                <div 
+                  key={index}
+                  className={`backdrop-modal-item ${gift.backdrop_name === backdrop.name ? 'current' : ''}`}
+                >
+                  <div 
+                    className="backdrop-circle-large"
+                    style={{
+                      background: `radial-gradient(circle, ${backdrop.hex.centerColor}, ${backdrop.hex.edgeColor})`
+                    }}
+                  />
+                  <span className="backdrop-name">{backdrop.name}</span>
+                  {backdrop.rarity && (
+                    <span className="backdrop-rarity">{(backdrop.rarity / 10).toFixed(1)}%</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

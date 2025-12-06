@@ -8,6 +8,7 @@ import ShopFilterModal from './ShopFilterModal'
 import starStaticBlackIcon from '../assets/starstatic_black.svg'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
 
 function Shop({ onNavigateToTopUp }) {
   const [activeCategory, setActiveCategory] = useState('gift')
@@ -32,9 +33,7 @@ function Shop({ onNavigateToTopUp }) {
 
   const categories = [
     { id: 'gift', label: 'Подарок' },
-    { id: 'model', label: 'Модель' },
-    { id: 'background', label: 'Фон' },
-    { id: 'symbol', label: 'Символ' }
+    { id: 'background', label: 'Фон' }
   ]
 
   // Загрузка подарков с сервера и списка моделей
@@ -174,10 +173,8 @@ function Shop({ onNavigateToTopUp }) {
               className={`category-btn ${activeCategory === category.id ? 'active' : ''}`}
               onClick={() => {
                 setActiveCategory(category.id)
-                // Открываем фильтр при нажатии на "Подарок"
-                if (category.id === 'gift') {
-                  setShowFilterModal(true)
-                }
+                // Открываем фильтр при нажатии на категорию
+                setShowFilterModal(true)
               }}
             >
               {category.label}
