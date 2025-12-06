@@ -175,9 +175,18 @@ async def parse_gifts_from_telegram():
             
             # Основная информация
             print(f"   ID: {gift.id}")
-            print(f"   Slug: {gift.slug}")
-            print(f"   Total: {gift.total_count}")
-            print(f"   Available: {gift.available_count}")
+            print(f"   Title: {gift.title}")
+            
+            # Показываем все доступные атрибуты для отладки
+            gift_attrs = [attr for attr in dir(gift) if not attr.startswith('_')]
+            print(f"   Available attributes: {', '.join(gift_attrs[:10])}")
+            
+            if hasattr(gift, 'total_count'):
+                print(f"   Total: {gift.total_count}")
+            if hasattr(gift, 'available_count'):
+                print(f"   Available: {gift.available_count}")
+            elif hasattr(gift, 'remaining_count'):
+                print(f"   Remaining: {gift.remaining_count}")
             
             # Transfer price (LIMITED NFT признак)
             if hasattr(gift, 'transfer_price') and gift.transfer_price:
