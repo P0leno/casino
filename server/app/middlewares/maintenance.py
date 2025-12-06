@@ -45,11 +45,15 @@ async def maintenance_middleware(request: Request, call_next):
         '/api/get-maintenance',
         '/api/toggle-maintenance',
         '/api/health',
+        '/api/crash/ws',  # WebSocket для краш игры
         '/'
     ]
     
     # Если путь разрешен или не API - пропускаем
-    if request.url.path in allowed_paths or not request.url.path.startswith('/api/'):
+    # Также пропускаем все WebSocket запросы (любые /ws пути)
+    if (request.url.path in allowed_paths or 
+        not request.url.path.startswith('/api/') or 
+        '/ws' in request.url.path):
         return await call_next(request)
     
     # Проверяем режим технических работ
