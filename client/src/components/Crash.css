@@ -10,6 +10,45 @@
   background: #000000;
 }
 
+/* Баннер отключения - в стиле плитки ставки */
+.crash-disconnected-tile {
+  background: rgba(255, 68, 68, 0.1) !important;
+  border: 1px solid rgba(255, 68, 68, 0.3) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 20px !important;
+  gap: 8px !important;
+}
+
+.disconnected-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff4444;
+  margin: 0;
+}
+
+.disconnected-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+  text-align: center;
+  margin: 0;
+}
+
+.disconnected-text a {
+  color: #ff4444;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.disconnected-text a:hover {
+  opacity: 0.8;
+}
+
 .crash-game-area {
   position: relative;
   width: 100%;
@@ -128,7 +167,7 @@
   transform: translate(-50%, -50%);
   z-index: 5;
   animation: rocketFloat 2s ease-in-out infinite;
-  opacity: 0.3;
+  opacity: 0.4;
 }
 
 @keyframes rocketFloat {
@@ -140,7 +179,7 @@
   }
 }
 
-/* Большая цифра по центру */
+/* Большая цифра по центру - эффект жидкого стекла */
 .crash-multiplier-big {
   position: absolute;
   top: 50%;
@@ -149,10 +188,26 @@
   font-size: 120px;
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 0 40px currentColor;
-  transition: color 0.3s ease;
+  
+  /* Стеклянный эффект - прозрачный градиент на тексте */
+  color: transparent;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  
+  /* Свечение по краям текста */
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 0 40px rgba(255, 255, 255, 0.15);
+  
+  transition: all 0.3s ease;
   z-index: 100;
-  color: #ffffff;
 }
 
 @keyframes pulse {
@@ -268,103 +323,249 @@
   gap: 8px;
 }
 
-.crash-cashout-btn {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.55) 0%, rgba(5, 150, 105, 0.55) 50%, rgba(4, 120, 87, 0.55) 100%) !important;
-  animation: cashoutPulse 1.5s ease-in-out infinite;
+/* Кнопки в краше - закругленные как коэффициенты */
+.crash-button {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 20px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-@keyframes cashoutPulse {
+.crash-button:active {
+  transform: scale(0.98);
+}
+
+.crash-cashout-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  animation: pulse-green 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
   0%, 100% {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
   50% {
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
   }
+}
+
+/* Убираем hover эффект для кнопок в краше */
+.crash-controls .spin-button-fixed:hover:not(.disabled) {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 
 
-/* Модалка ставки */
+/* Модалка ставки - Bottom Sheet */
 .crash-bet-modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.crash-bet-modal-content {
-  background: #1a1a1a;
-  border-radius: 20px;
-  padding: 24px;
-  width: calc(100% - 80px);
-  max-width: 400px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.crash-bet-modal-content h3 {
-  margin: 0 0 20px 0;
-  font-size: 22px;
+.crash-bet-sheet {
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-radius: 28px 28px 0 0;
+  padding: 24px 20px 32px 20px;
+  width: 100%;
+  max-height: 50vh;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.crash-bet-sheet h3 {
+  margin: 0 0 24px 0;
+  font-size: 20px;
+  font-weight: 700;
   color: #ffffff;
   text-align: center;
 }
 
-.bet-input-group {
+.bet-amount-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.bet-amount-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.bet-amount-star {
+  width: 24px;
+  height: 24px;
+}
+
+.bet-amount-plus {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: none;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.bet-amount-plus:active {
+  transform: scale(0.95);
+  background: #2563eb;
+}
+
+.bet-amount-big {
+  text-align: center;
+  font-size: 48px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 20px;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.bet-amount-label {
+  font-size: 24px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bet-quick-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bet-quick-buttons button {
+  flex: 1;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bet-quick-buttons button:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bet-range-hint {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
   margin-bottom: 20px;
 }
 
-.bet-input-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+.bet-submit-btn {
+  margin-top: 8px;
 }
 
-.bet-input-group input {
-  width: 100%;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 16px;
-  box-sizing: border-box;
-}
 
-.bet-modal-buttons {
+
+/* Плитка ставки пользователя */
+.crash-user-bet-tile {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.bet-tile-left {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.bet-modal-buttons button {
-  flex: 1;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
+.bet-tile-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.bet-tile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bet-tile-name {
   font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.bet-tile-status {
+  font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.3s ease;
 }
 
-.bet-modal-buttons button:first-child {
-  background: rgba(255, 255, 255, 0.1);
+.bet-tile-amount {
+  font-size: 18px;
+  font-weight: 700;
   color: #ffffff;
-}
-
-.bet-modal-buttons button.primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.bet-modal-buttons button:hover {
-  transform: translateY(-2px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 
+
+
+.bet-star-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}

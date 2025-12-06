@@ -198,16 +198,24 @@ async def websocket_crash(websocket: WebSocket, initData: str = None):
     # initData передается как query параметр для авторизации
     await manager.connect(websocket)
     
+    # Извлекаем user_id из initData если есть
+    user_id = None
+    if initData:
+        from app.routers.auth import verify_init_data
+        user_data = verify_init_data(initData)
+        if user_data:
+            user_id = user_data.get('id')
+    
     try:
-        # Отправляем начальное состояние
-        initial_state = crash_game.get_state()
+        # Отправляем начальное состояние с nextBet для этого пользователя
+        initial_state = crash_game.get_state(user_id=user_id)
         await websocket.send_json(initial_state)
         
         # Фоновая задача для отправки обновлений
         async def send_updates():
             while True:
                 try:
-                    state = crash_game.get_state()
+                    state = crash_game.get_state(user_id=user_id)
                     await websocket.send_json(state)
                     await asyncio.sleep(0.05)  # 20 обновлений в секунду
                 except Exception:

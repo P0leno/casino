@@ -5,6 +5,7 @@ import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import { useBalance } from '../contexts/BalanceContext'
 import crashAnim from '../assets/crash.json'
+import starIcon from '../assets/star_static.svg'
 
 function Crash({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
@@ -14,8 +15,11 @@ function Crash({ onNavigateToTopUp }) {
   const [crashed, setCrashed] = useState(false)
   const [bets, setBets] = useState([])
   const [userBet, setUserBet] = useState(null)
+  const [nextBet, setNextBet] = useState(null) // Ставка на следующий раунд от сервера
   const [showBetModal, setShowBetModal] = useState(false)
   const [betAmount, setBetAmount] = useState(25)
+  const [isConnected, setIsConnected] = useState(false)
+  const [wasConnected, setWasConnected] = useState(false) // Было ли подключение хоть раз
   
   const previousIsRunning = useRef(false)
   const crashedTimeoutRef = useRef(null)
@@ -56,6 +60,8 @@ function Crash({ onNavigateToTopUp }) {
 
         ws.onopen = () => {
           console.log('🔌 WebSocket connected to crash game')
+          setIsConnected(true)
+          setWasConnected(true) // Помечаем что было подключение
         }
 
         ws.onmessage = (event) => {
@@ -69,10 +75,12 @@ function Crash({ onNavigateToTopUp }) {
 
         ws.onerror = (error) => {
           console.error('WebSocket error:', error)
+          setIsConnected(false)
         }
 
         ws.onclose = () => {
           console.log('🔌 WebSocket disconnected, reconnecting in 3s...')
+          setIsConnected(false)
           // Переподключение через 3 секунды
           setTimeout(connectWebSocket, 3000)
         }
@@ -98,10 +106,14 @@ function Crash({ onNavigateToTopUp }) {
     setBets(data.bets || [])
     
     // Находим ставку текущего пользователя
+    let myBet = null
     if (user) {
-      const myBet = data.bets?.find(b => b.userId === user.id)
+      myBet = data.bets?.find(b => b.userId === user.id)
       setUserBet(myBet || null)
     }
+    
+    // Обновляем nextBet от сервера
+    setNextBet(data.nextBet || null)
     
     // Определяем краш: переход из running в stopped
     if (previousIsRunning.current && !data.isRunning) {
@@ -167,6 +179,7 @@ function Crash({ onNavigateToTopUp }) {
       if (response.ok) {
         updateBalance(data)
         setShowBetModal(false)
+        // nextBet придет от сервера через WebSocket
       } else {
         if (tg) {
           tg.showAlert(data.detail || 'Ошибка при размещении ставки')
@@ -269,24 +282,24 @@ function Crash({ onNavigateToTopUp }) {
           </div>
         </div>
 
-        {/* Ракета на фоне */}
-        {isRunning && (
-          <div className="crash-rocket-center">
-            <LottieAnimation 
-              animationData={crashAnim} 
-              width={80} 
-              height={80}
-              loop={true}
-              autoplay={true}
-              rotation={2}
-            />
+        {/* Ракета на фоне - показывается всегда */}
+        <div className="crash-rocket-center">
+          <LottieAnimation 
+            animationData={crashAnim} 
+            width={160} 
+            height={160}
+            loop={true}
+            autoplay={true}
+            rotation={2}
+          />
+        </div>
+
+        {/* Большая цифра по центру - только когда раунд идет */}
+        {isRunning && !crashed && (
+          <div className="crash-multiplier-big" style={{ color: getMultiplierColor() }}>
+            {multiplier.toFixed(2)}
           </div>
         )}
-
-        {/* Большая цифра по центру */}
-        <div className="crash-multiplier-big" style={{ color: getMultiplierColor() }}>
-          {crashed ? '💥' : multiplier.toFixed(2)}
-        </div>
       </div>
 
       {/* История коэффициентов или "Ожидание" */}
@@ -305,8 +318,68 @@ function Crash({ onNavigateToTopUp }) {
         )}
       </div>
 
+      {/* Сообщение об отключении В ставках - только если было подключение */}
+      {!isConnected && wasConnected && (
+        <div className="crash-user-bet-tile crash-disconnected-tile">
+          <div className="disconnected-title">Отключено от сервера</div>
+          <div className="disconnected-text">
+            Если вы потеряли ставку, напишите в{' '}
+            <a href="https://t.me/helpshellbot" target="_blank" rel="noopener noreferrer">
+              поддержку
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Плитка текущей ставки или следующей */}
+      {(userBet || nextBet) && !(!isConnected && wasConnected) && (
+        <div className="crash-user-bet-tile">
+          <div className="bet-tile-left">
+            <img 
+              src={user?.photo_url || `https://ui-avatars.com/api/?name=${user?.first_name}&background=3b82f6&color=fff`} 
+              alt="Avatar" 
+              className="bet-tile-avatar"
+            />
+            <div className="bet-tile-info">
+              <div className="bet-tile-name">{user?.first_name || 'Игрок'}</div>
+              <div 
+                className="bet-tile-status"
+                style={{
+                  color: userBet?.cashoutAt 
+                    ? '#10b981' 
+                    : (crashed && userBet && !userBet.cashoutAt) 
+                      ? '#ff4444' 
+                      : 'rgba(255, 255, 255, 0.6)'
+                }}
+              >
+                {nextBet && !userBet ? (
+                  // Ставка на следующий раунд - ожидание
+                  'Следующий раунд'
+                ) : userBet?.cashoutAt ? (
+                  // Забрал - показываем зафиксированный коэффициент зеленым
+                  `${userBet.cashoutAt.toFixed(2)}x`
+                ) : crashed && userBet && !userBet.cashoutAt ? (
+                  // Краш произошел и не забрал - красный коэффициент краша
+                  `${multiplier.toFixed(2)}x`
+                ) : isRunning ? (
+                  // Раунд идет - показываем текущий коэффициент
+                  `${multiplier.toFixed(2)}x`
+                ) : (
+                  // Ожидание следующего раунда
+                  'Ожидание'
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="bet-tile-amount">
+            <img src={starIcon} alt="⭐" className="bet-star-icon" />
+            {(userBet?.amount || nextBet?.amount) || 0}
+          </div>
+        </div>
+      )}
+
       {/* Ставки пока нет - панель с текстом */}
-      {!userBet && (
+      {!userBet && !nextBet && (
         <div className="crash-no-bet-panel">
           Ставок еще нет
         </div>
@@ -315,34 +388,57 @@ function Crash({ onNavigateToTopUp }) {
       {/* Кнопки внизу */}
       <div className="crash-controls" style={{ bottom: `calc(10px + ${safeAreaBottom}px)` }}>
         {userBet && isRunning && !userBet.cashoutAt ? (
-          <button className="spin-button-fixed crash-cashout-btn" onClick={handleCashout}>
-            <span className="button-main-text">Забрать</span>
+          // Ставка активна в текущем раунде - показываем "Забрать"
+          <button className="crash-button crash-cashout-btn" onClick={handleCashout}>
+            Забрать
           </button>
         ) : (
-          <button className="spin-button-fixed" onClick={() => setShowBetModal(true)}>
-            <span className="button-main-text">Сделать ставку</span>
+          // Показываем "Сделать ставку" (серая если есть nextBet или если забрал в текущем раунде)
+          <button 
+            className="crash-button" 
+            onClick={() => setShowBetModal(true)}
+            disabled={!!nextBet || (userBet?.cashoutAt && isRunning)}
+            style={{
+              opacity: (nextBet || (userBet?.cashoutAt && isRunning)) ? 0.5 : 1,
+              cursor: (nextBet || (userBet?.cashoutAt && isRunning)) ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {nextBet ? 'Ставка принята' : 'Сделать ставку'}
           </button>
         )}
       </div>
 
-      {/* Модалка ставки */}
+      {/* Модалка ставки - bottom sheet */}
       {showBetModal && (
         <div className="crash-bet-modal" onClick={() => setShowBetModal(false)}>
-          <div className="crash-bet-modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Сделать ставку</h3>
-            <div className="bet-input-group">
-              <label>Сумма (минимум 25 ⭐️)</label>
-              <input 
-                type="number" 
-                value={betAmount} 
-                onChange={(e) => setBetAmount(Math.max(25, parseInt(e.target.value) || 25))}
-                min="25"
-              />
+          <div className="crash-bet-sheet" onClick={(e) => e.stopPropagation()}>
+            <h3>Новая ставка</h3>
+            
+            <div className="bet-amount-display">
+              <div className="bet-amount-value">
+                <img src={starIcon} alt="⭐" className="bet-amount-star" />
+                {betAmount}
+              </div>
+              <button className="bet-amount-plus" onClick={() => setBetAmount(prev => prev + 25)}>
+                +
+              </button>
             </div>
-            <div className="bet-modal-buttons">
-              <button onClick={() => setShowBetModal(false)}>Отмена</button>
-              <button onClick={handlePlaceBet} className="primary">Подтвердить</button>
+            
+            <div className="bet-amount-big">
+              {betAmount} <span className="bet-amount-label">stars</span>
             </div>
+            
+            <div className="bet-quick-buttons">
+              <button onClick={() => setBetAmount(prev => Math.max(25, prev + 100))}>+ 100</button>
+              <button onClick={() => setBetAmount(prev => Math.max(25, prev + 500))}>+ 500</button>
+              <button onClick={() => setBetAmount(prev => Math.max(25, prev + 2500))}>+ 2 500</button>
+            </div>
+            
+            <div className="bet-range-hint">От 50 до 20 000 звезд</div>
+            
+            <button className="crash-button bet-submit-btn" onClick={handlePlaceBet}>
+              Сделать ставку
+            </button>
           </div>
         </div>
       )}

@@ -18,9 +18,10 @@ import Tasks from './components/Tasks'
 import TabBar from './components/TabBar'
 import BannedScreen from './components/BannedScreen'
 import Maintenance from './components/Maintenance'
-import { BalanceProvider } from './contexts/BalanceContext'
+import { BalanceProvider, useBalance } from './contexts/BalanceContext'
 
-function App() {
+function AppContent() {
+  const { updateBalance } = useBalance()
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('home')
@@ -190,6 +191,14 @@ function App() {
           return
         }
         
+        // Обновляем баланс если пришел в ответе
+        if (data.balance !== undefined || data.bonusBalance !== undefined) {
+          updateBalance({
+            balance: data.balance || 0,
+            bonus_balance: data.bonusBalance || 0
+          })
+        }
+        
         // Все ок - убираем лоадер и показываем приложение
         console.log('User validated successfully, showing app')
         setLoading(false)
@@ -291,28 +300,32 @@ function App() {
   // Если путь /spin - показываем Spin без TabBar
   if (currentPath === '/spin') {
     return (
-      <BalanceProvider>
-        <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
-          <Spin onNavigateToTopUp={setActiveTab} />
-        </div>
-      </BalanceProvider>
+      <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+        <Spin onNavigateToTopUp={setActiveTab} />
+      </div>
     )
   }
 
   return (
+    <div 
+      className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
+      style={{ '--safe-area-top': `${safeAreaTop}px` }}
+    >
+      {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'shop' && <Shop onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'tasks' && <Tasks onNavigateToTopUp={setActiveTab} />}
+      {activeTab === 'profile' && <Profile />}
+      {activeTab === 'topup' && <TopUp onNavigateBack={setActiveTab} />}
+      {activeTab !== 'topup' && <TabBar activeTab={activeTab} onTabChange={setActiveTab} />}
+    </div>
+  )
+}
+
+function App() {
+  return (
     <BalanceProvider>
-      <div 
-        className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
-        style={{ '--safe-area-top': `${safeAreaTop}px` }}
-      >
-        {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
-        {activeTab === 'shop' && <Shop onNavigateToTopUp={setActiveTab} />}
-        {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}
-        {activeTab === 'tasks' && <Tasks onNavigateToTopUp={setActiveTab} />}
-        {activeTab === 'profile' && <Profile />}
-        {activeTab === 'topup' && <TopUp onNavigateBack={setActiveTab} />}
-        {activeTab !== 'topup' && <TabBar activeTab={activeTab} onTabChange={setActiveTab} />}
-      </div>
+      <AppContent />
     </BalanceProvider>
   )
 }

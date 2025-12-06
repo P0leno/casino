@@ -125,6 +125,13 @@ async def get_inventory(request: GetInventoryRequest):
             
             for row in cursor.fetchall():
                 gift_name, price, gift_id = row
+                
+                # Рассчитываем sell_price с комиссией для обычных подарков
+                sell_price = None
+                if price and price > 0:
+                    sell_price = int(price * (1 - sell_commission / 100))
+                    sell_price = max(1, sell_price)  # Минимум 1 звезда
+                
                 # Формируем данные для обычного подарка
                 inventory_gifts.append({
                     'gift_id': gift_id,
@@ -143,6 +150,7 @@ async def get_inventory(request: GetInventoryRequest):
                     'rarity_backdrop': None,
                     'ton_price': None,
                     'price': price,
+                    'sell_price': sell_price,
                     'is_regular_gift': True
                 })
         
@@ -168,11 +176,11 @@ async def get_inventory(request: GetInventoryRequest):
                 gift_dict = dict(row)
                 gift_dict['is_regular_gift'] = False
                 
-                # Рассчитываем sell_price с комиссией
-                if gift_dict['price']:
+                # Рассчитываем sell_price с комиссией от текущей цены в звездах
+                if gift_dict['price'] and gift_dict['price'] > 0:
                     # Применяем комиссию к цене в звездах
                     sell_price = int(gift_dict['price'] * (1 - sell_commission / 100))
-                    gift_dict['sell_price'] = sell_price
+                    gift_dict['sell_price'] = max(1, sell_price)  # Минимум 1 звезда
                 else:
                     gift_dict['sell_price'] = None
                 
@@ -278,9 +286,12 @@ async def get_sell_price(request: GetSellPriceRequest):
         print(f"Error getting sell price: {e}")
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
+@router.post("/inventory/sell-nft")
 @router.post("/inventory/sell")
+@router.post("/sell-gift")
+@router.post("/shop/sell-gift")
 async def sell_gift(request: SellGiftRequest):
-    """Продать подарок из инвентаря"""
+    """Продать подарок из инвентаря (работает для всех типов подарков)"""
     user_data = verify_init_data(request.initData)
     if not user_data:
         raise HTTPException(status_code=401, detail="Unauthorized")

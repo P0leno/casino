@@ -204,8 +204,8 @@ class CrashGame:
             return {"success": True, "refund": amount}
         return {"success": False, "error": "Нет ставки для отмены"}
     
-    def get_state(self) -> Dict:
-        """Возвращает текущее состояние игры"""
+    def get_state(self, user_id=None) -> Dict:
+        """Возвращает текущее состояние игры (опционально для конкретного пользователя)"""
         # Если игра идет - отправляем время начала для клиентского расчета
         # Если взорвалась - отправляем финальный множитель
         state = {
@@ -218,12 +218,19 @@ class CrashGame:
                     "username": bet["username"],
                     "avatar": bet["avatar"],
                     "amount": bet["amount"],
-                    "cashoutAt": bet["cashout_at"],
-                    "waiting": bet.get("waiting", False)
+                    "cashoutAt": bet["cashout_at"]
                 }
-                for uid, bet in {**self.bets, **self.next_round_bets}.items()
+                for uid, bet in self.bets.items()
             ]
         }
+        
+        # Добавляем nextBet если запрашивается для конкретного пользователя
+        if user_id and user_id in self.next_round_bets:
+            state["nextBet"] = {
+                "amount": self.next_round_bets[user_id]["amount"]
+            }
+        else:
+            state["nextBet"] = None
         
         if self.is_running:
             # Игра идет - отправляем время начала

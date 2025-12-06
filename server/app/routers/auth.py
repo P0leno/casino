@@ -129,11 +129,13 @@ async def validate(request: ValidateRequest):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT is_banned, balance, bonus_balance FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
         
         if result:
             is_banned = bool(result[0])
+            balance = result[1] if result[1] is not None else 0
+            bonus_balance = result[2] if result[2] is not None else 0
             # Обновляем username и avatar_url при каждом логине
             cursor.execute(
                 "UPDATE users SET username = ?, avatar_url = ? WHERE id = ?",
@@ -142,15 +144,22 @@ async def validate(request: ValidateRequest):
             conn.commit()
         else:
             cursor.execute(
-                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned) VALUES (?, ?, ?, ?, 0)",
+                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned, balance, bonus_balance) VALUES (?, ?, ?, ?, 0, 0, 0)",
                 (user_id, username, photo_url, datetime.now().isoformat())
             )
             conn.commit()
             is_banned = False
+            balance = 0
+            bonus_balance = 0
         
         conn.close()
         
-        return {"valid": True, "isBanned": is_banned}
+        return {
+            "valid": True, 
+            "isBanned": is_banned,
+            "balance": balance,
+            "bonusBalance": bonus_balance
+        }
     except Exception as e:
         print(f"[VALIDATE] ❌ ERROR in main validation logic: {e}")
         import traceback

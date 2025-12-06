@@ -12,6 +12,10 @@ async def ban_check_middleware(request: Request, call_next):
     """
     Middleware для проверки бана на всех API запросах кроме check-ban, validate и health
     """
+    # Пропускаем WebSocket запросы (они не имеют body с initData)
+    if request.url.path.endswith('/ws') or 'websocket' in request.headers.get('upgrade', '').lower():
+        return await call_next(request)
+    
     # Разрешенные пути (не проверяем бан)
     allowed_paths = ['/api/check-ban', '/api/validate', '/api/health', '/']
     

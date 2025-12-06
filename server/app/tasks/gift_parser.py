@@ -50,6 +50,107 @@ def init_gifts_table():
     # Таблица создается в app.database.db.init_db()
     pass
 
+async def parse_gift_attributes_with_retry(app, gift, max_retries=10):
+    """
+    Парсит атрибуты подарка с retry логикой.
+    Если backdrop не найден, пробует повторно до max_retries раз.
+    Возвращает dict с атрибутами или None если не удалось распарсить backdrop.
+    """
+    for attempt in range(max_retries):
+        try:
+            model_name = None
+            model_path = None
+            symbol_name = None
+            backdrop_name = None
+            center_color = None
+            edge_color = None
+            pattern_color = None
+            text_color = None
+            rarity_model = None
+            rarity_symbol = None
+            rarity_backdrop = None
+            
+            # Парсим attributes
+            if hasattr(gift, 'attributes') and gift.attributes:
+                for attr in gift.attributes:
+                    # Преобразуем в dict, обрабатываем вложенные объекты
+                    if hasattr(attr, '__dict__'):
+                        attr_dict = attr.__dict__
+                    elif isinstance(attr, dict):
+                        attr_dict = attr
+                    else:
+                        continue
+                
+                    attr_name = attr_dict.get('name', '')
+                    attr_type = str(attr_dict.get('type', ''))
+                
+                    # MODEL type
+                    if 'MODEL' in attr_type or (hasattr(attr, 'sticker') and hasattr(attr, 'name') and not hasattr(attr, 'center_color')):
+                        model_name = attr_name
+                        rarity_model = attr_dict.get('rarity', 0)
+                        # Формируем путь к анимации
+                        if model_name:
+                            model_path = f"/gifts/models/{gift.title}/{model_name}.json"
+                
+                    # SYMBOL type
+                    elif 'SYMBOL' in attr_type:
+                        symbol_name = attr_name
+                        rarity_symbol = attr_dict.get('rarity', 0)
+                
+                    # BACKDROP type - определяем по наличию center_color
+                    elif hasattr(attr, 'center_color') or 'BACKDROP' in attr_type:
+                        backdrop_name = attr_name
+                        rarity_backdrop = attr_dict.get('rarity', 0)
+                    
+                        # Конвертируем цвета (с проверкой на None)
+                        if hasattr(attr, 'center_color') and attr.center_color is not None:
+                            center_color = int_to_hex_color(attr.center_color)
+                        if hasattr(attr, 'edge_color') and attr.edge_color is not None:
+                            edge_color = int_to_hex_color(attr.edge_color)
+                        if hasattr(attr, 'pattern_color') and attr.pattern_color is not None:
+                            pattern_color = int_to_hex_color(attr.pattern_color)
+                        if hasattr(attr, 'text_color') and attr.text_color is not None:
+                            text_color = int_to_hex_color(attr.text_color)
+            
+            # Проверяем что backdrop найден
+            if backdrop_name:
+                return {
+                    'model_name': model_name,
+                    'model_path': model_path,
+                    'symbol_name': symbol_name,
+                    'backdrop_name': backdrop_name,
+                    'center_color': center_color,
+                    'edge_color': edge_color,
+                    'pattern_color': pattern_color,
+                    'text_color': text_color,
+                    'rarity_model': rarity_model,
+                    'rarity_symbol': rarity_symbol,
+                    'rarity_backdrop': rarity_backdrop
+                }
+            
+            # Backdrop не найден - пробуем снова
+            if attempt < max_retries - 1:
+                print(f"⚠️  Попытка {attempt + 1}/{max_retries}: backdrop не найден для {gift.title} ({gift.id}), повтор через 0.5 сек...")
+                await asyncio.sleep(0.5)
+                # Пробуем перезапросить gift
+                try:
+                    gifts_list = []
+                    async for g in app.get_chat_gifts(chat_id=(await app.get_me()).id, exclude_unlimited=True):
+                        if str(g.id) == str(gift.id):
+                            gift = g
+                            break
+                except Exception as e:
+                    print(f"⚠️  Ошибка при повторном запросе gift: {e}")
+        
+        except Exception as e:
+            print(f"⚠️  Ошибка парсинга атрибутов (попытка {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(0.5)
+    
+    # После всех попыток backdrop не найден
+    print(f"❌ Не удалось распарсить backdrop для {gift.title} ({gift.id}) после {max_retries} попыток - подарок НЕ сохранен")
+    return None
+
 async def parse_gifts(send_log=True):
     """Парсит подарки из Telegram и сохраняет в БД"""
     if not SESSION_STRING or not API_ID or not API_HASH:
@@ -106,59 +207,27 @@ async def parse_gifts(send_log=True):
                 gift_id = str(gift.id)
                 slug = getattr(gift, 'name', None)  # HappyBrownie-95259
                 title = gift.title
-                model_name = None
-                model_path = None
-                symbol_name = None
-                backdrop_name = None
-                center_color = None
-                edge_color = None
-                pattern_color = None
-                text_color = None
-                rarity_model = None
-                rarity_symbol = None
-                rarity_backdrop = None
-            
-                # Парсим attributes
-                if hasattr(gift, 'attributes') and gift.attributes:
-                    for attr in gift.attributes:
-                        # Преобразуем в dict, обрабатываем вложенные объекты
-                        if hasattr(attr, '__dict__'):
-                            attr_dict = attr.__dict__
-                        elif isinstance(attr, dict):
-                            attr_dict = attr
-                        else:
-                            continue
-                    
-                        attr_name = attr_dict.get('name', '')
-                        attr_type = str(attr_dict.get('type', ''))
-                    
-                        # MODEL type
-                        if 'MODEL' in attr_type or (hasattr(attr, 'sticker') and hasattr(attr, 'name') and not hasattr(attr, 'center_color')):
-                            model_name = attr_name
-                            rarity_model = attr_dict.get('rarity', 0)
-                            # Формируем путь к анимации
-                            if model_name:
-                                model_path = f"/gifts/models/{title}/{model_name}.json"
-                    
-                        # SYMBOL type
-                        elif 'SYMBOL' in attr_type:
-                            symbol_name = attr_name
-                            rarity_symbol = attr_dict.get('rarity', 0)
-                    
-                        # BACKDROP type - определяем по наличию center_color
-                        elif hasattr(attr, 'center_color') or 'BACKDROP' in attr_type:
-                            backdrop_name = attr_name
-                            rarity_backdrop = attr_dict.get('rarity', 0)
-                        
-                            # Конвертируем цвета (с проверкой на None)
-                            if hasattr(attr, 'center_color') and attr.center_color is not None:
-                                center_color = int_to_hex_color(attr.center_color)
-                            if hasattr(attr, 'edge_color') and attr.edge_color is not None:
-                                edge_color = int_to_hex_color(attr.edge_color)
-                            if hasattr(attr, 'pattern_color') and attr.pattern_color is not None:
-                                pattern_color = int_to_hex_color(attr.pattern_color)
-                            if hasattr(attr, 'text_color') and attr.text_color is not None:
-                                text_color = int_to_hex_color(attr.text_color)
+                
+                # Парсим attributes с retry логикой (до 10 попыток)
+                attrs = await parse_gift_attributes_with_retry(app, gift, max_retries=10)
+                
+                # Если не удалось распарсить backdrop - НЕ сохраняем подарок
+                if attrs is None:
+                    skipped_count += 1
+                    continue
+                
+                # Извлекаем распарсенные атрибуты
+                model_name = attrs['model_name']
+                model_path = attrs['model_path']
+                symbol_name = attrs['symbol_name']
+                backdrop_name = attrs['backdrop_name']
+                center_color = attrs['center_color']
+                edge_color = attrs['edge_color']
+                pattern_color = attrs['pattern_color']
+                text_color = attrs['text_color']
+                rarity_model = attrs['rarity_model']
+                rarity_symbol = attrs['rarity_symbol']
+                rarity_backdrop = attrs['rarity_backdrop']
             
                 available_amount = getattr(gift, 'available_amount', 0)
                 total_amount = getattr(gift, 'total_amount', 0)
@@ -220,7 +289,7 @@ async def parse_gifts(send_log=True):
                 
                 message = f"✅ <b>Gift Parser</b>\nОбновлено подарков: <b>{gifts_count}</b>"
                 if skipped_count > 0:
-                    message += f"\nПропущено без transfer_price: {skipped_count}"
+                    message += f"\nПропущено: {skipped_count} шт (без transfer_price + без backdrop)"
                 await send_log_to_channel_with_button(message)
             else:
                 # При старте - краткий лог
@@ -234,7 +303,7 @@ async def parse_gifts(send_log=True):
                 
                 message = "ℹ️ <b>Gift Parser</b>\nНет новых подарков для обновления"
                 if skipped_count > 0:
-                    message += f"\nПропущено без transfer_price: {skipped_count}"
+                    message += f"\nПропущено: {skipped_count} шт (без transfer_price + без backdrop)"
                 await send_log_to_channel_with_button(message)
         
         return {"updated": gifts_count, "skipped": skipped_count}

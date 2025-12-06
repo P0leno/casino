@@ -199,30 +199,57 @@ async def buy_gift(request: BuyGiftRequest):
         # Добавляем slug в инвентарь
         inventory.append(slug)
         
-        # Обновляем баланс и инвентарь
-        new_balance = balance - price
-        cursor.execute("""
-            UPDATE users 
-            SET balance = ?, inventory = ? 
-            WHERE id = ?
-        """, (new_balance, json.dumps(inventory), user_id))
-        
-        # Уменьшаем available_amount
-        cursor.execute("""
-            UPDATE shop_gifts 
-            SET available_amount = available_amount - 1 
-            WHERE slug = ?
-        """, (request.slug,))
-        
-        conn.commit()
-        conn.close()
-        
-        return {
-            "success": True,
-            "message": f"Подарок \"{title}\" куплен!",
-            "new_balance": new_balance,
-            "gift_slug": slug
-        }
+        # КРИТИЧНО: Используем транзакцию и блокировку для избежания двойной покупки
+        try:
+            # Блокируем строку подарка для обновления
+            cursor.execute("BEGIN IMMEDIATE")
+            
+            # Проверяем доступность еще раз с блокировкой
+            cursor.execute("""
+                SELECT available_amount 
+                FROM shop_gifts 
+                WHERE slug = ? AND available_amount > 0
+            """, (request.slug,))
+            
+            current_amount = cursor.fetchone()
+            
+            if not current_amount or current_amount[0] <= 0:
+                conn.rollback()
+                conn.close()
+                raise HTTPException(status_code=400, detail="Подарок уже куплен кем-то другим")
+            
+            # Обновляем баланс и инвентарь
+            new_balance = balance - price
+            cursor.execute("""
+                UPDATE users 
+                SET balance = ?, inventory = ? 
+                WHERE id = ?
+            """, (new_balance, json.dumps(inventory), user_id))
+            
+            # Уменьшаем available_amount
+            cursor.execute("""
+                UPDATE shop_gifts 
+                SET available_amount = available_amount - 1 
+                WHERE slug = ?
+            """, (request.slug,))
+            
+            conn.commit()
+            conn.close()
+            
+            # ВАЖНО: Инвалидируем кэш Redis сразу после покупки
+            invalidate_shop_cache()
+            print(f"✅ Подарок {title} куплен пользователем {user_id}, кэш инвалидирован")
+            
+            return {
+                "success": True,
+                "message": f"Подарок \"{title}\" куплен!",
+                "new_balance": new_balance,
+                "gift_slug": slug
+            }
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            raise
         
     except HTTPException:
         raise

@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
 import sqlite3
+import asyncio
 from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH
 from app.utils.validate import validate_init_data
 from aiogram import Bot
@@ -676,4 +677,43 @@ async def update_setting(request: UpdateSettingRequest):
         return {"success": True, "message": f"Настройка {request.key} обновлена"}
     except Exception as e:
         print(f"Error updating setting: {e}")
+        return {"success": False, "message": str(e)}
+
+@router.post("/admin/restart")
+async def restart_server(request: ValidateRequest):
+    """
+    Перезапустить сервер с graceful shutdown
+    Ждет завершения текущего краш раунда если есть активные ставки
+    """
+    try:
+        # Проверяем что это админ
+        is_valid = validate_init_data(request.initData, BOT_TOKEN)
+        if not is_valid:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        user = json.loads(user_data)
+        user_id = user.get('id')
+        
+        if user_id not in ADMIN_IDS:
+            raise HTTPException(status_code=403, detail="Forbidden: Admin access required")
+        
+        # Запускаем перезапуск в фоне
+        from app.restart_monitor import handle_restart_command
+        from aiogram import types, Bot
+        from app.config import LOG_BOT_TOKEN
+        
+        # Создаем фейковое сообщение для trigger перезапуска
+        bot = Bot(token=LOG_BOT_TOKEN)
+        asyncio.create_task(handle_restart_command(None, bot))
+        
+        return {
+            "success": True, 
+            "message": "Перезапуск инициирован. Сервер перезагрузится через несколько секунд."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error restarting server: {e}")
         return {"success": False, "message": str(e)}

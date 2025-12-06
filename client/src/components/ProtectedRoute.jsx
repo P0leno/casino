@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { useBalance } from '../contexts/BalanceContext'
 
 function ProtectedRoute({ children }) {
+  const { updateBalance } = useBalance()
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const [banned, setBanned] = useState(false)
@@ -40,6 +42,14 @@ function ProtectedRoute({ children }) {
         }
 
         if (data.valid && !data.isBanned) {
+          // Обновляем баланс если пришел в ответе
+          if (data.balance !== undefined || data.bonusBalance !== undefined) {
+            updateBalance({
+              balance: data.balance || 0,
+              bonus_balance: data.bonusBalance || 0
+            })
+          }
+          
           setAuthorized(true)
           setLoading(false)
         } else {
