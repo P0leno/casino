@@ -93,8 +93,9 @@ def get_shop_gifts_with_prices() -> List[Dict]:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT gift_id, slug, title, model_name, model_path, 
-                   backdrop_name, center_color, edge_color, 
-                   ton_price, available_amount, total_amount
+                   symbol_name, backdrop_name, center_color, edge_color, 
+                   ton_price, available_amount, total_amount,
+                   rarity_model, rarity_symbol, rarity_backdrop
             FROM shop_gifts
             WHERE ton_price IS NOT NULL AND ton_price > 0
             ORDER BY title
@@ -102,8 +103,9 @@ def get_shop_gifts_with_prices() -> List[Dict]:
         
         gifts = []
         for row in cursor.fetchall():
-            gift_id, slug, title, model_name, model_path, backdrop_name, \
-            center_color, edge_color, ton_price, available_amount, total_amount = row
+            gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name, \
+            center_color, edge_color, ton_price, available_amount, total_amount, \
+            rarity_model, rarity_symbol, rarity_backdrop = row
             
             # Пересчитываем цену в звезды
             stars_price = calculate_stars_price(ton_price, ton_usd, commission)
@@ -114,13 +116,17 @@ def get_shop_gifts_with_prices() -> List[Dict]:
                 "title": title,
                 "model_name": model_name,
                 "model_path": model_path,
+                "symbol_name": symbol_name,
                 "backdrop_name": backdrop_name,
                 "center_color": center_color,
                 "edge_color": edge_color,
                 "ton_price": ton_price,
                 "price": stars_price,  # Цена в звездах
                 "available_amount": available_amount or 0,
-                "total_amount": total_amount or 0
+                "total_amount": total_amount or 0,
+                "rarity_model": rarity_model,
+                "rarity_symbol": rarity_symbol,
+                "rarity_backdrop": rarity_backdrop
             })
         
         conn.close()

@@ -8,7 +8,7 @@ import json
 import os
 import sys
 from dotenv import load_dotenv
-import aiohttp
+from curl_cffi.requests import AsyncSession
 
 # Загружаем .env
 load_dotenv()
@@ -54,7 +54,7 @@ def get_headers():
     }
 
 async def search_tonnel_resale(gift_name, model=None):
-    """Поиск подарка на Tonnel маркетплейсе"""
+    """Поиск подарка на Tonnel маркетплейсе (с обходом Cloudflare через curl_cffi)"""
     
     # Базовый фильтр
     filter_data = {
@@ -84,33 +84,32 @@ async def search_tonnel_resale(gift_name, model=None):
         'user_auth': '',
     }
     
-    print(f"\n   📤 Отправка запроса к Tonnel API...")
+    print(f"\n   📤 Отправка запроса к Tonnel API (curl_cffi)...")
     print(f"   Filter: {json.dumps(filter_data, ensure_ascii=False)}")
     
     try:
-        # Отключаем проверку SSL для тестирования
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(connector=connector) as session:
-            async with session.post(
+        # Используем curl_cffi для обхода Cloudflare
+        # impersonate="chrome" имитирует реальный браузер Chrome
+        async with AsyncSession(impersonate="chrome") as session:
+            response = await session.post(
                 'https://gifts2.tonnel.network/api/pageGifts',
                 json=json_data,
                 headers=get_headers(),
-                timeout=aiohttp.ClientTimeout(total=10)
-            ) as response:
-                
-                print(f"   📥 Статус: {response.status}")
-                print(f"   📋 Headers: {dict(response.headers)}")
-                
-                if response.status == 200:
-                    data = await response.json()
-                    print(f"   ✅ Успешно! Получено объектов: {len(data) if isinstance(data, list) else 'N/A'}")
-                    return data
-                else:
-                    text = await response.text()
-                    print(f"   ❌ Ошибка {response.status}")
-                    print(f"   Response: {text[:200]}")
-                    return None
+                timeout=10
+            )
+            
+            print(f"   📥 Статус: {response.status_code}")
+            print(f"   📋 Headers: {dict(response.headers)}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                print(f"   ✅ Успешно! Получено объектов: {len(data) if isinstance(data, list) else 'N/A'}")
+                return data
+            else:
+                text = response.text
+                print(f"   ❌ Ошибка {response.status_code}")
+                print(f"   Response: {text[:200]}")
+                return None
                     
     except Exception as e:
         print(f"   💥 Exception: {e}")

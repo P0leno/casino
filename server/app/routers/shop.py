@@ -37,18 +37,18 @@ def sanitize_error(error: Exception) -> str:
 
 class ShopGift(BaseModel):
     gift_id: str
-    slug: Optional[str]  # Нужен для покупки и отображения
+    slug: Optional[str] = None  # Нужен для покупки и отображения
     title: str
-    model_name: Optional[str]
-    model_path: Optional[str]
-    symbol_name: Optional[str]
-    backdrop_name: Optional[str]
-    center_color: Optional[str]
-    edge_color: Optional[str]
+    model_name: Optional[str] = None
+    model_path: Optional[str] = None
+    symbol_name: Optional[str] = None
+    backdrop_name: Optional[str] = None
+    center_color: Optional[str] = None
+    edge_color: Optional[str] = None
     price: int
-    rarity_model: Optional[int]
-    rarity_symbol: Optional[int]
-    rarity_backdrop: Optional[int]
+    rarity_model: Optional[int] = None
+    rarity_symbol: Optional[int] = None
+    rarity_backdrop: Optional[int] = None
 
 class BuyGiftRequest(BaseModel):
     initData: str

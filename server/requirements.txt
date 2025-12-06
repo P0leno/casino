@@ -12,3 +12,4 @@ aiocryptopay>=0.4.8
 fake-useragent>=1.4.0
 redis>=5.0.1
 hiredis>=2.3.2
+curl_cffi>=0.13.0
