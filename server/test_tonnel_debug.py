@@ -21,7 +21,7 @@ from pyrogram import Client
 # Pyrogram credentials
 API_ID = os.getenv("API_ID")
 API_HASH = os.getenv("API_HASH")
-SESSION_NAME = "gift_sender_session"  # Используем рабочую сессию
+SESSION_STRING = os.getenv("SESSION_STRING")  # Строковая сессия из .env
 
 # Fake user agent
 try:
@@ -126,15 +126,21 @@ async def parse_gifts_from_telegram():
         print("❌ Ошибка: API_ID или API_HASH не найдены в .env")
         return
     
-    print(f"📱 Pyrogram: API_ID={API_ID}, SESSION={SESSION_NAME}")
+    if not SESSION_STRING:
+        print("❌ Ошибка: SESSION_STRING не найден в .env")
+        return
+    
+    print(f"📱 Pyrogram: API_ID={API_ID}")
+    print(f"📱 SESSION_STRING: {SESSION_STRING[:50]}...")
     print()
     
-    # Создаем клиент Pyrogram
+    # Создаем клиент Pyrogram со строковой сессией
     app = Client(
-        name=SESSION_NAME,
+        name="test_session",
         api_id=int(API_ID),
         api_hash=API_HASH,
-        workdir="sessions"
+        session_string=SESSION_STRING,
+        in_memory=True  # Не создавать файл сессии
     )
     
     try:
