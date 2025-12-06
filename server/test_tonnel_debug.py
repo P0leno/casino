@@ -21,7 +21,7 @@ from pyrogram import Client
 # Pyrogram credentials
 API_ID = os.getenv("API_ID")
 API_HASH = os.getenv("API_HASH")
-SESSION_NAME = os.getenv("SESSION_NAME", "my_account")
+SESSION_NAME = "gift_sender_session"  # Используем рабочую сессию
 
 # Fake user agent
 try:
