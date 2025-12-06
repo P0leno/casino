@@ -88,7 +88,10 @@ async def search_tonnel_resale(gift_name, model=None):
     print(f"   Filter: {json.dumps(filter_data, ensure_ascii=False)}")
     
     try:
-        async with aiohttp.ClientSession() as session:
+        # Отключаем проверку SSL для тестирования
+        connector = aiohttp.TCPConnector(ssl=False)
+        
+        async with aiohttp.ClientSession(connector=connector) as session:
             async with session.post(
                 'https://gifts2.tonnel.network/api/pageGifts',
                 json=json_data,
