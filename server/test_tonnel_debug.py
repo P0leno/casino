@@ -252,8 +252,14 @@ async def parse_gifts_from_telegram():
     
     finally:
         print("\n🔌 Отключение от Telegram...")
-        await app.stop()
-        print("✅ Отключено")
+        try:
+            if app.is_connected:
+                await app.stop()
+                print("✅ Отключено")
+            else:
+                print("ℹ️  Клиент уже отключен")
+        except Exception as e:
+            print(f"⚠️  Ошибка при отключении: {e}")
 
 if __name__ == "__main__":
     asyncio.run(parse_gifts_from_telegram())
