@@ -386,12 +386,10 @@ function Crash({ onNavigateToTopUp }) {
         )}
       </div>
 
-      {/* Countdown текст над историей */}
-      {isCountdown && (
-        <div className="crash-countdown-text">
-          Начинаем через {countdownValue}...
-        </div>
-      )}
+      {/* Countdown текст над историей - всегда присутствует для стабильности */}
+      <div className="crash-countdown-text">
+        {isCountdown ? `Начинаем через ${countdownValue}...` : ''}
+      </div>
 
       {/* История коэффициентов */}
       <div className="crash-history-row">
@@ -478,8 +476,8 @@ function Crash({ onNavigateToTopUp }) {
         </div>
       )}
 
-      {/* Ставки пока нет - панель с текстом */}
-      {!userBet && !nextBet && (
+      {/* Ставки пока нет - панель с текстом - всегда присутствует для стабильности */}
+      {!userBet && !nextBet && !(!isConnected && wasConnected) && (
         <div className="crash-no-bet-panel">
           Ставок еще нет
         </div>
