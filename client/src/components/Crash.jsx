@@ -386,12 +386,17 @@ function Crash({ onNavigateToTopUp }) {
         )}
       </div>
 
-      {/* История коэффициентов или статус */}
+      {/* Countdown текст над историей */}
+      {isCountdown && (
+        <div className="crash-countdown-text">
+          Начинаем через {countdownValue}...
+        </div>
+      )}
+
+      {/* История коэффициентов */}
       <div className="crash-history-row">
-        {!isRunning && !isCountdown && history.length === 0 ? (
+        {history.length === 0 ? (
           <div className="crash-waiting-text">Ожидание</div>
-        ) : isCountdown ? (
-          <div className="crash-waiting-text">Начинаем через {countdownValue}...</div>
         ) : (
           [...history].reverse().slice(0, 10).map((mult, idx) => (
             <div 
