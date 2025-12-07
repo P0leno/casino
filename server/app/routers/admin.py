@@ -383,70 +383,7 @@ async def update_crash_settings(request: UpdateCrashSettingsRequest):
         print(f"Error in update_crash_settings: {e}")
         return {"success": False, "message": "Ошибка сервера"}
 
-class CrashStateRequest(BaseModel):
-    initData: str
 
-@router.post("/admin/crash/state")
-async def get_crash_state(request: CrashStateRequest):
-    """Получить текущее состояние краш-игры (только для админов)"""
-    try:
-        is_valid = validate_init_data(request.initData, BOT_TOKEN)
-        if not is_valid:
-            return {"success": False, "message": "Invalid init data"}
-        
-        parsed = parse_qs(request.initData)
-        user_data = json.loads(parsed['user'][0])
-        user_id = int(user_data['id'])
-        
-        if user_id not in ADMIN_IDS:
-            return {"success": False, "message": "Forbidden"}
-        
-        game_state = crash_game.get_state()
-        
-        # Получаем данные о ставках из базы
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        bets_info = []
-        for bet in game_state["bets"]:
-            # Используем username из bet если есть, иначе ищем в БД
-            username = bet.get("username", None)
-            if not username:
-                cursor.execute("SELECT username FROM users WHERE id = ?", (bet["userId"],))
-                user = cursor.fetchone()
-                username = user[0] if user and user[0] else f"User {bet['userId']}"
-            
-            bets_info.append({
-                "user_id": bet["userId"],
-                "username": username,
-                "amount": bet["amount"],
-                "currency": "star",
-                "cashout_multiplier": bet.get("cashoutAt")
-            })
-        
-        conn.close()
-        
-        # Определяем статус
-        if game_state["isRunning"]:
-            status = "running"
-        else:
-            status = "waiting"
-        
-        return {
-            "success": True,
-            "state": {
-                "status": status,
-                "currentMultiplier": game_state.get("currentMultiplier", 1.0),
-                "gameId": game_state["gameId"],
-                "startTime": game_state.get("startTime"),
-                "crashed": game_state.get("crashed", False),
-                "crashedAt": game_state.get("crashedAt")
-            },
-            "bets": bets_info
-        }
-    except Exception as e:
-        print(f"Error getting crash state: {e}")
-        return {"success": False, "message": str(e)}
 
 class ExplodeRequest(BaseModel):
     initData: str
@@ -499,21 +436,18 @@ async def get_settings(request: ValidateRequest):
         if user_id not in ADMIN_IDS:
             return {"valid": False, "settings": {}, "error": "Not admin"}
         
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        # Читаем из Redis (с fallback на SQLite)
+        from app.utils.redis_models import RedisSettings
+        settings = RedisSettings.get_all()
         
-        cursor.execute("SELECT key, value, description FROM settings")
-        results = cursor.fetchall()
-        conn.close()
+        # Извлекаем maintenance_mode для удобства
+        maintenance_mode = settings.get('maintenance_mode', {}).get('value', '0') == '1'
         
-        settings = {
-            row[0]: {
-                "value": row[1],
-                "description": row[2]
-            } for row in results
+        return {
+            "valid": True, 
+            "settings": settings,
+            "maintenanceMode": maintenance_mode
         }
-        
-        return {"valid": True, "settings": settings}
     except Exception as e:
         print(f"Error getting settings: {e}")
         return {"valid": False, "settings": {}, "error": str(e)}
@@ -650,22 +584,12 @@ async def update_setting(request: UpdateSettingRequest):
                 except ValueError:
                     return {"success": False, "message": "Некорректное числовое значение"}
         
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        # Обновляем через Redis (автоматически обновит БД и Redis)
+        from app.utils.redis_models import RedisSettings
+        success = RedisSettings.set(request.key, sanitized_value)
         
-        # Обновляем настройку
-        cursor.execute("""
-            UPDATE settings 
-            SET value = ?, updated_at = CURRENT_TIMESTAMP 
-            WHERE key = ?
-        """, (sanitized_value, request.key))
-        
-        if cursor.rowcount == 0:
-            conn.close()
+        if not success:
             return {"success": False, "message": "Setting not found"}
-        
-        conn.commit()
-        conn.close()
         
         # Если изменили комиссию магазина - запускаем пересчет цен
         if request.key == 'shop_commission':

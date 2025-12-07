@@ -10,15 +10,13 @@ from app.config import DB_PATH, ADMIN_IDS
 from app.routers.auth import verify_init_data
 
 def is_maintenance_mode() -> bool:
-    """Проверить включен ли режим технических работ"""
+    """Проверить включен ли режим технических работ (из Redis с fallback на SQLite)"""
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
-        result = cursor.fetchone()
-        conn.close()
+        # Читаем из Redis (с автоматическим fallback на SQLite)
+        from app.utils.redis_models import RedisSettings
+        setting = RedisSettings.get('maintenance_mode')
         
-        if result and result[0] == '1':
+        if setting and setting['value'] == '1':
             return True
         return False
     except Exception as e:

@@ -9,7 +9,6 @@ const Settings = () => {
 
   useEffect(() => {
     loadSettings();
-    loadMaintenanceStatus();
   }, []);
 
   const loadSettings = async () => {
@@ -48,6 +47,8 @@ const Settings = () => {
       
       if (data.valid && data.settings) {
         setSettings(data.settings);
+        // Получаем статус тех работ из настроек
+        setMaintenanceMode(data.maintenanceMode || false);
       } else {
         tg.showAlert(data.error || 'Ошибка загрузки настроек');
       }
@@ -64,27 +65,6 @@ const Settings = () => {
     }
   };
 
-  const loadMaintenanceStatus = async () => {
-    try {
-      const tg = window.Telegram.WebApp;
-      const initData = tg.initData;
-
-      const response = await fetch('https://api.shelloch.xyz/api/get-maintenance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setMaintenanceMode(data.maintenance_mode);
-      }
-    } catch (error) {
-      console.error('Error loading maintenance status:', error);
-    }
-  };
-
   const toggleMaintenance = async () => {
     if (saving) return;
     
@@ -94,19 +74,37 @@ const Settings = () => {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
       
-      const response = await fetch('https://api.shelloch.xyz/api/toggle-maintenance', {
+      // Используем update-setting вместо toggle-maintenance
+      const newValue = maintenanceMode ? '0' : '1';
+      
+      const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
+        body: JSON.stringify({ 
+          initData,
+          key: 'maintenance_mode',
+          value: newValue
+        })
       });
 
       const data = await response.json();
       
       if (data.success) {
-        setMaintenanceMode(data.maintenance_mode);
+        const newMode = newValue === '1';
+        setMaintenanceMode(newMode);
+        
+        // Обновляем локальное состояние settings
+        setSettings(prev => ({
+          ...prev,
+          maintenance_mode: {
+            ...prev.maintenance_mode,
+            value: newValue
+          }
+        }));
+        
         tg.HapticFeedback.notificationOccurred('success');
         
-        const status = data.maintenance_mode ? 'включен' : 'выключен';
+        const status = newMode ? 'включен' : 'выключен';
         tg.showAlert?.(`Режим технических работ ${status}`);
       } else {
         tg.showAlert?.(data.message || 'Ошибка переключения режима');

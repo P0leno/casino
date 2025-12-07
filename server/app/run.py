@@ -118,6 +118,11 @@ async def lifespan(app: FastAPI):
     
     # Запуск Redis синхронизации
     if cache.is_available():
+        # Загружаем settings в Redis при старте
+        from app.utils.redis_models import RedisSettings
+        print("📥 Загрузка настроек в Redis...")
+        RedisSettings.load_all_to_redis()
+        
         await start_redis_sync()
         print("✅ Redis синхронизация запущена (каждые 5 минут)")
         redis_info = cache.get_info()

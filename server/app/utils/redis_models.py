@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 TTL_USER = 1800  # 30 минут
 TTL_SHOP_GIFT = 3600  # 1 час
 TTL_PROMO = 600  # 10 минут
+TTL_SETTINGS = 3600  # 1 час для настроек
 
 
 class RedisUser:
@@ -383,5 +384,179 @@ class RedisPromo:
             return False
 
 
+class RedisSettings:
+    """Работа с настройками через Redis + SQLite"""
+    
+    @staticmethod
+    def get(key: str) -> Optional[Dict]:
+        """
+        Получить одну настройку по ключу
+        Возвращает: {value, description, updated_at}
+        """
+        redis_key = f"setting:{key}"
+        
+        # Пытаемся Redis
+        setting = cache.get(redis_key)
+        if setting:
+            return setting
+        
+        # Fallback на SQLite
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT value, description, updated_at
+                FROM settings WHERE key = ?
+            """, (key,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if not row:
+                return None
+            
+            setting = {
+                "value": row[0],
+                "description": row[1] or "",
+                "updated_at": row[2]
+            }
+            
+            # Кэшируем
+            cache.set(redis_key, setting, TTL_SETTINGS)
+            logger.info(f"[CACHE] Setting {key} loaded from DB → Redis")
+            
+            return setting
+            
+        except Exception as e:
+            logger.error(f"[DB] Error loading setting {key}: {e}")
+            return None
+    
+    @staticmethod
+    def get_all() -> Dict[str, Dict]:
+        """
+        Получить все настройки
+        Возвращает: {key1: {value, description}, key2: {...}, ...}
+        """
+        redis_key = "settings:all"
+        
+        # Пытаемся Redis
+        settings = cache.get(redis_key)
+        if settings:
+            logger.debug(f"[CACHE] Settings loaded from Redis, count: {len(settings)}")
+            return settings
+        
+        # Fallback на SQLite
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT key, value, description, updated_at
+                FROM settings
+            """)
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            settings = {}
+            for row in rows:
+                key = row[0]
+                settings[key] = {
+                    "value": row[1],
+                    "description": row[2] or "",
+                    "updated_at": row[3]
+                }
+                
+                # Кэшируем каждую настройку отдельно
+                cache.set(f"setting:{key}", settings[key], TTL_SETTINGS)
+            
+            # Кэшируем весь словарь настроек
+            cache.set(redis_key, settings, TTL_SETTINGS)
+            logger.info(f"[CACHE] {len(settings)} settings loaded from DB → Redis")
+            
+            return settings
+            
+        except Exception as e:
+            logger.error(f"[DB] Error loading all settings: {e}")
+            return {}
+    
+    @staticmethod
+    def set(key: str, value: str) -> bool:
+        """
+        Обновить настройку (СНАЧАЛА SQLite, потом Redis)
+        """
+        try:
+            # 1. Обновляем SQLite (источник истины!)
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE settings 
+                SET value = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE key = ?
+            """, (value, key))
+            rows_affected = cursor.rowcount
+            conn.commit()
+            conn.close()
+            
+            if rows_affected == 0:
+                logger.warning(f"[DB] ⚠️ Setting {key} not found in DB, update had no effect!")
+                return False
+            
+            logger.info(f"[DB] Setting {key} updated to: {value}")
+            
+            # 2. Invalidate Redis кэш
+            cache.delete(f"setting:{key}")
+            cache.delete("settings:all")
+            
+            # 3. СРАЗУ загружаем свежие данные в Redis
+            fresh_setting = RedisSettings.get(key)
+            if fresh_setting:
+                logger.info(f"[CACHE] Setting {key} reloaded: {fresh_setting['value']}")
+            
+            # 4. Перезагружаем весь словарь настроек
+            all_settings = RedisSettings.get_all()
+            logger.info(f"[CACHE] All settings reloaded, count: {len(all_settings)}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"[DB] Error updating setting {key}: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    @staticmethod
+    def invalidate(key: str = None):
+        """
+        Принудительно удалить настройку(и) из кэша
+        Если key=None, удаляет все настройки
+        """
+        if key:
+            cache.delete(f"setting:{key}")
+        else:
+            cache.delete_pattern("setting:*")
+        
+        cache.delete("settings:all")
+        logger.info(f"[CACHE] Settings invalidated: {key or 'ALL'}")
+    
+    @staticmethod
+    def load_all_to_redis():
+        """
+        Принудительная загрузка всех настроек в Redis при старте
+        """
+        try:
+            # Сначала очищаем старый кэш
+            RedisSettings.invalidate()
+            
+            # Загружаем все настройки
+            settings = RedisSettings.get_all()
+            
+            logger.info(f"✅ Settings loaded to Redis: {len(settings)} keys")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error loading settings to Redis: {e}")
+            return False
+
+
 # Экспортируем для удобства
-__all__ = ['RedisUser', 'RedisShopGift', 'RedisPromo', 'cache']
+__all__ = ['RedisUser', 'RedisShopGift', 'RedisPromo', 'RedisSettings', 'cache']

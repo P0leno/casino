@@ -5,7 +5,7 @@ import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import { useBalance } from '../contexts/BalanceContext'
 import crashAnim from '../assets/crash.json'
-import starIcon from '../assets/star_static.svg'
+import starAnim from '../assets/star.json'
 
 function Crash({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
@@ -20,6 +20,8 @@ function Crash({ onNavigateToTopUp }) {
   const [betAmount, setBetAmount] = useState(25)
   const [isConnected, setIsConnected] = useState(false)
   const [wasConnected, setWasConnected] = useState(false) // Было ли подключение хоть раз
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showCrashPanel, setShowCrashPanel] = useState(false)
   
   const previousIsRunning = useRef(false)
   const crashedTimeoutRef = useRef(null)
@@ -43,7 +45,35 @@ function Crash({ onNavigateToTopUp }) {
         tg.BackButton.offClick(handleBack)
       }
     }
+    
+    // Проверяем параметр showCrashPanel в URL
+    const urlParams = new URLSearchParams(window.location.search)
+    setShowCrashPanel(urlParams.get('showCrashPanel') === 'true')
+    
+    // Проверяем является ли пользователь админом
+    checkAdmin()
   }, [])
+
+  const checkAdmin = async () => {
+    try {
+      const initData = tg?.initData
+      if (!initData) return
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const response = await fetch(`${apiUrl}/api/check-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      })
+
+      const data = await response.json()
+      if (data.valid && data.isAdmin) {
+        setIsAdmin(true)
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+    }
+  }
 
   // WebSocket подключение (без polling fallback)
   useEffect(() => {
@@ -105,12 +135,8 @@ function Crash({ onNavigateToTopUp }) {
     setHistory(data.history)
     setBets(data.bets || [])
     
-    // Находим ставку текущего пользователя
-    let myBet = null
-    if (user) {
-      myBet = data.bets?.find(b => b.userId === user.id)
-      setUserBet(myBet || null)
-    }
+    // Ставка текущего пользователя приходит отдельно от сервера
+    setUserBet(data.userBet || null)
     
     // Обновляем nextBet от сервера
     setNextBet(data.nextBet || null)
@@ -120,11 +146,21 @@ function Crash({ onNavigateToTopUp }) {
       console.log('КРАШ ОБНАРУЖЕН! Multiplier:', data.currentMultiplier)
       setCrashed(true)
       
-      // Вибрация при краше (3 раза)
+      // Вибрация при краше - паттерн "взрыв" (нарастающий, ~1 сек)
       if (tg?.HapticFeedback) {
+        // Первый удар - тяжелый (начало)
         tg.HapticFeedback.impactOccurred('heavy')
-        setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 100)
+        
+        // Второй удар - тяжелый (нарастание)
         setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 200)
+        
+        // Третий удар - тяжелый (пик)
+        setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 400)
+        
+        // Четвертый удар - средний (затухание)
+        setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), 700)
+        
+        // Всего ~900ms (меньше 1 секунды)
       }
       
       // Сбрасываем crashed через 3 секунды
@@ -253,9 +289,46 @@ function Crash({ onNavigateToTopUp }) {
     }
   }
 
+  const handleExplodeCrash = async () => {
+    if (!isAdmin || !user) return
+
+    try {
+      const initData = tg?.initData
+      if (!initData) {
+        if (tg) tg.showAlert('Ошибка авторизации')
+        return
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const response = await fetch(`${apiUrl}/api/admin/crash/explode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok || !data.success) {
+        if (tg) {
+          tg.showAlert(data.message || 'Ошибка взрыва')
+        }
+      } else {
+        if (tg) {
+          tg.HapticFeedback.notificationOccurred('success')
+        }
+      }
+    } catch (error) {
+      console.error('Error exploding crash:', error)
+      if (tg) {
+        tg.showAlert('Ошибка соединения')
+      }
+    }
+  }
+
   const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
                    window.Telegram?.WebApp?.platform === 'ios'
-  const safeAreaBottom = tg?.safeAreaInset?.bottom || tg?.contentSafeAreaInset?.bottom || 0
+  // Всегда 0 чтобы кнопка была ровно 10px от safe area (без дополнительного отступа)
+  const safeAreaBottom = 0
 
   return (
     <div className="crash-page">
@@ -372,8 +445,16 @@ function Crash({ onNavigateToTopUp }) {
             </div>
           </div>
           <div className="bet-tile-amount">
-            <img src={starIcon} alt="⭐" className="bet-star-icon" />
-            {(userBet?.amount || nextBet?.amount) || 0}
+            {userBet?.current_winnings !== undefined 
+              ? Math.floor(userBet.current_winnings)
+              : (nextBet?.amount || 0)
+            }
+            <LottieAnimation 
+              animationData={starAnim} 
+              loop={false} 
+              autoplay={false}
+              style={{ width: 1, height: 1 }}
+            />
           </div>
         </div>
       )}
@@ -408,24 +489,58 @@ function Crash({ onNavigateToTopUp }) {
         )}
       </div>
 
+      {/* Кнопка взрыва для админов (показывается только когда showCrashPanel=true) */}
+      {isAdmin && showCrashPanel && isRunning && (
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          zIndex: 1000
+        }}>
+          <button 
+            onClick={handleExplodeCrash}
+            style={{
+              background: 'linear-gradient(135deg, #ff4444, #cc0000)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 20px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(255, 68, 68, 0.4)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            💥 Взорвать сейчас
+          </button>
+        </div>
+      )}
+
       {/* Модалка ставки - bottom sheet */}
       {showBetModal && (
         <div className="crash-bet-modal" onClick={() => setShowBetModal(false)}>
           <div className="crash-bet-sheet" onClick={(e) => e.stopPropagation()}>
             <h3>Новая ставка</h3>
             
-            <div className="bet-amount-display">
-              <div className="bet-amount-value">
-                <img src={starIcon} alt="⭐" className="bet-amount-star" />
-                {betAmount}
-              </div>
-              <button className="bet-amount-plus" onClick={() => setBetAmount(prev => prev + 25)}>
-                +
-              </button>
-            </div>
-            
-            <div className="bet-amount-big">
-              {betAmount} <span className="bet-amount-label">stars</span>
+            <div className="bet-amount-input-container">
+              <input 
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="bet-amount-input"
+                value={betAmount}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, ''); // Только цифры
+                  const numValue = parseInt(value) || 0;
+                  setBetAmount(Math.max(0, Math.min(20000, numValue))); // 0-20000
+                }}
+                placeholder="0"
+              />
+              <span className="bet-amount-label">stars</span>
             </div>
             
             <div className="bet-quick-buttons">
