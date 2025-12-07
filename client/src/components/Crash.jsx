@@ -22,6 +22,8 @@ function Crash({ onNavigateToTopUp }) {
   const [wasConnected, setWasConnected] = useState(false) // Было ли подключение хоть раз
   const [isAdmin, setIsAdmin] = useState(false)
   const [showCrashPanel, setShowCrashPanel] = useState(false)
+  const [isCountdown, setIsCountdown] = useState(false)
+  const [countdownValue, setCountdownValue] = useState(0)
   
   const previousIsRunning = useRef(false)
   const crashedTimeoutRef = useRef(null)
@@ -134,6 +136,8 @@ function Crash({ onNavigateToTopUp }) {
     setMultiplier(data.currentMultiplier)
     setHistory(data.history)
     setBets(data.bets || [])
+    setIsCountdown(data.isCountdown || false)
+    setCountdownValue(data.countdownValue || 0)
     
     // Ставка текущего пользователя приходит отдельно от сервера
     setUserBet(data.userBet || null)
@@ -163,13 +167,13 @@ function Crash({ onNavigateToTopUp }) {
         // Всего ~900ms (меньше 1 секунды)
       }
       
-      // Сбрасываем crashed через 3 секунды
+      // Сбрасываем crashed через 1 секунду (время показа ставок после краша)
       if (crashedTimeoutRef.current) {
         clearTimeout(crashedTimeoutRef.current)
       }
       crashedTimeoutRef.current = setTimeout(() => {
         setCrashed(false)
-      }, 3000)
+      }, 1000)
     }
     
     // Обновляем состояние isRunning и сохраняем предыдущее
@@ -367,18 +371,27 @@ function Crash({ onNavigateToTopUp }) {
           />
         </div>
 
-        {/* Большая цифра по центру - только когда раунд идет */}
+        {/* Большая цифра по центру - когда раунд идет или countdown */}
         {isRunning && !crashed && (
           <div className="crash-multiplier-big" style={{ color: getMultiplierColor() }}>
             {multiplier.toFixed(2)}
           </div>
         )}
+        
+        {/* Countdown отсчет перед раундом */}
+        {isCountdown && countdownValue > 0 && (
+          <div className="crash-multiplier-big" style={{ color: '#ffffff' }}>
+            {countdownValue}
+          </div>
+        )}
       </div>
 
-      {/* История коэффициентов или "Ожидание" */}
+      {/* История коэффициентов или статус */}
       <div className="crash-history-row">
-        {!isRunning && history.length === 0 ? (
+        {!isRunning && !isCountdown && history.length === 0 ? (
           <div className="crash-waiting-text">Ожидание</div>
+        ) : isCountdown ? (
+          <div className="crash-waiting-text">Начинаем через {countdownValue}...</div>
         ) : (
           [...history].reverse().slice(0, 10).map((mult, idx) => (
             <div 
@@ -482,7 +495,8 @@ function Crash({ onNavigateToTopUp }) {
             disabled={!!nextBet || (userBet?.cashoutAt && isRunning)}
             style={{
               opacity: (nextBet || (userBet?.cashoutAt && isRunning)) ? 0.5 : 1,
-              cursor: (nextBet || (userBet?.cashoutAt && isRunning)) ? 'not-allowed' : 'pointer'
+              cursor: (nextBet || (userBet?.cashoutAt && isRunning)) ? 'not-allowed' : 'pointer',
+              background: isCountdown ? 'linear-gradient(135deg, #10b981, #059669)' : undefined
             }}
           >
             {nextBet ? 'Ставка принята' : 'Сделать ставку'}

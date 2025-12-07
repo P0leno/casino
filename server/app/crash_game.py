@@ -13,6 +13,8 @@ class CrashGame:
     def __init__(self):
         self.current_multiplier = 1.0
         self.is_running = False
+        self.is_countdown = False  # Фаза отсчета перед раундом
+        self.countdown_value = 0  # 3, 2, 1
         self.game_id = 0
         self.history = []  # История последних 50 раундов
         self.crash_point = 1.0
@@ -140,14 +142,19 @@ class CrashGame:
         
         print(f"💥 Раунд #{self.game_id} завершен! Crashed at {self.crash_point}x | Выиграли: {winners}, Проиграли: {losers}")
         
-        # Пауза 3 секунды чтобы показать результат
-        await asyncio.sleep(3)
+        # Пауза 1 секунда - показываем результат со ставками
+        await asyncio.sleep(1)
         
         # Очищаем ставки текущего раунда
         self.bets = {}
         
-        # Пауза 2 секунды перед следующим раундом
-        await asyncio.sleep(2)
+        # Фаза countdown - 3, 2, 1 (во время countdown можно ставить)
+        self.is_countdown = True
+        for countdown in [3, 2, 1]:
+            self.countdown_value = countdown
+            await asyncio.sleep(1)
+        self.is_countdown = False
+        self.countdown_value = 0
         
         # Запускаем новый раунд
         asyncio.create_task(self.start_round())
@@ -168,6 +175,7 @@ class CrashGame:
                 "waiting": True
             }
             return {"success": True, "waiting": True, "message": "Ставка будет размещена в следующем раунде"}
+        # Если countdown или ожидание - ставка принимается на следующий раунд
         else:
             self.next_round_bets[user_id] = {
                 "amount": amount,
@@ -211,6 +219,8 @@ class CrashGame:
         state = {
             "gameId": self.game_id,
             "isRunning": self.is_running,
+            "isCountdown": self.is_countdown,
+            "countdownValue": self.countdown_value,
             "history": self.history[-10:],
             "bets": [
                 {
@@ -223,6 +233,32 @@ class CrashGame:
                 for uid, bet in self.bets.items()
             ]
         }
+        
+        # Добавляем userBet если запрашивается для конкретного пользователя
+        if user_id and user_id in self.bets:
+            bet = self.bets[user_id]
+            amount = bet["amount"]
+            cashout_at = bet.get("cashout_at")
+            
+            # Вычисляем текущий выигрыш
+            if cashout_at:
+                # Если уже забрал - показываем зафиксированный выигрыш
+                current_winnings = amount * cashout_at
+            elif self.is_running:
+                # Если раунд идет - показываем текущий потенциальный выигрыш
+                current_winnings = amount * self.current_multiplier
+            else:
+                # Раунд не начался - показываем ставку
+                current_winnings = amount
+            
+            state["userBet"] = {
+                "user_id": user_id,
+                "amount": amount,
+                "cashoutAt": cashout_at,
+                "current_winnings": round(current_winnings, 2)
+            }
+        else:
+            state["userBet"] = None
         
         # Добавляем nextBet если запрашивается для конкретного пользователя
         if user_id and user_id in self.next_round_bets:
