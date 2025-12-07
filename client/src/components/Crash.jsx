@@ -495,8 +495,7 @@ function Crash({ onNavigateToTopUp }) {
             disabled={!!nextBet || (userBet?.cashoutAt && isRunning)}
             style={{
               opacity: (nextBet || (userBet?.cashoutAt && isRunning)) ? 0.5 : 1,
-              cursor: (nextBet || (userBet?.cashoutAt && isRunning)) ? 'not-allowed' : 'pointer',
-              background: isCountdown ? 'linear-gradient(135deg, #10b981, #059669)' : undefined
+              cursor: (nextBet || (userBet?.cashoutAt && isRunning)) ? 'not-allowed' : 'pointer'
             }}
           >
             {nextBet ? 'Ставка принята' : 'Сделать ставку'}
