@@ -313,6 +313,13 @@
   justify-content: center;
 }
 
+/* Контейнер для ставок - ВСЕГДА фиксированная высота */
+.crash-bet-container {
+  min-height: 100px; /* Фиксированная высота для стабильности */
+  display: flex;
+  flex-direction: column;
+}
+
 /* Панель "Ставок еще нет" */
 .crash-no-bet-panel {
   flex: 1;
@@ -323,7 +330,6 @@
   font-size: 16px;
   font-weight: 500;
   padding: 40px 20px;
-  min-height: 100px; /* Фиксированная высота для стабильности */
 }
 
 
@@ -503,7 +509,6 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  min-height: 76px; /* Фиксированная высота для стабильности */
 }
 
 .bet-tile-left {

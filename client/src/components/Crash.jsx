@@ -407,81 +407,80 @@ function Crash({ onNavigateToTopUp }) {
         )}
       </div>
 
-      {/* Сообщение об отключении В ставках - только если было подключение */}
-      {!isConnected && wasConnected && (
-        <div className="crash-user-bet-tile crash-disconnected-tile">
-          <div className="disconnected-title">Отключено от сервера</div>
-          <div className="disconnected-text">
-            Если вы потеряли ставку, напишите в{' '}
-            <a href="https://t.me/helpshellbot" target="_blank" rel="noopener noreferrer">
-              поддержку
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Плитка текущей ставки или следующей */}
-      {(userBet || nextBet) && !(!isConnected && wasConnected) && (
-        <div className="crash-user-bet-tile">
-          <div className="bet-tile-left">
-            <img 
-              src={user?.photo_url || `https://ui-avatars.com/api/?name=${user?.first_name}&background=3b82f6&color=fff`} 
-              alt="Avatar" 
-              className="bet-tile-avatar"
-            />
-            <div className="bet-tile-info">
-              <div className="bet-tile-name">{user?.first_name || 'Игрок'}</div>
-              <div 
-                className="bet-tile-status"
-                style={{
-                  color: userBet?.cashoutAt 
-                    ? '#10b981' 
-                    : (crashed && userBet && !userBet.cashoutAt) 
-                      ? '#ff4444' 
-                      : 'rgba(255, 255, 255, 0.6)'
-                }}
-              >
-                {nextBet && !userBet ? (
-                  // Ставка на следующий раунд - ожидание
-                  'Следующий раунд'
-                ) : userBet?.cashoutAt ? (
-                  // Забрал - показываем зафиксированный коэффициент зеленым
-                  `${userBet.cashoutAt.toFixed(2)}x`
-                ) : crashed && userBet && !userBet.cashoutAt ? (
-                  // Краш произошел и не забрал - красный коэффициент краша
-                  `${multiplier.toFixed(2)}x`
-                ) : isRunning ? (
-                  // Раунд идет - показываем текущий коэффициент
-                  `${multiplier.toFixed(2)}x`
-                ) : (
-                  // Ожидание следующего раунда
-                  'Ожидание'
-                )}
-              </div>
+      {/* Контейнер для ставок - ВСЕГДА присутствует с фиксированной высотой */}
+      <div className="crash-bet-container">
+        {!isConnected && wasConnected ? (
+          // Сообщение об отключении
+          <div className="crash-user-bet-tile crash-disconnected-tile">
+            <div className="disconnected-title">Отключено от сервера</div>
+            <div className="disconnected-text">
+              Если вы потеряли ставку, напишите в{' '}
+              <a href="https://t.me/helpshellbot" target="_blank" rel="noopener noreferrer">
+                поддержку
+              </a>
             </div>
           </div>
-          <div className="bet-tile-amount">
-            {userBet?.current_winnings !== undefined 
-              ? Math.floor(userBet.current_winnings)
-              : (nextBet?.amount || 0)
-            }
-            <LottieAnimation 
-              animationData={starAnim} 
-              loop={false} 
-              autoplay={false}
-              width={24}
-              height={24}
-            />
+        ) : (userBet || nextBet) ? (
+          // Плитка текущей ставки или следующей
+          <div className="crash-user-bet-tile">
+            <div className="bet-tile-left">
+              <img 
+                src={user?.photo_url || `https://ui-avatars.com/api/?name=${user?.first_name}&background=3b82f6&color=fff`} 
+                alt="Avatar" 
+                className="bet-tile-avatar"
+              />
+              <div className="bet-tile-info">
+                <div className="bet-tile-name">{user?.first_name || 'Игрок'}</div>
+                <div 
+                  className="bet-tile-status"
+                  style={{
+                    color: userBet?.cashoutAt 
+                      ? '#10b981' 
+                      : (crashed && userBet && !userBet.cashoutAt) 
+                        ? '#ff4444' 
+                        : 'rgba(255, 255, 255, 0.6)'
+                  }}
+                >
+                  {nextBet && !userBet ? (
+                    // Ставка на следующий раунд - ожидание
+                    'Следующий раунд'
+                  ) : userBet?.cashoutAt ? (
+                    // Забрал - показываем зафиксированный коэффициент зеленым
+                    `${userBet.cashoutAt.toFixed(2)}x`
+                  ) : crashed && userBet && !userBet.cashoutAt ? (
+                    // Краш произошел и не забрал - красный коэффициент краша
+                    `${multiplier.toFixed(2)}x`
+                  ) : isRunning ? (
+                    // Раунд идет - показываем текущий коэффициент
+                    `${multiplier.toFixed(2)}x`
+                  ) : (
+                    // Ожидание следующего раунда
+                    'Ожидание'
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="bet-tile-amount">
+              {userBet?.current_winnings !== undefined 
+                ? Math.floor(userBet.current_winnings)
+                : (nextBet?.amount || 0)
+              }
+              <LottieAnimation 
+                animationData={starAnim} 
+                loop={false} 
+                autoplay={false}
+                width={24}
+                height={24}
+              />
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Ставки пока нет - панель с текстом - всегда присутствует для стабильности */}
-      {!userBet && !nextBet && !(!isConnected && wasConnected) && (
-        <div className="crash-no-bet-panel">
-          Ставок еще нет
-        </div>
-      )}
+        ) : (
+          // Ставки пока нет - панель с текстом
+          <div className="crash-no-bet-panel">
+            Ставок еще нет
+          </div>
+        )}
+      </div>
 
       {/* Кнопки внизу */}
       <div className="crash-controls" style={{ bottom: `calc(10px + ${safeAreaBottom}px)` }}>
