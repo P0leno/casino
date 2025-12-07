@@ -43,12 +43,9 @@ function Profile() {
   const [deductFromBalance, setDeductFromBalance] = useState(false)
   const [showCrashPanel, setShowCrashPanel] = useState(false)
   const [crashMaxMultiplier, setCrashMaxMultiplier] = useState(1000)
-  const [crashGameState, setCrashGameState] = useState(null)
-  const [crashBets, setCrashBets] = useState([])
+  const [crashState, setCrashState] = useState(null)
   const [exploding, setExploding] = useState(false)
-  const [clientMultiplier, setClientMultiplier] = useState(1.0)
-  const [lastGameId, setLastGameId] = useState(null)
-  const [crashed, setCrashed] = useState(false)
+  const adminWsRef = useRef(null)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [safeAreaInset, setSafeAreaInset] = useState({ top: 0, bottom: 0, left: 0, right: 0 })
   const [showTasksPanel, setShowTasksPanel] = useState(false)
@@ -120,36 +117,7 @@ function Profile() {
     loadInventory()
   }, [])
 
-  useEffect(() => {
-    if (showCrashPanel) {
-      loadCrashGameState()
-      
-      // Загружаем состояние каждые 500ms
-      const stateInterval = setInterval(() => {
-        loadCrashGameState()
-      }, 500)
-      
-      // Клиентский расчет множителя каждые 100ms для плавности
-      const multiplierInterval = setInterval(() => {
-        if (crashGameState?.status === 'running' && crashGameState?.startTime) {
-          const elapsed = Date.now() / 1000 - crashGameState.startTime
-          if (elapsed > 0) {
-            // Используем ту же формулу что и сервер
-            const growthRate = 0.1 + (10 / 100) // Предполагаем средний crash_point
-            const mult = 1.0 + (elapsed * growthRate)
-            setClientMultiplier(Math.max(1.0, mult))
-          }
-        } else if (crashed && crashGameState?.crashedAt) {
-          setClientMultiplier(crashGameState.crashedAt)
-        }
-      }, 100)
-      
-      return () => {
-        clearInterval(stateInterval)
-        clearInterval(multiplierInterval)
-      }
-    }
-  }, [showCrashPanel, crashGameState, crashed])
+
 
   useEffect(() => {
     // Intersection Observer для оптимизации Lottie анимаций
@@ -365,51 +333,7 @@ function Profile() {
     }
   }
 
-  const loadCrashGameState = async () => {
-    try {
-      const tg = window.Telegram?.WebApp
-      const initData = tg?.initData
-      if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/admin/crash/state`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        const newState = data.state
-        
-        // Проверяем смену игры
-        if (lastGameId !== null && lastGameId !== newState.gameId) {
-          // Новая игра началась
-          setClientMultiplier(1.0)
-          setCrashed(false)
-        }
-        
-        // Проверяем взрыв
-        if (newState.crashed && !crashed) {
-          setCrashed(true)
-          setClientMultiplier(newState.crashedAt)
-          // Вибрация на телефоне
-          if (tg?.HapticFeedback) {
-            tg.HapticFeedback.impactOccurred('heavy')
-          }
-        } else if (!newState.crashed && crashed) {
-          // Взрыв закончился, ждем новую игру
-          setCrashed(false)
-        }
-        
-        setLastGameId(newState.gameId)
-        setCrashGameState(newState)
-        setCrashBets(data.bets || [])
-      }
-    } catch (error) {
-      console.error('Error loading crash state:', error)
-    }
-  }
 
   const handleExplode = async () => {
     if (!window.confirm('Взорвать ракету сейчас?')) return
@@ -428,14 +352,12 @@ function Profile() {
       })
 
       const data = await response.json()
-      if (data.success) {
-        loadCrashGameState()
-      } else {
+      if (!data.success) {
         alert(data.message || 'Ошибка взрыва')
       }
     } catch (error) {
       console.error('Error exploding:', error)
-      alert('Ошибка взрыва')
+      alert('Ошибка соединения с сервером')
     } finally {
       setExploding(false)
     }
@@ -925,6 +847,18 @@ function Profile() {
               <span className="button-text">Промокод</span>
             </button>
             
+            <button className="action-button" onClick={() => {
+              const tg = window.Telegram?.WebApp
+              if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink('https://t.me/helpshellbot')
+              } else {
+                window.open('https://t.me/helpshellbot', '_blank')
+              }
+            }}>
+              <span className="button-icon">👤</span>
+              <span className="button-text">Поддержка</span>
+            </button>
+            
             {!loading && isAdmin && (
               <>
                 <button className="action-button admin-button" onClick={() => setShowAdminPanel(true)}>
@@ -1341,67 +1275,54 @@ function Profile() {
             <div className="sheet-content">
               <h2 className="admin-panel-title">Настройки краш-игры</h2>
               
-              {crashGameState && (
+              {crashState && (
                 <div className="crash-game-info">
                   <div className="crash-info-card">
                     <div className="crash-info-label">Статус игры</div>
                     <div className="crash-info-value">
-                      {crashed && '💥 CRASHED!'}
-                      {!crashed && crashGameState.status === 'waiting' && '⏳ Ожидание'}
-                      {!crashed && crashGameState.status === 'running' && '🚀 В полете'}
+                      {crashState.crashed && '💥 CRASHED!'}
+                      {!crashState.crashed && !crashState.isRunning && '⏳ Ожидание'}
+                      {!crashState.crashed && crashState.isRunning && '🚀 В полете'}
                     </div>
                   </div>
                   
-                  {(crashGameState.status === 'running' || crashed) && (
-                    <div className={`crash-info-card ${crashed ? 'crashed' : 'highlight'}`}>
-                      <div className="crash-info-label">
-                        {crashed ? 'Взорвалась на' : 'Текущий коэффициент'}
-                      </div>
-                      <div className={`crash-info-value multiplier ${crashed ? 'crashed-mult' : ''}`}>
-                        {clientMultiplier.toFixed(2)}x
+                  {crashState.isRunning && !crashState.crashed && (
+                    <div className="crash-info-card highlight">
+                      <div className="crash-info-label">Текущий коэффициент</div>
+                      <div className="crash-info-value multiplier">
+                        {crashState.currentMultiplier.toFixed(2)}x
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-
-              {crashBets && crashBets.length > 0 ? (
-                <div className="crash-bets-section">
-                  <h3 className="crash-bets-title">Активные ставки ({crashBets.length})</h3>
-                  <div className="crash-bets-list">
-                    {crashBets.map((bet, index) => (
-                      <div key={index} className="crash-bet-item">
-                        <div className="crash-bet-user">
-                          {bet.username || `User ${bet.user_id}`}
-                        </div>
-                        <div className="crash-bet-amount">
-                          {bet.amount} {bet.currency === 'star' ? '⭐' : '🐾'}
-                        </div>
-                        {bet.cashout_multiplier && (
-                          <div className="crash-bet-cashout">
-                            ✓ {bet.cashout_multiplier.toFixed(2)}x
-                          </div>
-                        )}
+                  
+                  {crashState.crashed && crashState.crashedAt && (
+                    <div className="crash-info-card crashed">
+                      <div className="crash-info-label">Взорвалась на</div>
+                      <div className="crash-info-value multiplier crashed-mult">
+                        {crashState.crashedAt.toFixed(2)}x
                       </div>
-                    ))}
+                    </div>
+                  )}
+                  
+                  <div className="crash-info-card">
+                    <div className="crash-info-label">Активных ставок</div>
+                    <div className="crash-info-value">
+                      {crashState.betsCount || 0}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="crash-bets-empty">
-                  Нет активных ставок
-                </div>
               )}
 
-              {crashGameState?.status === 'running' && !crashed && (
+              {crashState?.isRunning && !crashState?.crashed && (
                 <button 
                   className="admin-action-button explode-button" 
                   onClick={handleExplode}
                   disabled={exploding}
                 >
-                  {exploding ? '💥 Взрываем...' : '💣 Взорвать сейчас'}
+                  {exploding ? 'Взрываем...' : '💥 Взорвать сейчас'}
                 </button>
               )}
-
+              
               <div className="admin-divider"></div>
               
               <div className="admin-input-group">

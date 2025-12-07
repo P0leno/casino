@@ -21,6 +21,7 @@ class CrashGame:
         self.start_time = None
         self.bets = {}  # {user_id: {"amount": 100, "cashout_at": None, "username": "", "avatar": ""}}
         self.next_round_bets = {}  # Ставки на следующий раунд
+        self.shutting_down = False  # Флаг для graceful shutdown
     
     def get_max_multiplier(self) -> float:
         """Получает максимальный коэффициент из настроек"""
@@ -147,6 +148,11 @@ class CrashGame:
         
         # Очищаем ставки текущего раунда
         self.bets = {}
+        
+        # Проверяем флаг shutting_down - если рестарт, не запускаем новый раунд
+        if self.shutting_down:
+            print("🛑 Graceful shutdown: не запускаем новый раунд")
+            return
         
         # Фаза countdown - 3, 2, 1 (во время countdown можно ставить)
         self.is_countdown = True

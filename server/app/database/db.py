@@ -86,6 +86,41 @@ def init_db():
             conn.commit()
             print("✅ Миграция завершена: support_banned_until добавлен")
         
+        if 'ip_addresses' not in columns:
+            print("⚙️  Миграция: добавление поля ip_addresses...")
+            cursor.execute("ALTER TABLE users ADD COLUMN ip_addresses TEXT DEFAULT '[]'")
+            conn.commit()
+            print("✅ Миграция завершена: ip_addresses добавлен")
+        
+        if 'user_agents' not in columns:
+            print("⚙️  Миграция: добавление поля user_agents...")
+            cursor.execute("ALTER TABLE users ADD COLUMN user_agents TEXT DEFAULT '[]'")
+            conn.commit()
+            print("✅ Миграция завершена: user_agents добавлен")
+        
+        # Таблица для игнорируемых IP пар (антифрод)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS antifraud_ignored (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address TEXT NOT NULL,
+                user_ids TEXT NOT NULL,
+                ignored_at TEXT NOT NULL
+            )
+        """)
+        print("✅ Таблица antifraud_ignored создана/проверена")
+        
+        # Таблица для отправленных алертов (чтобы не спамить)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS antifraud_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                alert_type TEXT NOT NULL,
+                ip_address TEXT NOT NULL,
+                user_ids TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        print("✅ Таблица antifraud_alerts создана/проверена")
+        
         # Создание таблицы настроек бота поддержки
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS support_settings (

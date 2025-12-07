@@ -420,9 +420,12 @@ function Crash({ onNavigateToTopUp }) {
               </a>
             </div>
           </div>
-        ) : (userBet || nextBet) ? (
-          // Плитка текущей ставки или следующей
-          <div className="crash-user-bet-tile">
+        ) : (userBet || nextBet || bets.length > 0) ? (
+          // Отображаем ставки
+          <div style={{ width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
+            {/* Сначала ставка текущего пользователя */}
+            {(userBet || nextBet) && (
+              <div className="crash-user-bet-tile">
             <div className="bet-tile-left">
               <img 
                 src={user?.photo_url || `https://ui-avatars.com/api/?name=${user?.first_name}&background=3b82f6&color=fff`} 
@@ -473,6 +476,62 @@ function Crash({ onNavigateToTopUp }) {
                 height={24}
               />
             </div>
+              </div>
+            )}
+            
+            {/* Остальные ставки игроков (кроме текущего пользователя) */}
+            {bets
+              .filter(bet => bet.userId !== user?.id)
+              .map((bet, index) => (
+                <div key={`${bet.userId}-${index}`} className="crash-user-bet-tile" style={{ marginTop: '8px' }}>
+                  <div className="bet-tile-left">
+                    <img 
+                      src={bet.avatar || `https://ui-avatars.com/api/?name=${bet.username}&background=6366f1&color=fff`} 
+                      alt={bet.username} 
+                      className="bet-tile-avatar"
+                    />
+                    <div className="bet-tile-info">
+                      <div className="bet-tile-name">{bet.username || 'Игрок'}</div>
+                      <div 
+                        className="bet-tile-status"
+                        style={{
+                          color: bet.cashoutAt 
+                            ? '#10b981' 
+                            : (crashed && !bet.cashoutAt) 
+                              ? '#ff4444' 
+                              : 'rgba(255, 255, 255, 0.6)'
+                        }}
+                      >
+                        {bet.cashoutAt ? (
+                          `${bet.cashoutAt.toFixed(2)}x`
+                        ) : crashed && !bet.cashoutAt ? (
+                          `${multiplier.toFixed(2)}x`
+                        ) : isRunning ? (
+                          `${multiplier.toFixed(2)}x`
+                        ) : (
+                          'Ожидание'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bet-tile-amount">
+                    {bet.cashoutAt 
+                      ? Math.floor(bet.amount * bet.cashoutAt)
+                      : isRunning 
+                        ? Math.floor(bet.amount * multiplier)
+                        : bet.amount
+                    }
+                    <LottieAnimation 
+                      animationData={starAnim} 
+                      loop={false} 
+                      autoplay={false}
+                      width={24}
+                      height={24}
+                    />
+                  </div>
+                </div>
+              ))
+            }
           </div>
         ) : (
           // Ставки пока нет - панель с текстом

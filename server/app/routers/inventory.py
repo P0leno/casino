@@ -319,6 +319,7 @@ async def sell_gift(request: SellGiftRequest):
             raise HTTPException(status_code=400, detail="Подарок не найден в инвентаре")
         
         # Получаем АКТУАЛЬНУЮ информацию о подарке из БД
+        # Сначала ищем в shop_gifts (NFT подарки)
         cursor.execute("""
             SELECT gift_id, title, price
             FROM shop_gifts
@@ -326,6 +327,15 @@ async def sell_gift(request: SellGiftRequest):
         """, (request.slug,))
         
         gift = cursor.fetchone()
+        
+        # Если не нашли в shop_gifts, ищем в gift_prices (обычные подарки)
+        if not gift:
+            cursor.execute("""
+                SELECT gift_id, gift_name as title, price
+                FROM gift_prices
+                WHERE gift_name = ?
+            """, (request.slug,))
+            gift = cursor.fetchone()
         
         if not gift:
             conn.close()

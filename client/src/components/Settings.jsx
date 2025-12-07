@@ -6,6 +6,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -307,6 +308,45 @@ const Settings = () => {
     }
   };
 
+  const handleRestart = async () => {
+    const tg = window.Telegram.WebApp;
+    
+    // Подтверждение
+    const confirmed = await new Promise(resolve => 
+      tg.showConfirm('Перезапустить сервер? Текущий раунд краша завершится, затем сервер перезагрузится с новым кодом.', resolve)
+    );
+    
+    if (!confirmed) return;
+    
+    setRestarting(true);
+    
+    try {
+      const initData = tg.initData;
+      
+      const response = await fetch('https://api.shelloch.xyz/api/restart-server', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        tg.showAlert('Рестарт запущен! Сервер перезагрузится через ~30-60 сек');
+        tg.HapticFeedback.notificationOccurred('success');
+      } else {
+        tg.showAlert(data.message || 'Ошибка запуска рестарта');
+        tg.HapticFeedback.notificationOccurred('error');
+        setRestarting(false);
+      }
+    } catch (error) {
+      console.error('Error restarting server:', error);
+      tg.showAlert('Ошибка соединения');
+      tg.HapticFeedback.notificationOccurred('error');
+      setRestarting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="settings-container">
@@ -323,6 +363,16 @@ const Settings = () => {
       <div className="settings-header">
         <h2>⚙️ Настройки</h2>
         <p className="settings-subtitle">Управление системными параметрами</p>
+        
+        {/* Кнопка рестарта */}
+        <button 
+          className="restart-server-button" 
+          onClick={handleRestart}
+          disabled={restarting || saving}
+        >
+          <span className="restart-icon">🔄</span>
+          <span className="restart-text">{restarting ? 'Перезапуск...' : 'Рестарт сервера'}</span>
+        </button>
       </div>
 
       <div className="settings-list">

@@ -545,6 +545,9 @@ def get_admin_keyboard(dialog_id: int, user_id: int, category: str, support_bann
         ban_button = InlineKeyboardButton(text="🚫 Заблокировать в поддержке", callback_data=f"block_{dialog_id}_{user_id}")
         buttons = [[ban_button]]
     
+    # Кнопка "Данные" всегда добавляется
+    buttons.append([InlineKeyboardButton(text="📊 Данные", callback_data=f"user_data_{user_id}")])
+    
     # Для категории "Вывод" добавляем кнопку "Вывод выполнен"
     if category == "Вывод":
         buttons.append([InlineKeyboardButton(text="✅ Вывод выполнен", callback_data=f"withdraw_done_{dialog_id}")])
@@ -1397,6 +1400,83 @@ async def handle_withdraw_done(callback: CallbackQuery):
     except Exception as e:
         print(f"Error marking withdrawal done: {e}")
         await callback.answer("Ошибка", show_alert=True)
+
+@dp.callback_query(F.data.startswith("user_data_"))
+async def handle_user_data(callback: CallbackQuery):
+    """Отправка данных пользователя (IP, User-Agent)"""
+    admin_id = callback.from_user.id
+    
+    # Проверка прав админа
+    try:
+        member = await bot.get_chat_member(SUPPORT_GROUP_ID, admin_id)
+        if member.status not in ['creator', 'administrator']:
+            await callback.answer("У вас нет прав", show_alert=True)
+            return
+    except Exception as e:
+        print(f"Error checking admin rights: {e}")
+        await callback.answer("Ошибка проверки прав", show_alert=True)
+        return
+    
+    try:
+        user_id = int(callback.data.replace("user_data_", ""))
+        
+        # Получаем данные пользователя из БД
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, ip_addresses, user_agents FROM users WHERE id = ?",
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            await callback.answer("Пользователь не найден", show_alert=True)
+            return
+        
+        username, ip_addresses_json, user_agents_json = result
+        
+        # Парсим JSON
+        ip_list = json.loads(ip_addresses_json) if ip_addresses_json else []
+        ua_list = json.loads(user_agents_json) if user_agents_json else []
+        
+        # Формируем сообщение
+        message_text = (
+            f"📊 <b>Данные пользователя</b>\n\n"
+            f"👤 Username: @{username or 'нет'}\n"
+            f"🆔 ID: <code>{user_id}</code>\n\n"
+        )
+        
+        if ip_list:
+            message_text += "🌐 <b>IP адреса:</b>\n"
+            for idx, ip in enumerate(ip_list, 1):
+                message_text += f"{idx}. <code>{ip}</code>\n"
+        else:
+            message_text += "🌐 <b>IP адреса:</b> нет данных\n"
+        
+        message_text += "\n"
+        
+        if ua_list:
+            message_text += "📱 <b>User-Agent:</b>\n"
+            for idx, ua in enumerate(ua_list, 1):
+                # Обрезаем слишком длинные User-Agent
+                ua_short = ua[:100] + "..." if len(ua) > 100 else ua
+                message_text += f"{idx}. <code>{ua_short}</code>\n"
+        else:
+            message_text += "📱 <b>User-Agent:</b> нет данных\n"
+        
+        # Отправляем сообщение в группу
+        await bot.send_message(
+            SUPPORT_GROUP_ID,
+            message_text,
+            parse_mode=ParseMode.HTML
+        )
+        
+        await callback.answer("✅ Данные отправлены")
+        
+    except Exception as e:
+        print(f"Error fetching user data: {e}")
+        await callback.answer("Ошибка получения данных", show_alert=True)
 
 @dp.callback_query(F.data.startswith("admin_close_"))
 async def handle_admin_close_dialog(callback: CallbackQuery):

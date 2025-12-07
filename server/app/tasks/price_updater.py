@@ -11,14 +11,13 @@ from curl_cffi.requests import AsyncSession
 from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 
 async def send_log_to_channel(message):
-    """Отправляет сообщение в канал логов"""
+    """Отправляет сообщение в канал логов через постоянный log_bot"""
     if not LOG_BOT_TOKEN or not LOGS_ID:
         return
     
     try:
-        from aiogram import Bot
-        async with Bot(token=LOG_BOT_TOKEN) as log_bot:
-            await log_bot.send_message(LOGS_ID, message, parse_mode="HTML")
+        from app.log_bot import send_message_to_logs
+        await send_message_to_logs(message)
     except Exception as e:
         print(f"⚠️  Не удалось отправить лог в канал: {e}")
 

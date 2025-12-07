@@ -23,6 +23,58 @@
   color: var(--tg-theme-hint-color);
 }
 
+/* Кнопка рестарта */
+.restart-server-button {
+  margin-top: 16px;
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(255, 82, 82, 0.3);
+}
+
+.restart-server-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 82, 82, 0.4);
+}
+
+.restart-server-button:active {
+  transform: translateY(0);
+}
+
+.restart-server-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.restart-icon {
+  font-size: 20px;
+}
+
+.restart-server-button:disabled .restart-icon {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .settings-loading {
   display: flex;
   flex-direction: column;

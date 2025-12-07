@@ -14,17 +14,13 @@ MODELS_DIR = "/var/www/shell/gifts/models"
 MODELS_LIST_JSON = "/var/www/shell/gifts/models_list.json"
 
 async def send_log_to_channel(message, reply_markup=None):
-    """Отправляет сообщение в канал логов"""
+    """Отправляет сообщение в канал логов через постоянный log_bot"""
     if not LOG_BOT_TOKEN or not LOGS_ID:
         return
     
     try:
-        from aiogram import Bot
-        async with Bot(token=LOG_BOT_TOKEN) as log_bot:
-            if reply_markup:
-                await log_bot.send_message(LOGS_ID, message, parse_mode="HTML", reply_markup=reply_markup)
-            else:
-                await log_bot.send_message(LOGS_ID, message, parse_mode="HTML")
+        from app.log_bot import send_message_to_logs
+        await send_message_to_logs(message, reply_markup=reply_markup)
     except Exception as e:
         print(f"⚠️  Не удалось отправить лог в канал: {e}")
 

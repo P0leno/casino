@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from urllib.parse import parse_qs
@@ -41,17 +41,21 @@ def verify_init_data(init_data: str):
         return None
 
 @router.post("/validate")
-async def validate(request: ValidateRequest):
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+async def validate(validate_req: ValidateRequest, request: Request):
+    is_valid = validate_init_data(validate_req.initData, BOT_TOKEN)
     
     if not is_valid:
         return {"valid": False, "isBanned": False}
+    
+    # Извлекаем IP адрес и User-Agent
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
     
     # Проверяем режим технических работ ПЕРВЫМ делом
     print("=" * 80)
     print("[VALIDATE] Starting maintenance check...")
     try:
-        parsed = parse_qs(request.initData)
+        parsed = parse_qs(validate_req.initData)
         user_data = parsed.get('user', [''])[0]
         
         if user_data:
@@ -114,7 +118,7 @@ async def validate(request: ValidateRequest):
     print("=" * 80)
     
     try:
-        parsed = parse_qs(request.initData)
+        parsed = parse_qs(validate_req.initData)
         user_data = parsed.get('user', [''])[0]
         
         if not user_data:
@@ -129,23 +133,41 @@ async def validate(request: ValidateRequest):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cursor.execute("SELECT is_banned, balance, bonus_balance FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT is_banned, balance, bonus_balance, ip_addresses, user_agents FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
         
         if result:
             is_banned = bool(result[0])
             balance = result[1] if result[1] is not None else 0
             bonus_balance = result[2] if result[2] is not None else 0
-            # Обновляем username и avatar_url при каждом логине
+            
+            # Обновляем списки IP и User-Agent
+            ip_list = json.loads(result[3]) if result[3] else []
+            ua_list = json.loads(result[4]) if result[4] else []
+            
+            # Добавляем в начало, удаляем дубликаты, ограничиваем до 6
+            if client_ip not in ip_list:
+                ip_list.insert(0, client_ip)
+                ip_list = ip_list[:6]
+            
+            if user_agent not in ua_list:
+                ua_list.insert(0, user_agent)
+                ua_list = ua_list[:6]
+            
+            # Обновляем username, avatar_url, IP и User-Agent при каждом логине
             cursor.execute(
-                "UPDATE users SET username = ?, avatar_url = ? WHERE id = ?",
-                (username, photo_url, user_id)
+                "UPDATE users SET username = ?, avatar_url = ?, ip_addresses = ?, user_agents = ? WHERE id = ?",
+                (username, photo_url, json.dumps(ip_list), json.dumps(ua_list), user_id)
             )
             conn.commit()
         else:
+            # Новый пользователь
+            ip_list = [client_ip]
+            ua_list = [user_agent]
+            
             cursor.execute(
-                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned, balance, bonus_balance) VALUES (?, ?, ?, ?, 0, 0, 0)",
-                (user_id, username, photo_url, datetime.now().isoformat())
+                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned, balance, bonus_balance, ip_addresses, user_agents) VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)",
+                (user_id, username, photo_url, datetime.now().isoformat(), json.dumps(ip_list), json.dumps(ua_list))
             )
             conn.commit()
             is_banned = False

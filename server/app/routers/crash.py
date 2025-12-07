@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from app.crash_game import crash_game
 import sqlite3
-from app.config import DB_PATH, BOT_TOKEN
+from app.config import DB_PATH, BOT_TOKEN, ADMIN_IDS
 from app.utils.validate import validate_init_data
 from app.utils.balance import get_user_balance
 from urllib.parse import parse_qs
@@ -15,31 +15,55 @@ router = APIRouter(prefix="/api/crash", tags=["crash"])
 # WebSocket Connection Manager
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        # Храним соединения по user_id: {user_id: websocket}
+        self.active_connections: dict[int, WebSocket] = {}
     
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, user_id: int):
+        """Подключает WebSocket и закрывает старые соединения этого пользователя"""
+        # Если у этого user_id уже есть активное соединение - закрываем его
+        if user_id in self.active_connections:
+            old_ws = self.active_connections[user_id]
+            try:
+                await old_ws.close(code=1000, reason="New connection from same user")
+                print(f"🔌 Закрыто старое соединение для user_id={user_id}")
+            except Exception as e:
+                print(f"⚠️ Ошибка закрытия старого соединения: {e}")
+        
+        # Принимаем новое соединение
         await websocket.accept()
-        self.active_connections.append(websocket)
-        print(f"🔌 WebSocket подключен. Всего: {len(self.active_connections)}")
+        self.active_connections[user_id] = websocket
+        print(f"🔌 WebSocket подключен для user_id={user_id}. Всего уникальных: {len(self.active_connections)}")
     
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-        print(f"🔌 WebSocket отключен. Осталось: {len(self.active_connections)}")
+    def disconnect(self, user_id: int):
+        """Отключает WebSocket по user_id"""
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+            print(f"🔌 WebSocket отключен для user_id={user_id}. Осталось: {len(self.active_connections)}")
+    
+    async def disconnect_all(self):
+        """Отключает все WebSocket соединения (для graceful shutdown)"""
+        print(f"🔌 Закрываю все WebSocket соединения ({len(self.active_connections)})...")
+        for user_id, connection in list(self.active_connections.items()):
+            try:
+                await connection.close(code=1001, reason="Server restarting")
+            except Exception as e:
+                print(f"❌ Ошибка закрытия WebSocket для user_id={user_id}: {e}")
+        self.active_connections.clear()
+        print("✅ Все WebSocket соединения закрыты")
     
     async def broadcast(self, message: dict):
         """Отправка сообщения всем подключенным клиентам"""
-        disconnected = []
-        for connection in self.active_connections:
+        disconnected_users = []
+        for user_id, connection in self.active_connections.items():
             try:
                 await connection.send_json(message)
             except Exception as e:
-                print(f"❌ Ошибка отправки в WebSocket: {e}")
-                disconnected.append(connection)
+                print(f"❌ Ошибка отправки в WebSocket для user_id={user_id}: {e}")
+                disconnected_users.append(user_id)
         
         # Удаляем отключенные соединения
-        for conn in disconnected:
-            self.disconnect(conn)
+        for user_id in disconnected_users:
+            self.disconnect(user_id)
 
 manager = ConnectionManager()
 
@@ -79,14 +103,31 @@ async def place_bet(bet: BetRequest):
         user_data = parsed.get('user', [''])[0]
         user = json.loads(user_data)
         user_id = user.get('id')
-        username = user.get('username') or user.get('first_name', 'User')
+        username = user.get('first_name') or user.get('username', 'User')
         avatar = user.get('photo_url')
     except Exception:
         raise HTTPException(status_code=403, detail="Invalid user data")
     
+    # Валидация: только целые числа и положительные значения
+    amount = bet.amount
+    
+    # Проверка что amount - целое число (может прийти float из JSON)
+    if not isinstance(amount, (int, float)) or amount != int(amount):
+        raise HTTPException(status_code=400, detail="Сумма ставки должна быть целым числом")
+    
+    amount = int(amount)
+    
+    # Фильтрация отрицательных значений
+    if amount < 0:
+        raise HTTPException(status_code=400, detail="Сумма ставки не может быть отрицательной")
+    
     # Минимальная ставка 25 звезд
-    if bet.amount < 25:
+    if amount < 25:
         raise HTTPException(status_code=400, detail="Минимальная ставка 25 звезд")
+    
+    # Максимальная ставка 20000 звезд
+    if amount > 20000:
+        raise HTTPException(status_code=400, detail="Максимальная ставка 20000 звезд")
     
     # Проверяем баланс
     try:
@@ -96,19 +137,19 @@ async def place_bet(bet: BetRequest):
         result = cursor.fetchone()
         conn.close()
         
-        if not result or result[0] < bet.amount:
+        if not result or result[0] < amount:
             raise HTTPException(status_code=400, detail="Недостаточно средств")
         
         # Снимаем со счета
-        new_balance = int(round(result[0] - bet.amount))
+        new_balance = int(round(result[0] - amount))
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
         conn.commit()
         conn.close()
         
-        # Размещаем ставку
-        result = crash_game.place_bet(user_id, bet.amount, username, avatar)
+        # Размещаем ставку (используем валидированный amount)
+        result = crash_game.place_bet(user_id, amount, username, avatar)
         
         # Получаем обновленный баланс
         user_balance = get_user_balance(user_id)
@@ -196,15 +237,23 @@ async def cancel_bet(request: CancelBetRequest):
 async def websocket_crash(websocket: WebSocket, initData: str = None):
     """WebSocket endpoint для краш игры"""
     # initData передается как query параметр для авторизации
-    await manager.connect(websocket)
     
-    # Извлекаем user_id из initData если есть
+    # Извлекаем user_id из initData
     user_id = None
     if initData:
         from app.routers.auth import verify_init_data
         user_data = verify_init_data(initData)
         if user_data:
             user_id = user_data.get('id')
+    
+    # Если не удалось получить user_id - используем анонимный ID
+    if not user_id:
+        # Для анонимных пользователей генерируем ID на основе websocket
+        user_id = id(websocket)
+        print(f"⚠️ Анонимное подключение, используется ID: {user_id}")
+    
+    # Подключаем с user_id (закроет старые соединения этого пользователя)
+    await manager.connect(websocket, user_id)
     
     try:
         # Отправляем начальное состояние с nextBet для этого пользователя
@@ -239,4 +288,60 @@ async def websocket_crash(websocket: WebSocket, initData: str = None):
     except Exception as e:
         print(f"WebSocket error: {e}")
     finally:
-        manager.disconnect(websocket)
+        manager.disconnect(user_id)
+
+@router.websocket("/admin/ws")
+async def admin_websocket_endpoint(websocket: WebSocket, initData: str = None):
+    """Скрытный WebSocket тоннель для админов - подключается только из админки"""
+    await websocket.accept()
+    
+    try:
+        # Получаем initData из query параметров
+        if not initData:
+            await websocket.close(code=1008, reason="Missing initData")
+            return
+        
+        # Валидация
+        is_valid = validate_init_data(initData, BOT_TOKEN)
+        if not is_valid:
+            await websocket.close(code=1008, reason="Invalid initData")
+            return
+        
+        # Проверка что это админ
+        parsed = parse_qs(initData)
+        user_data = json.loads(parsed['user'][0])
+        user_id = int(user_data['id'])
+        
+        if user_id not in ADMIN_IDS:
+            await websocket.close(code=1008, reason="Forbidden")
+            return
+        
+        print(f"🔐 Admin WebSocket tunnel connected: {user_id}")
+        
+        # Отправляем обновления каждые 100ms
+        while True:
+            game_state = crash_game.get_state()
+            
+            # Формируем минимальный ответ для админа (без списка ставок)
+            admin_state = {
+                "gameId": game_state["gameId"],
+                "isRunning": game_state["isRunning"],
+                "currentMultiplier": game_state.get("currentMultiplier", 1.0),
+                "startTime": game_state.get("startTime"),
+                "history": game_state["history"],
+                "betsCount": len(game_state["bets"]),  # Только количество ставок
+                "crashed": game_state.get("crashed", False),
+                "crashedAt": game_state.get("crashedAt")
+            }
+            
+            await websocket.send_json(admin_state)
+            await asyncio.sleep(0.1)  # 100ms для плавности
+            
+    except WebSocketDisconnect:
+        print(f"🔐 Admin WebSocket tunnel disconnected: {user_id}")
+    except Exception as e:
+        print(f"Admin WebSocket error: {e}")
+        try:
+            await websocket.close()
+        except:
+            pass

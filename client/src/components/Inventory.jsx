@@ -168,7 +168,7 @@ function Inventory({ onNavigateToTopUp }) {
       const response = await fetch(`${apiUrl}/api/sell-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftName: gift.slug })
+        body: JSON.stringify({ initData, slug: gift.slug })
       })
 
       const data = await response.json()

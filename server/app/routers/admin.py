@@ -603,11 +603,11 @@ async def update_setting(request: UpdateSettingRequest):
         print(f"Error updating setting: {e}")
         return {"success": False, "message": str(e)}
 
-@router.post("/admin/restart")
+@router.post("/restart-server")
 async def restart_server(request: ValidateRequest):
     """
     Перезапустить сервер с graceful shutdown
-    Ждет завершения текущего краш раунда если есть активные ставки
+    Ждет завершения текущего краш раунда, закрывает WebSocket, затем перезапускает Python процесс
     """
     try:
         # Проверяем что это админ
@@ -625,16 +625,14 @@ async def restart_server(request: ValidateRequest):
         
         # Запускаем перезапуск в фоне
         from app.restart_monitor import handle_restart_command
-        from aiogram import types, Bot
-        from app.config import LOG_BOT_TOKEN
+        from app.log_bot import log_bot
         
-        # Создаем фейковое сообщение для trigger перезапуска
-        bot = Bot(token=LOG_BOT_TOKEN)
-        asyncio.create_task(handle_restart_command(None, bot))
+        # Используем постоянный log_bot
+        asyncio.create_task(handle_restart_command(None, log_bot))
         
         return {
             "success": True, 
-            "message": "Перезапуск инициирован. Сервер перезагрузится через несколько секунд."
+            "message": "Перезапуск запущен. Сервер дождется завершения краш-раунда и перезагрузится."
         }
     except HTTPException:
         raise

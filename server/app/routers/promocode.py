@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
@@ -58,14 +58,17 @@ def sanitize_promo_name(name):
     return sanitized[:16]  # Максимум 16 символов
 
 @router.post("/activate")
-async def activate_promocode(request: ActivateRequest):
+async def activate_promocode(activate_req: ActivateRequest, request: Request):
     """Активация промокода пользователем"""
-    user_data = verify_init_data(request.initData)
+    user_data = verify_init_data(activate_req.initData)
     if not user_data:
         return {"success": False, "error": "Неверные данные"}
     
     user_id = user_data['id']
-    promo_code = sanitize_promo_name(request.promoCode)
+    promo_code = sanitize_promo_name(activate_req.promoCode)
+    
+    # Получаем IP для антифрод проверки
+    client_ip = request.client.host if request.client else "unknown"
     
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -86,6 +89,22 @@ async def activate_promocode(request: ActivateRequest):
         # Проверяем, что пользователь не активирует свой собственный промокод
         if owner_id == user_id:
             return {"success": False, "error": "Нельзя активировать свой промокод"}
+        
+        # АНТИФРОД: проверяем совпадение IP с владельцем промокода
+        from app.tasks.antifraud import check_promo_fraud, check_same_ip_promo_activation
+        import asyncio
+        
+        # Проверка 1: активатор и владелец с одного IP
+        is_fraud = await check_promo_fraud(user_id, client_ip, owner_id)
+        if is_fraud:
+            conn.close()
+            return {"success": False, "error": "Подозрительная активность. Вы заблокированы."}
+        
+        # Проверка 2: два активатора одного промокода с одного IP
+        is_same_ip_fraud = await check_same_ip_promo_activation(user_id, client_ip, promo_id)
+        if is_same_ip_fraud:
+            conn.close()
+            return {"success": False, "error": "Подозрительная активность. Вы заблокированы."}
         
         # Получаем список активированных промокодов пользователя (храним ID промокодов)
         cursor.execute(
