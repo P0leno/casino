@@ -453,8 +453,8 @@ function Crash({ onNavigateToTopUp }) {
               animationData={starAnim} 
               loop={false} 
               autoplay={false}
-              width={12}
-              height={12}
+              width={24}
+              height={24}
             />
           </div>
         </div>
