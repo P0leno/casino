@@ -302,11 +302,10 @@
 .crash-countdown-text {
   text-align: center;
   color: #ffffff;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   padding: 8px 20px;
-  background: rgba(16, 185, 129, 0.1);
-  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+  background: transparent;
 }
 
 /* Панель "Ставок еще нет" */
