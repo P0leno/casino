@@ -177,6 +177,22 @@ async def lifespan(app: FastAPI):
             print("✅ Сообщение о рестарте обновлено")
         except Exception as e:
             print(f"⚠️ Ошибка обновления сообщения о рестарте: {e}")
+    else:
+        # Обычный запуск (не рестарт) — отправляем сообщение в логи
+        try:
+            from app.log_bot import log_bot, send_message_to_logs
+            import os
+            LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))
+            if LOG_CHANNEL_ID:
+                await send_message_to_logs(
+                    "✅ <b>Скрипт запущен!</b>\n\n"
+                    "🚀 Все системы инициализированы\n"
+                    "🤖 Боты подключены\n"
+                    "💎 Синхронизация активна"
+                )
+                print("✅ Отправлено сообщение о запуске в логи")
+        except Exception as e:
+            print(f"⚠️ Ошибка отправки сообщения о запуске: {e}")
     
     yield
     
