@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from app.crash_game import crash_game
-import sqlite3
-from app.config import DB_PATH, BOT_TOKEN, ADMIN_IDS
+from app.config import BOT_TOKEN, ADMIN_IDS
 from app.utils.validate import validate_init_data
 from app.utils.balance import get_user_balance
+from app.utils.database import get_db_connection
 from urllib.parse import parse_qs
 import json
 import asyncio
@@ -131,7 +131,7 @@ async def place_bet(bet: BetRequest):
     
     # Проверяем баланс
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
@@ -142,7 +142,7 @@ async def place_bet(bet: BetRequest):
         
         # Снимаем со счета
         new_balance = int(round(result[0] - amount))
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
         conn.commit()
@@ -181,7 +181,7 @@ async def cashout(request: CashoutRequest):
     if result["success"]:
         # Начисляем выигрыш
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
             current_balance = cursor.fetchone()[0]
@@ -220,7 +220,7 @@ async def cancel_bet(request: CancelBetRequest):
     if result["success"]:
         # Возвращаем деньги
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
             current_balance = cursor.fetchone()[0]

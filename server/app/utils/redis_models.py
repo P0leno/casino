@@ -3,12 +3,24 @@
 """
 import sqlite3
 import json
+import os
 from typing import Optional, List, Dict
 from .redis_client import cache
-from app.config import DB_PATH
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Database settings
+DB_PATH = os.getenv("DB_PATH", "./users.db")
+SQLITE_TIMEOUT = 60
+
+def _get_conn():
+    """Получить оптимизированное соединение"""
+    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=60000")
+    return conn
 
 # TTL константы (в секундах)
 TTL_USER = 1800  # 30 минут
@@ -35,7 +47,7 @@ class RedisUser:
         
         # Fallback на SQLite
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, user_id, username, balance, bonus_balance, 
@@ -82,7 +94,7 @@ class RedisUser:
         
         try:
             # 1. Обновляем SQLite (источник истины!)
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             
             # Формируем SQL
@@ -115,7 +127,7 @@ class RedisUser:
             
             # Загружаем свежие данные НАПРЯМУЮ из БД и сохраняем в Redis
             try:
-                conn2 = sqlite3.connect(DB_PATH)
+                conn2 = _get_conn()
                 cursor2 = conn2.cursor()
                 cursor2.execute("""
                     SELECT id, user_id, username, balance, bonus_balance, 
@@ -190,7 +202,7 @@ class RedisShopGift:
         
         # Fallback на SQLite
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT gift_id, title, price, available_amount, slug, updated_at
@@ -240,7 +252,7 @@ class RedisShopGift:
         
         # Fallback на SQLite
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT gift_id, title, price, available_amount, slug, updated_at
@@ -283,7 +295,7 @@ class RedisShopGift:
         """Обновить доступное количество (атомарно)"""
         try:
             # 1. Обновляем SQLite
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE shop_gifts 
@@ -326,7 +338,7 @@ class RedisPromo:
         
         # Fallback на SQLite
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, owner, promo, reward, type, invited_count
@@ -363,7 +375,7 @@ class RedisPromo:
         """Увеличить счётчик приглашённых"""
         try:
             # 1. Обновляем SQLite
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE promocodes 
@@ -402,7 +414,7 @@ class RedisSettings:
         
         # Fallback на SQLite
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT value, description, updated_at
@@ -432,6 +444,97 @@ class RedisSettings:
             return None
     
     @staticmethod
+    def get_value(key: str, default=None):
+        """
+        Быстрое получение значения настройки
+        Возвращает только value или default
+        """
+        setting = RedisSettings.get(key)
+        if setting:
+            return setting.get('value', default)
+        return default
+    
+    @staticmethod
+    def get_float(key: str, default: float = 0.0) -> float:
+        """Получить настройку как float"""
+        value = RedisSettings.get_value(key, default)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+    
+    @staticmethod
+    def get_int(key: str, default: int = 0) -> int:
+        """Получить настройку как int"""
+        value = RedisSettings.get_value(key, default)
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return default
+    
+    @staticmethod
+    def get_bool(key: str, default: bool = False) -> bool:
+        """Получить настройку как bool (1/0 или true/false)"""
+        value = RedisSettings.get_value(key, str(default))
+        return value in ('1', 'true', 'True', True)
+    
+    @staticmethod
+    def get_admins() -> list:
+        """Получить список ID админов из Redis"""
+        value = RedisSettings.get_value('admins', '[]')
+        try:
+            import json
+            return json.loads(value) if value else []
+        except:
+            return []
+    
+    @staticmethod
+    def is_admin(user_id: int) -> bool:
+        """Проверить является ли пользователь админом"""
+        admins = RedisSettings.get_admins()
+        return user_id in admins
+    
+    @staticmethod
+    def load_admins_from_env():
+        """Загрузить админов из ENV в Redis"""
+        import os
+        import json
+        
+        admin_ids_str = os.getenv('ADMIN_IDS', '')
+        if not admin_ids_str:
+            logger.warning("ADMIN_IDS not found in ENV")
+            return []
+        
+        try:
+            # Парсим из строки "123,456,789" или "[123,456,789]"
+            admin_ids_str = admin_ids_str.strip()
+            if admin_ids_str.startswith('['):
+                admin_ids = json.loads(admin_ids_str)
+            else:
+                admin_ids = [int(x.strip()) for x in admin_ids_str.split(',') if x.strip()]
+            
+            admin_ids_json = json.dumps(admin_ids)
+            
+            # Сохраняем в SQLite (создаем если нет)
+            conn = _get_conn()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO settings (key, value, description, updated_at)
+                VALUES ('admins', ?, 'Список ID администраторов', CURRENT_TIMESTAMP)
+            """, (admin_ids_json,))
+            conn.commit()
+            conn.close()
+            
+            # Сохраняем в Redis
+            cache.set("setting:admins", {"value": admin_ids_json, "description": "Список ID администраторов"}, TTL_SETTINGS)
+            
+            logger.info(f"✅ Loaded {len(admin_ids)} admins to Redis: {admin_ids}")
+            return admin_ids
+        except Exception as e:
+            logger.error(f"❌ Error loading admins from ENV: {e}")
+            return []
+    
+    @staticmethod
     def get_all() -> Dict[str, Dict]:
         """
         Получить все настройки
@@ -447,7 +550,7 @@ class RedisSettings:
         
         # Fallback на SQLite
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT key, value, description, updated_at
@@ -486,7 +589,7 @@ class RedisSettings:
         """
         try:
             # 1. Обновляем SQLite (источник истины!)
-            conn = sqlite3.connect(DB_PATH)
+            conn = _get_conn()
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE settings 

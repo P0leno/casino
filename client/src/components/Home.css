@@ -194,3 +194,19 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Плавные анимации с высоким FPS */
+.crash-dynamic-banner,
+.info-card,
+.spin-banner-item {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.crash-dynamic-banner:active,
+.info-card:active,
+.spin-banner-item:active {
+  transform: scale(0.98) translateZ(0);
+}

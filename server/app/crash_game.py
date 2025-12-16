@@ -6,8 +6,8 @@ import time
 import asyncio
 from typing import Dict, List
 import math
-import sqlite3
-from app.config import DB_PATH
+from app.utils.database import get_db_connection
+from app.utils.redis_models import RedisSettings
 
 class CrashGame:
     def __init__(self):
@@ -22,25 +22,110 @@ class CrashGame:
         self.bets = {}  # {user_id: {"amount": 100, "cashout_at": None, "username": "", "avatar": ""}}
         self.next_round_bets = {}  # Ставки на следующий раунд
         self.shutting_down = False  # Флаг для graceful shutdown
+        
+        # Always Profit Mode - система компенсации
+        self.debt_to_recover = 0  # Долг который нужно откупить (выигрыши игроков)
+        self.rounds_since_debt = 0  # Раундов с момента появления долга
+        self.suspicious_users = {}  # {user_id: count} - сколько раз забрал на 1.01-1.15
+        self.rounds_since_low_crash = 0  # Раундов с последнего низкого краша (для пустых раундов)
     
     def get_max_multiplier(self) -> float:
-        """Получает максимальный коэффициент из настроек"""
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = 'max_crash_multiplier'")
-            result = cursor.fetchone()
-            conn.close()
-            return float(result[0]) if result else 10.0
-        except Exception as e:
-            print(f"Ошибка получения max_multiplier: {e}")
-            return 1000.0
+        """Получает максимальный коэффициент из Redis"""
+        return RedisSettings.get_float('max_crash_multiplier', 10.0)
+    
+    def is_always_profit_mode(self) -> bool:
+        """Проверяет включен ли режим 'Всегда в плюсе' из Redis"""
+        return RedisSettings.get_bool('crash_always_profit', False)
+    
+    def get_max_debt_threshold(self) -> int:
+        """Получает порог долга из Redis"""
+        return RedisSettings.get_int('crash_max_debt', 300)
+    
+    def get_big_bet_threshold(self) -> int:
+        """Получает порог большой ставки из Redis"""
+        return RedisSettings.get_int('crash_big_bet_threshold', 100)
+    
+    def get_big_bet_lose_chance(self) -> int:
+        """Получает шанс проигрыша на большой ставке (в %) из Redis"""
+        return RedisSettings.get_int('crash_big_bet_lose_chance', 30)
         
     def generate_crash_point(self) -> float:
         """
         Генерирует точку краша используя провабельно честный алгоритм
         Адаптивное распределение в зависимости от max_multiplier
         """
+        # Always Profit Mode
+        if self.is_always_profit_mode() and self.bets:
+            total_bets = sum(bet["amount"] for bet in self.bets.values())
+            max_debt = self.get_max_debt_threshold()
+            big_bet_threshold = self.get_big_bet_threshold()
+            big_bet_lose_chance = self.get_big_bet_lose_chance()
+            
+            # Проверка 1: Крупные ставки (>= порога) - шанс раннего краша
+            if total_bets >= big_bet_threshold:
+                if random.randint(1, 100) <= big_bet_lose_chance:
+                    # Проигрыш - ранний краш
+                    rand = random.random()
+                    if rand < 0.15:
+                        low_crash = 1.01
+                    elif rand < 0.70:
+                        low_crash = round(random.uniform(1.01, 1.20), 2)
+                    else:
+                        low_crash = round(random.uniform(1.20, 1.50), 2)
+                    print(f"💰 [ALWAYS PROFIT] Крупная ставка ({total_bets}⭐ >= {big_bet_threshold}), шанс {big_bet_lose_chance}% сработал -> краш: {low_crash}x")
+                    return low_crash
+            
+            # Проверка 2: Есть ли "хитрецы" среди ставящих (2+ раз забрали на 1.01-1.15)
+            for user_id in self.bets.keys():
+                if self.suspicious_users.get(user_id, 0) >= 2:
+                    # Краш до 1.03 - хитрец не успеет забрать
+                    low_crash = round(random.uniform(1.00, 1.03), 2)
+                    print(f"💰 [ALWAYS PROFIT] Хитрец #{user_id} (счетчик: {self.suspicious_users[user_id]}) -> краш: {low_crash}x")
+                    return low_crash
+            
+            # Проверка 3: Большой долг (>= max_debt * 1.5) - агрессивный откуп
+            if self.debt_to_recover >= max_debt * 1.5:
+                rand = random.random()
+                if rand < 0.15:
+                    low_crash = 1.01
+                elif rand < 0.85:
+                    low_crash = round(random.uniform(1.01, 1.25), 2)
+                else:
+                    low_crash = round(random.uniform(1.25, 1.40), 2)
+                print(f"💰 [ALWAYS PROFIT] Большой долг ({self.debt_to_recover}⭐) -> агрессивный краш: {low_crash}x")
+                return low_crash
+            
+            # Проверка 4: Есть долг И прошло 1-2 раунда - откупаем
+            if self.debt_to_recover > 0 and self.rounds_since_debt >= random.randint(1, 2):
+                rand = random.random()
+                if rand < 0.10:
+                    low_crash = 1.01
+                elif rand < 0.85:
+                    low_crash = round(random.uniform(1.01, 1.30), 2)
+                else:
+                    low_crash = None  # 15% на нормальный
+                
+                if low_crash:
+                    print(f"💰 [ALWAYS PROFIT] Откуп долга ({self.debt_to_recover}⭐) через {self.rounds_since_debt} раундов -> краш: {low_crash}x")
+                    return low_crash
+            
+            # Проверка 5: Любые ставки - базовый шанс низкого краша
+            if total_bets > 0:
+                rand = random.random()
+                if rand < 0.50:  # 50% шанс на низкий краш при любых ставках
+                    low_crash = round(random.uniform(1.10, 1.50), 2)
+                    print(f"💰 [ALWAYS PROFIT] Базовый низкий краш ({total_bets}⭐) -> {low_crash}x")
+                    return low_crash
+        
+        # Проверка 6: Каждые 2-3 раунда - низкий краш до 2x для реалистичности
+        if self.is_always_profit_mode():
+            self.rounds_since_low_crash += 1
+            if self.rounds_since_low_crash >= random.randint(2, 3):
+                low_crash = round(random.uniform(1.01, 1.90), 2)
+                print(f"💰 [ALWAYS PROFIT] Периодический низкий краш ({self.rounds_since_low_crash} раундов): {low_crash}x")
+                self.rounds_since_low_crash = 0
+                return low_crash
+        
         max_mult = self.get_max_multiplier()
         rand = random.random()
         
@@ -98,16 +183,18 @@ class CrashGame:
         
         self.game_id += 1
         self.is_running = True
-        self.crash_point = self.generate_crash_point()
-        self.start_time = time.time()
-        self.current_multiplier = 1.0
         
-        # Переносим ставки из next_round_bets в текущие bets
+        # СНАЧАЛА переносим ставки из next_round_bets в текущие bets
         self.bets = {}
         for user_id, bet in self.next_round_bets.items():
             bet["waiting"] = False  # Убираем флаг ожидания
             self.bets[user_id] = bet
         self.next_round_bets = {}
+        
+        # ПОТОМ генерируем crash_point с учетом текущих ставок
+        self.crash_point = self.generate_crash_point()
+        self.start_time = time.time()
+        self.current_multiplier = 1.0
         
         print(f"🎮 Раунд #{self.game_id} начался! Crash point: {self.crash_point}x, Ставок: {len(self.bets)}")
         
@@ -140,6 +227,48 @@ class CrashGame:
         # Подсчет выигравших/проигравших
         winners = sum(1 for bet in self.bets.values() if bet["cashout_at"] is not None)
         losers = len(self.bets) - winners
+        
+        # Always Profit Mode - подсчет профита и отслеживание хитрецов
+        if self.is_always_profit_mode() and self.bets:
+            round_profit = 0  # Профит игроков в этом раунде
+            
+            for user_id, bet in self.bets.items():
+                amount = bet["amount"]
+                cashout_at = bet["cashout_at"]
+                
+                if cashout_at is not None:
+                    # Игрок выиграл
+                    winnings = amount * cashout_at
+                    profit = winnings - amount
+                    round_profit += profit
+                    
+                    # Проверяем - это "хитрец"? (забрал на 1.01-1.15)
+                    if 1.01 <= cashout_at <= 1.15:
+                        self.suspicious_users[user_id] = self.suspicious_users.get(user_id, 0) + 1
+                        print(f"👀 [ALWAYS PROFIT] User #{user_id} забрал на {cashout_at}x (счетчик: {self.suspicious_users[user_id]})")
+                    elif cashout_at > 1.50:
+                        # Если забрал на высоком коэффициенте - сбрасываем счетчик
+                        if user_id in self.suspicious_users:
+                            self.suspicious_users[user_id] = max(0, self.suspicious_users[user_id] - 2)
+            
+            if round_profit > 0:
+                # Игроки в плюсе - добавляем к долгу + 10-15% прибыль казино
+                profit_margin = random.uniform(1.10, 1.15)  # 10-15% сверху
+                debt_with_margin = round(round_profit * profit_margin)
+                self.debt_to_recover += debt_with_margin
+                print(f"💰 [ALWAYS PROFIT] Игроки выиграли: +{round_profit}⭐ (+{int((profit_margin-1)*100)}% = {debt_with_margin}⭐) | Общий долг: {self.debt_to_recover}⭐")
+            
+            # Увеличиваем счетчик раундов с долгом
+            if self.debt_to_recover > 0:
+                self.rounds_since_debt += 1
+            
+            # Если был низкий краш (до 1.30) - считаем что откупили часть долга
+            if self.crash_point <= 1.30 and self.debt_to_recover > 0:
+                # Считаем сколько проиграли игроки (ставки без кэшаута)
+                lost_bets = sum(bet["amount"] for bet in self.bets.values() if bet["cashout_at"] is None)
+                self.debt_to_recover = max(0, self.debt_to_recover - lost_bets)
+                self.rounds_since_debt = 0
+                print(f"💰 [ALWAYS PROFIT] Откупили {lost_bets}⭐ | Остаток долга: {self.debt_to_recover}⭐")
         
         print(f"💥 Раунд #{self.game_id} завершен! Crashed at {self.crash_point}x | Выиграли: {winners}, Проиграли: {losers}")
         

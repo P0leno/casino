@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from urllib.parse import parse_qs, quote
 import json
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime
 import random
@@ -29,7 +30,7 @@ def generate_payment_code():
 def get_ton_usd_rate():
     """Получить текущий курс TON/USD из базы данных"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'ton_price_usd'")
         result = cursor.fetchone()
@@ -102,7 +103,7 @@ async def create_payment(request: CreatePaymentRequest):
         payment_code = generate_payment_code()
         
         # Создаем таблицу payments если не существует
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("""

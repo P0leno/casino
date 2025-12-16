@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
 import asyncio
-import sqlite3
+from app.utils.database import get_db_connection, DB_PATH
 from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import invoice_rate_limiter
@@ -24,7 +24,7 @@ async def create_invoice(request: TopUpRequest):
     
     # Проверяем настройку "Пополнение звездами"
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'stars_topup_enabled'")
         result = cursor.fetchone()

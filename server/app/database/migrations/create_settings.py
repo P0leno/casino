@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 #!/usr/bin/env python3
 """
 Миграция: создание таблицы settings для системных настроек
@@ -13,7 +14,7 @@ from app.config import DB_PATH
 
 def create_settings_table():
     """Создание таблицы settings"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Создаём таблицу settings

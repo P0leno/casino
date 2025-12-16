@@ -1,8 +1,7 @@
 """
 Утилита для работы с балансом пользователей
 """
-import sqlite3
-from app.config import DB_PATH
+from app.utils.database import get_db_connection
 
 def get_user_balance(user_id: int) -> dict:
     """
@@ -15,7 +14,7 @@ def get_user_balance(user_id: int) -> dict:
         dict: {"balance": int, "bonusBalance": int}
     """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT balance, bonus_balance FROM users WHERE id = ?", 

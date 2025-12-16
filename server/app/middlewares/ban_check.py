@@ -4,6 +4,7 @@ Middleware для проверки бана пользователя
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from app.config import DB_PATH
 from app.routers.auth import verify_init_data
@@ -41,7 +42,7 @@ async def ban_check_middleware(request: Request, call_next):
                     user_id = user_data.get('telegram_id')
                     
                     # Проверяем бан в БД
-                    conn = sqlite3.connect(DB_PATH)
+                    conn = get_db_connection()
                     cursor = conn.cursor()
                     cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
                     result = cursor.fetchone()

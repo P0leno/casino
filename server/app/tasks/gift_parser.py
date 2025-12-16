@@ -2,6 +2,7 @@
 Фоновая задача для парсинга подарков из Telegram
 """
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 import os
 from app.config import API_ID, API_HASH, SESSION_STRING, LOG_BOT_TOKEN, LOGS_ID, ADMIN_IDS
@@ -178,7 +179,7 @@ async def parse_gifts(send_log=True):
         await app.start()
         me = await app.get_me()
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         gifts_count = 0
@@ -330,7 +331,7 @@ async def force_parse_and_sync(search_tonnel_resale_func, update_gift_ton_price_
     prices_updated = 0
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем все подарки из БД для обновления цен

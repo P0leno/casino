@@ -27,19 +27,19 @@
 
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
   padding: 16px;
   padding-top: 0;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   align-content: start;
   justify-items: center;
 }
 
 .platform-mobile .inventory-grid {
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   padding: 8px;
   padding-top: 0;
   max-width: 100%;
@@ -456,4 +456,13 @@
 
 .help-btn:active {
   transform: translateY(0);
+}
+
+/* Для десктопов - больше колонок */
+@media (min-width: 1024px) {
+  .inventory-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    max-width: 900px;
+  }
 }

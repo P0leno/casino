@@ -4,6 +4,7 @@
 Запускается каждые 15 минут
 """
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime
 from app.config import DB_PATH
@@ -68,7 +69,7 @@ async def update_ton_price(silent=False):
             print(f"✅ Цена TON: ${price_usd}")
         
         # Сохраняем в БД
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -109,7 +110,7 @@ async def recalculate_gift_prices(silent=False):
         from app.utils.shop_cache import invalidate_shop_cache
         invalidate_shop_cache()
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем количество подарков для отчета

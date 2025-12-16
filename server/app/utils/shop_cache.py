@@ -3,18 +3,17 @@
 SQLite: ton_price (обновляется парсером)
 Redis: stars_price (пересчитывается динамически)
 """
-import sqlite3
 import math
 from typing import Optional, List, Dict
-from app.config import DB_PATH
 from app.utils.redis_client import cache
+from app.utils.database import get_db_connection
 
 TTL_SHOP_PRICES = 300  # 5 минут кэш для цен в звездах
 
 def get_ton_price_usd() -> float:
     """Получить текущую цену TON в USD"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'ton_price_usd'")
         result = cursor.fetchone()
@@ -30,7 +29,7 @@ def get_ton_price_usd() -> float:
 def get_shop_commission() -> float:
     """Получить комиссию магазина"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'shop_commission'")
         result = cursor.fetchone()
@@ -89,7 +88,7 @@ def get_shop_gifts_with_prices() -> List[Dict]:
             print("[SHOP_CACHE] ⚠️ Курс TON не установлен, используем цены по умолчанию")
         
         # Получаем подарки из SQLite
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
             SELECT gift_id, slug, title, model_name, model_path, 

@@ -2,6 +2,7 @@
 Background task для отправки уведомлений о доступности фри спина
 """
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime, timedelta
 from aiogram import Bot
@@ -16,7 +17,7 @@ async def check_and_send_spin_notifications():
     bot = Bot(token=BOT_TOKEN)
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем всех пользователей у которых:

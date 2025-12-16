@@ -8,7 +8,7 @@ import crashAnim from '../assets/crash.json'
 import starAnim from '../assets/star.json'
 
 function Crash({ onNavigateToTopUp }) {
-  const { updateBalance } = useBalance()
+  const { updateBalance, isAdmin } = useBalance()
   const [multiplier, setMultiplier] = useState(1.00)
   const [isRunning, setIsRunning] = useState(false)
   const [history, setHistory] = useState([])
@@ -20,7 +20,6 @@ function Crash({ onNavigateToTopUp }) {
   const [betAmount, setBetAmount] = useState(25)
   const [isConnected, setIsConnected] = useState(false)
   const [wasConnected, setWasConnected] = useState(false) // Было ли подключение хоть раз
-  const [isAdmin, setIsAdmin] = useState(false)
   const [showCrashPanel, setShowCrashPanel] = useState(false)
   const [isCountdown, setIsCountdown] = useState(false)
   const [countdownValue, setCountdownValue] = useState(0)
@@ -51,38 +50,18 @@ function Crash({ onNavigateToTopUp }) {
     // Проверяем параметр showCrashPanel в URL
     const urlParams = new URLSearchParams(window.location.search)
     setShowCrashPanel(urlParams.get('showCrashPanel') === 'true')
-    
-    // Проверяем является ли пользователь админом
-    checkAdmin()
   }, [])
-
-  const checkAdmin = async () => {
-    try {
-      const initData = tg?.initData
-      if (!initData) return
-
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/check-admin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      })
-
-      const data = await response.json()
-      if (data.valid && data.isAdmin) {
-        setIsAdmin(true)
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error)
-    }
-  }
 
   // WebSocket подключение (без polling fallback)
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://')
+    let shouldReconnect = true
+    let reconnectTimeout = null
     
     const connectWebSocket = () => {
+      if (!shouldReconnect) return
+      
       try {
         // Добавляем initData как query параметр для авторизации
         const initData = window.Telegram?.WebApp?.initData || ''
@@ -111,21 +90,29 @@ function Crash({ onNavigateToTopUp }) {
         }
 
         ws.onclose = () => {
-          console.log('🔌 WebSocket disconnected, reconnecting in 3s...')
+          console.log('🔌 WebSocket disconnected')
           setIsConnected(false)
-          // Переподключение через 3 секунды
-          setTimeout(connectWebSocket, 3000)
+          // Переподключение через 3 секунды только если не размонтирован
+          if (shouldReconnect) {
+            reconnectTimeout = setTimeout(connectWebSocket, 3000)
+          }
         }
       } catch (error) {
         console.error('WebSocket creation error:', error)
-        // Переподключение через 3 секунды
-        setTimeout(connectWebSocket, 3000)
+        // Переподключение через 3 секунды только если не размонтирован
+        if (shouldReconnect) {
+          reconnectTimeout = setTimeout(connectWebSocket, 3000)
+        }
       }
     }
 
     connectWebSocket()
 
     return () => {
+      shouldReconnect = false
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+      }
       if (wsRef.current) {
         wsRef.current.close()
       }

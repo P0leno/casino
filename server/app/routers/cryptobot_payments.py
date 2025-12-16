@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime, timedelta
 from app.config import DB_PATH, BOT_TOKEN, CRYPTOBOT_API_TOKEN
@@ -82,7 +83,7 @@ async def create_invoice(request: CreateInvoiceRequest):
         )
         
         # Сохраняем в БД
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         expires_at = datetime.now() + timedelta(seconds=1800)

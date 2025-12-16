@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
-import sqlite3
+from app.utils.database import get_db_connection, DB_PATH
 import asyncio
 from datetime import datetime, timedelta
 import random
@@ -95,7 +95,7 @@ async def check_spin_available(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT last_spin_date FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
@@ -138,7 +138,7 @@ async def spin(request: ValidateRequest):
         if not allowed:
             return {"success": False, "message": f"Попробуйте через {remaining_time}с"}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT last_spin_date FROM users WHERE id = ?", (user_id,))
@@ -284,7 +284,7 @@ async def bazmin_spin(request: ValidateRequest):
         
         print(f"[BAZMIN-SPIN] User ID: {user_id}")
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Проверяем баланс звезд - колонка balance
@@ -426,7 +426,7 @@ async def lapik_spin(request: ValidateRequest):
         
         print(f"[LAPIK-SPIN] User ID: {user_id}")
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Проверяем баланс лапок - колонка bonus_balance
@@ -538,7 +538,7 @@ async def get_inventory(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
@@ -566,7 +566,7 @@ async def sell_gift(request: SellGiftRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT inventory, balance FROM users WHERE id = ?", (user_id,))
@@ -632,7 +632,7 @@ async def get_prices(request: ValidateRequest):
         return {"valid": False, "prices": {}}
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT gift_name, price FROM gift_prices")
         results = cursor.fetchall()
@@ -677,7 +677,7 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         if pyrogram_app is None:
             return {"success": False, "message": "Вывод подарков временно недоступен"}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем инвентарь
@@ -770,7 +770,7 @@ async def request_manual_withdraw(request: ManualWithdrawRequest):
         username = user.get('username', '')
         first_name = user.get('first_name', 'User')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем инвентарь

@@ -4,6 +4,7 @@ CryptoBot Invoice Checker
 """
 
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime
 from app.config import DB_PATH, BOT_TOKEN, CRYPTOBOT_API_TOKEN
@@ -54,7 +55,7 @@ async def notify_user(user_id: int, stars_amount: int, usdt_amount: float):
 async def check_pending_invoices():
     """Проверить pending счета"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем все pending счета

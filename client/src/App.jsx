@@ -94,113 +94,44 @@ function AppContent() {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
     
-    // ПЕРВЫМ делом проверяем режим технических работ
-    fetch(`${apiUrl}/api/check-user-maintenance`, {
+    // Один запрос validate - проверяет всё: валидность, бан, тех.работы, админ
+    fetch(`${apiUrl}/api/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData })
     })
       .then(res => res.json())
       .then(data => {
-        console.log('Maintenance check response:', data)
-        
-        if (data.shouldBlock) {
-          console.log('User should be blocked - showing maintenance screen')
-          setMaintenanceMode(true)
-          setLoading(false)
-          return null // Прерываем загрузку
-        }
-        
-        console.log('Maintenance check passed, continuing...')
-        
-        // Продолжаем проверку бана
-        return fetch(`${apiUrl}/api/check-ban`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData })
-        })
-      })
-      .then(res => {
-        if (res === null) return null // Прерываем если maintenance
-        return res.json()
-      })
-      .then(data => {
-        if (data === null) return null // Прерываем если maintenance
-        
-        if (data.banned) {
-          setIsBanned(true)
-          setBotUsername(data.botUsername || 'HelpShellBot')
-          // НЕ делаем setLoading(false) - оставляем лоадер
-          return null // Прерываем цепочку
-        }
-        
-        // Если не забанен - проверяем валидность
-        return fetch(`${apiUrl}/api/validate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData })
-        })
-      })
-      .then(res => {
-        // Если res === null, значит пользователь забанен или режим тех.работ
-        if (res === null) return null
-        
-        console.log('Validate response status:', res.status)
-        
-        // Проверяем статус 503 (maintenance) - ВАЖНО: до res.json()
-        if (res.status === 503) {
-          console.log('Got 503 from validate - maintenance mode')
-          return res.json().then(errorData => {
-            console.log('Maintenance error data:', errorData)
-            if (errorData.maintenance) {
-              console.log('Setting maintenance mode TRUE')
-              setMaintenanceMode(true)
-              setLoading(false)
-            }
-            return null
-          }).catch(err => {
-            console.error('Error parsing 503 response:', err)
-            // На всякий случай включаем режим если 503
-            setMaintenanceMode(true)
-            setLoading(false)
-            return null
-          })
-        }
-        
-        return res.json()
-      })
-      .then(data => {
-        // Если data === null, значит пользователь забанен или режим тех.работ
-        if (data === null) return
-        
-        console.log('Validate response data:', data)
+        console.log('Validate response:', data)
         
         // Проверяем валидность
         if (!data.valid) {
-          console.log('Invalid initData')
           setError('Ошибка: данные не валидны')
           setLoading(false)
           return
         }
         
-        // ВАЖНО: Проверяем бан из validate
-        if (data.isBanned === true) {
-          console.log('User is banned from validate response')
-          setIsBanned(true)
-          // НЕ вызываем setLoading(false) - оставляем лоадер
+        // Проверяем тех.работы
+        if (data.maintenance) {
+          setMaintenanceMode(true)
+          setLoading(false)
           return
         }
         
-        // Обновляем баланс если пришел в ответе
-        if (data.balance !== undefined || data.bonusBalance !== undefined) {
-          updateBalance({
-            balance: data.balance || 0,
-            bonus_balance: data.bonusBalance || 0
-          })
+        // Проверяем бан
+        if (data.isBanned) {
+          setIsBanned(true)
+          return // Оставляем лоадер, показываем BannedScreen
         }
         
-        // Все ок - убираем лоадер и показываем приложение
-        console.log('User validated successfully, showing app')
+        // Обновляем баланс и isAdmin
+        updateBalance({
+          balance: data.balance || 0,
+          bonusBalance: data.bonusBalance || 0,
+          isAdmin: data.isAdmin || false
+        })
+        
+        // Все ок - показываем приложение
         setLoading(false)
       })
       .catch(err => {

@@ -5,6 +5,7 @@
 import os
 import sys
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -48,7 +49,7 @@ async def send_status_to_channel(bot: Bot, message: str, message_id: int = None)
 def save_restart_message_id(message_id: int):
     """Сохранить message_id сообщения о рестарте в БД"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
             INSERT OR REPLACE INTO settings (key, value, description)
@@ -64,7 +65,7 @@ def save_restart_message_id(message_id: int):
 def get_restart_message_id():
     """Получить message_id последнего рестарта"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'restart_message_id'")
         result = cursor.fetchone()
@@ -80,7 +81,7 @@ def get_restart_message_id():
 def clear_restart_message_id():
     """Очистить message_id после успешного старта"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM settings WHERE key = 'restart_message_id'")
         conn.commit()

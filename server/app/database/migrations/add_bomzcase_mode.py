@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 """
 Миграция: Добавление режима bomzcase для платного спина
 - Добавляет колонки star_min, star_max в gift_chances
@@ -12,7 +13,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(script_dir, '../../../users.db')
 
 def migrate():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     print("🔄 Начало миграции: add_bomzcase_mode")

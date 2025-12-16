@@ -1,9 +1,10 @@
-import sqlite3
+from app.utils.database import get_db_connection, DB_PATH
 from datetime import datetime
-from app.config import DB_PATH
+from app.utils.database import get_db_connection, DB_PATH
+import sqlite3
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -202,6 +203,11 @@ def init_db():
     # Дефолтные настройки
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('stars_topup_enabled', 'true', 'Пополнение звездами')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('max_crash_multiplier', '10.0', 'Максимальный коэффициент краша')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('crash_always_profit', '0', 'Режим всегда в плюсе (0/1)')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('crash_max_debt', '300', 'Порог долга для агрессивного режима')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('crash_big_bet_threshold', '100', 'Порог большой ставки')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('crash_big_bet_lose_chance', '30', 'Шанс проигрыша на большой ставке (%)')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('admins', '[]', 'Список ID администраторов')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('ton_price_usd', '5.5', 'Цена TON в USD (CoinMarketCap)')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('shop_commission', '10', 'Наценка на подарки (%)')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('sell_commission', '10', 'Комиссия на продажу подарков (%)')")

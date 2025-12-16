@@ -5,6 +5,7 @@
 
 import asyncio
 import aiohttp
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime
 from app.config import DB_PATH
@@ -76,7 +77,7 @@ async def process_transaction(tx):
         print(f"  💰 TX {tx_hash[:8] if tx_hash else 'unknown'}: {value_ton} TON ({value_nanotons} nanotons)")
         
         # Ищем платеж по точной сумме в nanotons
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем pending платежи за последние 15 минут

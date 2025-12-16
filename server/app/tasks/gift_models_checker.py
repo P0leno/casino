@@ -3,6 +3,7 @@
 """
 import os
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 import json
 from datetime import datetime
@@ -27,7 +28,7 @@ async def send_log_to_channel(message, reply_markup=None):
 def init_gift_models_table():
     """Создаёт таблицу gift_models если её нет"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -249,7 +250,7 @@ async def check_new_gifts():
         print(f"✅ Получено подарков из API: {len(api_gifts)}")
         
         # Получаем подарки из БД
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT gift_name, models FROM gift_models")
         db_gifts = {row[0]: json.loads(row[1]) for row in cursor.fetchall()}
@@ -381,7 +382,7 @@ async def download_gift_models(gift_name, message_to_edit=None):
             await asyncio.sleep(0.5)
         
         # Обновляем БД
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE gift_models SET folder_exists = 1, last_check = CURRENT_TIMESTAMP WHERE gift_name = ?",
@@ -404,7 +405,7 @@ async def verify_gift_folders():
     """Проверяет целостность папок с моделями"""
     print("🔍 Проверка целостности папок с моделями...")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT gift_name, models, folder_exists FROM gift_models")
     gifts = cursor.fetchall()
@@ -444,7 +445,7 @@ async def verify_gift_folders():
 
 async def init_from_local_folder():
     """Инициализирует БД из локальной папки (если БД пустая)"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM gift_models")
     count = cursor.fetchone()[0]

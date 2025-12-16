@@ -5,12 +5,14 @@ import BonusBalanceBar from './BonusBalanceBar'
 import LottieAnimation from './LottieAnimation'
 import GiftDetailsModal from './GiftDetailsModal'
 import ShopFilterModal from './ShopFilterModal'
+import { useBalance } from '../contexts/BalanceContext'
 import starStaticBlackIcon from '../assets/starstatic_black.svg'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
 
 function Shop({ onNavigateToTopUp }) {
+  const { updateBalance } = useBalance()
   const [activeCategory, setActiveCategory] = useState('gift')
   const [gifts, setGifts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -141,6 +143,9 @@ function Shop({ onNavigateToTopUp }) {
       // Закрываем модальное окно
       setShowGiftDetails(false)
       setSelectedGift(null)
+
+      // Обновляем баланс на фронтенде
+      updateBalance()
 
       // Обновляем список подарков (может измениться availability)
       loadGifts()

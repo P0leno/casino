@@ -3,13 +3,13 @@ from pydantic import BaseModel
 from typing import Optional
 from urllib.parse import parse_qs
 import json
-import sqlite3
 import aiohttp
-from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH, CHECKER_BOT_TOKEN
+from app.config import BOT_TOKEN, ADMIN_IDS, CHECKER_BOT_TOKEN
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import tasks_rate_limiter
 from app.utils.balance import get_user_balance
 from app.utils.redis_models import RedisUser
+from app.utils.database import get_db_connection, DB_PATH
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -202,7 +202,10 @@ async def get_tasks_list(request: ValidateRequest):
             }
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        # Инвалидируем Redis кэш перед чтением чтобы гарантировать свежие данные
+        RedisUser.invalidate(user_id)
+        
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         if admin_check:
@@ -218,9 +221,7 @@ async def get_tasks_list(request: ValidateRequest):
             
             if result:
                 completed_tasks = json.loads(result[0] or "[]")
-                print(f"[TASKS] User {user_id} getting tasks list (from DB)")
-                print(f"[TASKS] Completed tasks from DB: {completed_tasks}")
-                print(f"[TASKS] Completed tasks types: {[type(t).__name__ for t in completed_tasks]}")
+                print(f"[TASKS/LIST] User {user_id} completed_tasks from DB: {completed_tasks}")
             else:
                 conn.close()
                 return {"valid": False, "tasks": [], "error": "User not found"}
@@ -229,12 +230,18 @@ async def get_tasks_list(request: ValidateRequest):
             all_tasks = cursor.fetchall()
             conn.close()
             
+            # Приводим completed_tasks к int для корректного сравнения
+            completed_ids = set(int(t) for t in completed_tasks)
+            all_task_ids = [t[0] for t in all_tasks]
+            
+            print(f"[TASKS/LIST] All task IDs: {all_task_ids}, Completed IDs: {completed_ids}")
+            
             tasks = [
                 {"id": t[0], "target": t[1], "type": t[2], "award": t[3], "currency": t[4]}
-                for t in all_tasks if t[0] not in completed_tasks
+                for t in all_tasks if t[0] not in completed_ids
             ]
             
-            print(f"[TASKS] User {user_id} available tasks: {[t['id'] for t in tasks]}")
+            print(f"[TASKS/LIST] User {user_id} filtered tasks: {[t['id'] for t in tasks]}")
         
         return {"valid": True, "tasks": tasks}
     except Exception as e:
@@ -267,7 +274,7 @@ async def create_task(request: CreateTaskRequest):
                 print(f"⚠️  Бот не имеет прав администратора в канале {request.target}")
                 return {"success": False, "message": "Bot doesn't have admin rights in this channel"}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO tasks (target, type, award, currency, custom_invite) VALUES (?, ?, ?, ?, ?)",
@@ -293,7 +300,7 @@ async def delete_task(request: DeleteTaskRequest):
         return {"success": False, "message": "Not authorized"}
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM tasks WHERE id = ?", (request.taskId,))
         conn.commit()
@@ -312,7 +319,7 @@ async def get_invite_link(request: GetInviteLinkRequest):
         return {"success": False, "message": "Invalid initData"}
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получить задание
@@ -361,7 +368,7 @@ async def complete_task(request: CompleteTaskRequest):
         }
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получить задание
@@ -445,8 +452,8 @@ async def complete_task(request: CompleteTaskRequest):
         
         conn.close()
         
-        # Отметить задание как выполненное
-        completed_tasks.append(request.taskId)
+        # Отметить задание как выполненное (как int!)
+        completed_tasks.append(int(request.taskId))
         
         # Вычисляем новый баланс
         new_balance = current_balance + (award if currency == "star" else 0)
@@ -464,6 +471,9 @@ async def complete_task(request: CompleteTaskRequest):
         if not success:
             print(f"[TASKS] ❌ Failed to update user {user_id} in DB!")
             return {"success": False, "message": "Failed to update user - user not found in database"}
+        
+        # Явно инвалидируем кэш для гарантии синхронизации
+        RedisUser.invalidate(user_id)
         
         print(f"[TASKS] ✅ Task {request.taskId} completed by user {user_id}, new completed_tasks: {completed_tasks}")
         

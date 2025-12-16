@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
-import sqlite3
 import os
 import json
 from datetime import datetime
@@ -9,11 +8,10 @@ from app.routers.auth import verify_init_data
 from app.utils.rate_limit import buy_gift_rate_limiter, get_shop_gifts_rate_limiter
 from app.utils.balance import get_user_balance
 from app.utils.shop_cache import get_cached_shop_gifts, invalidate_shop_cache
+from app.utils.redis_models import RedisUser
+from app.utils.database import get_db_connection, DB_PATH
 
 router = APIRouter(prefix="/api", tags=["shop"])
-
-# Database path
-DB_PATH = os.getenv("DB_PATH", "./users.db")
 
 def sanitize_error(error: Exception) -> str:
     """
@@ -79,7 +77,7 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
     
     try:
         # Получаем инвентарь пользователя
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
         user_result = cursor.fetchone()
@@ -114,7 +112,8 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
 async def get_gift_details(gift_id: str):
     """Получить детали конкретного подарка"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
+        import sqlite3
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -145,12 +144,12 @@ async def buy_gift(request: BuyGiftRequest):
     username = user_data.get('username', '')
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем подарок по slug
         cursor.execute("""
-            SELECT gift_id, title, price, available_amount, slug 
+            SELECT gift_id, title, price, available_amount, slug, ton_price 
             FROM shop_gifts 
             WHERE slug = ?
         """, (request.slug,))
@@ -161,7 +160,19 @@ async def buy_gift(request: BuyGiftRequest):
             conn.close()
             raise HTTPException(status_code=404, detail="Подарок не найден")
         
-        gift_id, title, price, available_amount, slug = gift
+        gift_id, title, price, available_amount, slug, ton_price = gift
+        
+        # Если price = 0, конвертируем из ton_price (используем ту же формулу что и shop_cache)
+        if not price or price <= 0:
+            if ton_price and ton_price > 0:
+                from app.utils.shop_cache import get_ton_price_usd, get_shop_commission, calculate_stars_price
+                ton_usd = get_ton_price_usd()
+                commission = get_shop_commission()
+                price = calculate_stars_price(ton_price, ton_usd, commission)
+                print(f"🛒 [BUY] Calculated price: ton_price={ton_price}, ton_usd={ton_usd}, commission={commission}%, price={price}")
+            else:
+                conn.close()
+                raise HTTPException(status_code=400, detail="Цена подарка не установлена")
         
         # Проверяем доступность
         if available_amount <= 0:
@@ -186,6 +197,7 @@ async def buy_gift(request: BuyGiftRequest):
             balance, inventory_json = user
         
         # Проверяем баланс
+        print(f"🛒 [BUY] User {user_id}: balance={balance}, price={price}, type_balance={type(balance)}, type_price={type(price)}")
         if balance < price:
             conn.close()
             raise HTTPException(status_code=400, detail=f"Недостаточно звезд. Нужно: {price}⭐, есть: {balance}⭐")
@@ -220,11 +232,13 @@ async def buy_gift(request: BuyGiftRequest):
             
             # Обновляем баланс и инвентарь
             new_balance = balance - price
+            print(f"🛒 [BUY] Updating balance: {balance} - {price} = {new_balance}")
             cursor.execute("""
                 UPDATE users 
                 SET balance = ?, inventory = ? 
                 WHERE id = ?
             """, (new_balance, json.dumps(inventory), user_id))
+            print(f"🛒 [BUY] Rows affected: {cursor.rowcount}")
             
             # Уменьшаем available_amount
             cursor.execute("""
@@ -238,7 +252,8 @@ async def buy_gift(request: BuyGiftRequest):
             
             # ВАЖНО: Инвалидируем кэш Redis сразу после покупки
             invalidate_shop_cache()
-            print(f"✅ Подарок {title} куплен пользователем {user_id}, кэш инвалидирован")
+            RedisUser.invalidate(user_id)  # Инвалидируем кэш пользователя
+            print(f"✅ Подарок {title} куплен пользователем {user_id} за {price}⭐, новый баланс: {new_balance}⭐")
             
             return {
                 "success": True,

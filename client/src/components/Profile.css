@@ -130,24 +130,42 @@
   justify-content: center;
   gap: 8px;
   padding: 14px 24px;
-  background: linear-gradient(135deg, rgba(38, 171, 255, 0.85) 0%, rgba(0, 157, 255, 0.85) 50%, rgba(0, 144, 234, 0.85) 100%);
-  border: none;
-  border-radius: 32px;
+  background: linear-gradient(135deg, rgba(38, 171, 255, 0.55) 0%, rgba(0, 157, 255, 0.55) 50%, rgba(0, 144, 234, 0.55) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3rem;
   color: rgba(255, 255, 255, 0.9);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   isolation: isolate;
   position: relative;
   height: 52px;
   min-width: 280px;
   max-width: 350px;
-  box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.action-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 3rem;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .action-button:active {
-  background: linear-gradient(135deg, rgba(12, 139, 217, 0.85) 0%, rgba(0, 133, 216, 0.85) 50%, rgba(0, 129, 209, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(12, 139, 217, 0.55) 0%, rgba(0, 133, 216, 0.55) 50%, rgba(0, 129, 209, 0.55) 100%);
   transform: translateY(1px);
 }
 
@@ -976,6 +994,15 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .inventory-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+
 /* Profile Tabs */
 .profile-tabs-container {
   display: flex;
@@ -997,20 +1024,37 @@
   width: fit-content;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: center;
   background: transparent;
   backdrop-filter: blur(1.25rem);
   border-radius: 3rem;
   padding: 0.25rem;
-  gap: 0.25rem;
+  gap: 0;
   box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
   isolation: isolate;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Плавающий индикатор как в TabBar */
+.profile-tab-indicator {
+  position: absolute;
+  height: calc(100% - 4px);
+  background: #1C3F48;
+  border-radius: 3rem;
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  top: 2px;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .profile-tab-label {
-  padding: 10px 20px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-block;
+  padding: 10px 10px;
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   border-radius: 3rem;
   position: relative;
@@ -1018,22 +1062,48 @@
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
   font-weight: 500;
+  z-index: 1;
+  background: transparent;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .profile-tab-label input[type="radio"] {
   display: none;
 }
 
-.profile-tab-label:hover:not(:has(input:checked)) {
-  background: rgba(255, 255, 255, 0.05);
+.profile-tab-label:active {
+  transform: scale(0.98);
 }
 
 .profile-tab-label:has(input:checked) {
-  background: #1C3F48;
   color: #0FBCE0;
   font-weight: 600;
 }
 
 .profile-tab-label > span {
   transition: all 0.3s ease;
+}
+
+/* ========== ANDROID ФИКСЫ ========== */
+
+/* Опускаем header-card на Android (перекрывает кнопку закрыть) */
+.platform-android .profile-header-card {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
+  min-height: calc(45px + env(safe-area-inset-top, 0px) + 70px + 0.75rem);
+}
+
+.platform-android .profile-tabs-container {
+  margin-top: calc(45px + env(safe-area-inset-top, 0px) + 70px + 0.75rem + 0.75rem + 15px);
+}
+
+/* Плавные анимации с высоким FPS */
+.profile-tabs,
+.profile-tab-label,
+.profile-tab-indicator,
+.action-button,
+.profile-header-card {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }

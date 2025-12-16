@@ -5,6 +5,7 @@
 """
 import asyncio
 import json
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime
 from curl_cffi.requests import AsyncSession
@@ -138,7 +139,7 @@ async def search_tonnel_resale(gift_name, model=None, backdrop=None, max_retries
 def update_gift_ton_price(gift_id, ton_price):
     """Обновить цену подарка в TON (с Tonnel)"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -161,7 +162,7 @@ async def update_all_prices(send_log=True):
     print("=" * 80)
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Получаем все LIMITED NFT (у них есть slug и модель)

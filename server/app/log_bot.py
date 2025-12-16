@@ -196,6 +196,40 @@ async def force_gift_parse_handler(callback: CallbackQuery):
         except:
             pass
 
+@log_router.callback_query(F.data.startswith("manual_done_"))
+async def manual_withdraw_done_handler(callback: CallbackQuery):
+    """Обработчик кнопки 'Выполнен' для ручного вывода обычного подарка"""
+    try:
+        if callback.from_user.id not in ADMIN_IDS:
+            await callback.answer("⛔ Доступ запрещен", show_alert=True)
+            return
+        
+        await callback.answer("✅ Отмечено как выполненное")
+        
+        # Удаляем сообщение
+        await callback.message.delete()
+        
+    except Exception as e:
+        print(f"Error in manual_withdraw_done_handler: {e}")
+        await callback.answer("❌ Ошибка", show_alert=True)
+
+@log_router.callback_query(F.data.startswith("manual_nft_done_"))
+async def manual_nft_withdraw_done_handler(callback: CallbackQuery):
+    """Обработчик кнопки 'Выполнен' для ручного вывода NFT подарка"""
+    try:
+        if callback.from_user.id not in ADMIN_IDS:
+            await callback.answer("⛔ Доступ запрещен", show_alert=True)
+            return
+        
+        await callback.answer("✅ NFT отмечен как выполненный")
+        
+        # Удаляем сообщение
+        await callback.message.delete()
+        
+    except Exception as e:
+        print(f"Error in manual_nft_withdraw_done_handler: {e}")
+        await callback.answer("❌ Ошибка", show_alert=True)
+
 # Подключаем router к dispatcher
 log_dp.include_router(log_router)
 

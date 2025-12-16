@@ -3,6 +3,7 @@
 Запускается как background task
 """
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 import json
 import logging
@@ -75,7 +76,7 @@ class RedisSync:
         Загружаем пользователей с активностью за последние 24 часа
         """
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cursor = conn.cursor()
             
             # Получаем активных пользователей (пример - можно добавить last_activity)
@@ -124,7 +125,7 @@ class RedisSync:
     async def sync_hot_promos(self, limit: int = 100):
         """Синхронизировать активные промокоды"""
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cursor = conn.cursor()
             
             # Получаем все промокоды (они не очень большие)

@@ -4,6 +4,7 @@
 """
 
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -30,7 +31,7 @@ priority_invoices = {}  # invoice_id -> {"user_id": int, "dialog_id": int}
 
 def get_queue_size() -> int:
     """Получить размер очереди: реальные открытые обращения + надбавка"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Реальное количество открытых диалогов
@@ -51,7 +52,7 @@ def update_queue_offset():
     import random
     offset = random.randint(10, 20)
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "INSERT OR REPLACE INTO support_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
@@ -64,7 +65,7 @@ def update_queue_offset():
 
 def is_user_banned(user_id: int) -> bool:
     """Проверка бана пользователя в БД"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
     result = cursor.fetchone()
@@ -78,7 +79,7 @@ def ban_user_in_support(user_id: int, until_date: str = None):
         user_id: ID пользователя
         until_date: Дата разбана в формате ISO (например "2025-11-24T12:00:00") или None для постоянного бана
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Проверяем существование пользователя
@@ -111,7 +112,7 @@ def ban_user_in_support(user_id: int, until_date: str = None):
 
 def unban_user_in_support(user_id: int):
     """Разбанить пользователя ТОЛЬКО в поддержке (не трогает is_banned в аппке)"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Проверяем существование пользователя
@@ -135,7 +136,7 @@ def is_user_banned_in_support(user_id: int) -> bool:
     """Проверка бана в поддержке с учётом временного бана"""
     from datetime import datetime
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT support_banned, support_banned_until FROM users WHERE id = ?", (user_id,))
     result = cursor.fetchone()
@@ -157,7 +158,7 @@ def is_user_banned_in_support(user_id: int) -> bool:
             
             # Если срок истёк - снимаем бан
             if now >= until_dt:
-                cursor = sqlite3.connect(DB_PATH).cursor()
+                cursor = get_db_connection().cursor()
                 cursor.execute(
                     "UPDATE users SET support_banned = 0, support_banned_until = NULL WHERE id = ?", 
                     (user_id,)
@@ -173,7 +174,7 @@ def is_user_banned_in_support(user_id: int) -> bool:
 
 def unban_user(user_id: int):
     """Разбанить пользователя в БД"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Проверяем существование пользователя
@@ -202,7 +203,7 @@ dp = Dispatcher()
 
 def get_active_dialog(user_id: int):
     """Получить активный диалог пользователя"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "SELECT dialog_id, category, last_response_at FROM support_dialogs WHERE user_id = ? AND status = 'open'",
@@ -214,7 +215,7 @@ def get_active_dialog(user_id: int):
 
 def create_dialog(user_id: int, username: str, category: str):
     """Создать новый диалог"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO support_dialogs (user_id, username, category) VALUES (?, ?, ?)",
@@ -227,7 +228,7 @@ def create_dialog(user_id: int, username: str, category: str):
 
 def close_dialog(dialog_id: int):
     """Закрыть диалог"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE support_dialogs SET status = 'closed', closed_at = ? WHERE dialog_id = ?",
@@ -241,7 +242,7 @@ def close_dialog(dialog_id: int):
 
 def update_last_response(dialog_id: int):
     """Обновить время последнего ответа"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE support_dialogs SET last_response_at = ? WHERE dialog_id = ?",
@@ -252,7 +253,7 @@ def update_last_response(dialog_id: int):
 
 def save_message_to_dialog(dialog_id: int, sender_type: str, sender_name: str, message_text: str = None, photo_path: str = None):
     """Сохранить сообщение в историю диалога"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO dialog_messages (dialog_id, sender_type, sender_name, message_text, photo_path) VALUES (?, ?, ?, ?, ?)",
@@ -291,7 +292,7 @@ async def download_photo(photo_file_id: str, dialog_id: int) -> str:
 def delete_dialog_photos(dialog_id: int):
     """Удалить все фото диалога из app/temp"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT photo_path FROM dialog_messages WHERE dialog_id = ? AND photo_path IS NOT NULL",
@@ -311,7 +312,7 @@ async def generate_dialog_html(dialog_id: int) -> str:
     """Генерировать HTML файл диалога и вернуть путь к нему"""
     import pytz
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Получаем информацию о диалоге
@@ -489,7 +490,7 @@ def get_main_keyboard():
 def get_close_keyboard(dialog_id: int):
     """Клавиатура с кнопкой закрытия диалога и приоритетом"""
     # Проверяем isPriority в БД
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT isPriority FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
     result = cursor.fetchone()
@@ -669,7 +670,7 @@ async def handle_admin_reply(message: Message):
         print(f"🔍 Найден dialog_id: {dialog_id}")
         
         # Получаем информацию о диалоге
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
@@ -1083,7 +1084,7 @@ async def handle_block_user(callback: CallbackQuery):
         close_dialog(dialog_id)
         
         # Получаем категорию диалога
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT category FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
         result = cursor.fetchone()
@@ -1138,7 +1139,7 @@ async def handle_miniapp_unban_user(callback: CallbackQuery):
             pass
         
         # Получаем категорию диалога
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT category FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
         result = cursor.fetchone()
@@ -1315,7 +1316,7 @@ async def handle_unban_user(callback: CallbackQuery):
             pass
         
         # Получаем категорию диалога
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT category FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
         result = cursor.fetchone()
@@ -1347,7 +1348,7 @@ async def handle_withdraw_done(callback: CallbackQuery):
         dialog_id = int(callback.data.replace("withdraw_done_", ""))
         
         # Получаем user_id из диалога
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT user_id FROM support_dialogs WHERE dialog_id = ?", (dialog_id,))
         result = cursor.fetchone()
@@ -1401,9 +1402,28 @@ async def handle_withdraw_done(callback: CallbackQuery):
         print(f"Error marking withdrawal done: {e}")
         await callback.answer("Ошибка", show_alert=True)
 
+async def get_ip_country(ip: str) -> tuple:
+    """Получить страну и флаг по IP адресу"""
+    import aiohttp
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"http://ip-api.com/json/{ip}?fields=status,country,countryCode", timeout=aiohttp.ClientTimeout(total=3)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data.get("status") == "success":
+                        country_code = data.get("countryCode", "")
+                        country_name = data.get("country", "Unknown")
+                        # Конвертируем код страны в флаг эмодзи
+                        if country_code and len(country_code) == 2:
+                            flag = "".join(chr(ord(c) + 127397) for c in country_code.upper())
+                            return flag, country_name
+    except Exception as e:
+        print(f"Error getting IP country for {ip}: {e}")
+    return "🌍", "Unknown"
+
 @dp.callback_query(F.data.startswith("user_data_"))
 async def handle_user_data(callback: CallbackQuery):
-    """Отправка данных пользователя (IP, User-Agent)"""
+    """Отправка краткой информации о пользователе"""
     admin_id = callback.from_user.id
     
     # Проверка прав админа
@@ -1419,9 +1439,70 @@ async def handle_user_data(callback: CallbackQuery):
     
     try:
         user_id = int(callback.data.replace("user_data_", ""))
+        await callback.answer("⏳ Загрузка данных...")
         
         # Получаем данные пользователя из БД
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, ip_addresses, user_agents FROM users WHERE id = ?",
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            await bot.send_message(SUPPORT_GROUP_ID, "❌ Пользователь не найден", parse_mode=ParseMode.HTML)
+            return
+        
+        username, ip_addresses_json, user_agents_json = result
+        
+        # Парсим JSON
+        ip_list = json.loads(ip_addresses_json) if ip_addresses_json else []
+        
+        # Получаем геолокацию только для первого IP
+        last_ip = ip_list[0] if ip_list else None
+        last_country_flag = "🌍"
+        last_country_name = "Unknown"
+        
+        if last_ip:
+            last_country_flag, last_country_name = await get_ip_country(last_ip)
+        
+        # Формируем краткое сообщение
+        message_text = (
+            f"📊 <b>Данные пользователя</b>\n\n"
+            f"👤 Username: @{username or 'нет'}\n"
+            f"🆔 ID: <code>{user_id}</code>\n"
+            f"🌎 Страна: {last_country_flag} {last_country_name}\n"
+            f"🌐 IP: <code>{last_ip or 'нет данных'}</code> {last_country_flag if last_ip else ''}"
+        )
+        
+        # Кнопка для полной информации
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Доп. информация", callback_data=f"user_full_{user_id}")]
+        ])
+        
+        # Отправляем сообщение в группу
+        await bot.send_message(
+            SUPPORT_GROUP_ID,
+            message_text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard
+        )
+        
+    except Exception as e:
+        print(f"Error fetching user data: {e}")
+        await bot.send_message(SUPPORT_GROUP_ID, f"❌ Ошибка получения данных: {e}", parse_mode=ParseMode.HTML)
+
+@dp.callback_query(F.data.startswith("user_full_"))
+async def handle_user_full_data(callback: CallbackQuery):
+    """Показать полную информацию о пользователе"""
+    try:
+        user_id = int(callback.data.replace("user_full_", ""))
+        await callback.answer("⏳ Загрузка...")
+        
+        # Получаем данные пользователя из БД
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT username, ip_addresses, user_agents FROM users WHERE id = ?",
@@ -1440,43 +1521,120 @@ async def handle_user_data(callback: CallbackQuery):
         ip_list = json.loads(ip_addresses_json) if ip_addresses_json else []
         ua_list = json.loads(user_agents_json) if user_agents_json else []
         
-        # Формируем сообщение
+        # Получаем геолокацию для всех IP
+        ip_with_flags = []
+        last_country_flag = "🌍"
+        last_country_name = "Unknown"
+        
+        for ip in ip_list:
+            flag, country = await get_ip_country(ip)
+            ip_with_flags.append((ip, flag))
+        
+        if ip_with_flags:
+            last_country_flag = ip_with_flags[0][1]
+            # Получаем название страны для первого IP
+            _, last_country_name = await get_ip_country(ip_list[0])
+        
+        # Формируем полное сообщение
         message_text = (
             f"📊 <b>Данные пользователя</b>\n\n"
             f"👤 Username: @{username or 'нет'}\n"
-            f"🆔 ID: <code>{user_id}</code>\n\n"
+            f"🆔 ID: <code>{user_id}</code>\n"
+            f"🌎 Страна: {last_country_flag} {last_country_name}\n\n"
         )
         
-        if ip_list:
+        if ip_with_flags:
             message_text += "🌐 <b>IP адреса:</b>\n"
-            for idx, ip in enumerate(ip_list, 1):
-                message_text += f"{idx}. <code>{ip}</code>\n"
+            for idx, (ip, flag) in enumerate(ip_with_flags, 1):
+                message_text += f"{idx}. <code>{ip}</code> {flag}\n"
         else:
             message_text += "🌐 <b>IP адреса:</b> нет данных\n"
         
         message_text += "\n"
         
+        # Добавляем User-Agent если помещается в лимит
         if ua_list:
-            message_text += "📱 <b>User-Agent:</b>\n"
+            ua_section = "📱 <b>User-Agent:</b>\n"
             for idx, ua in enumerate(ua_list, 1):
-                # Обрезаем слишком длинные User-Agent
-                ua_short = ua[:100] + "..." if len(ua) > 100 else ua
-                message_text += f"{idx}. <code>{ua_short}</code>\n"
-        else:
-            message_text += "📱 <b>User-Agent:</b> нет данных\n"
+                ua_section += f"{idx}. <code>{ua}</code>\n"
+            
+            # Проверяем лимит 4096 символов
+            if len(message_text) + len(ua_section) <= 4096:
+                message_text += ua_section
         
-        # Отправляем сообщение в группу
-        await bot.send_message(
-            SUPPORT_GROUP_ID,
+        # Кнопка для скрытия
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔼 Скрыть доп. информацию", callback_data=f"user_hide_{user_id}")]
+        ])
+        
+        # Редактируем сообщение
+        await callback.message.edit_text(
             message_text,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard
         )
         
-        await callback.answer("✅ Данные отправлены")
+    except Exception as e:
+        print(f"Error fetching full user data: {e}")
+        await callback.answer("Ошибка", show_alert=True)
+
+@dp.callback_query(F.data.startswith("user_hide_"))
+async def handle_user_hide_data(callback: CallbackQuery):
+    """Скрыть доп. информацию - вернуть краткую версию"""
+    try:
+        user_id = int(callback.data.replace("user_hide_", ""))
+        
+        # Получаем данные пользователя из БД
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, ip_addresses FROM users WHERE id = ?",
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            await callback.answer("Пользователь не найден", show_alert=True)
+            return
+        
+        username, ip_addresses_json = result
+        ip_list = json.loads(ip_addresses_json) if ip_addresses_json else []
+        
+        # Получаем геолокацию только для первого IP
+        last_ip = ip_list[0] if ip_list else None
+        last_country_flag = "🌍"
+        last_country_name = "Unknown"
+        
+        if last_ip:
+            last_country_flag, last_country_name = await get_ip_country(last_ip)
+        
+        # Формируем краткое сообщение
+        message_text = (
+            f"📊 <b>Данные пользователя</b>\n\n"
+            f"👤 Username: @{username or 'нет'}\n"
+            f"🆔 ID: <code>{user_id}</code>\n"
+            f"🌎 Страна: {last_country_flag} {last_country_name}\n"
+            f"🌐 IP: <code>{last_ip or 'нет данных'}</code> {last_country_flag if last_ip else ''}"
+        )
+        
+        # Кнопка для полной информации
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Доп. информация", callback_data=f"user_full_{user_id}")]
+        ])
+        
+        # Редактируем сообщение
+        await callback.message.edit_text(
+            message_text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard
+        )
+        
+        await callback.answer()
         
     except Exception as e:
-        print(f"Error fetching user data: {e}")
-        await callback.answer("Ошибка получения данных", show_alert=True)
+        print(f"Error hiding user data: {e}")
+        await callback.answer("Ошибка", show_alert=True)
 
 @dp.callback_query(F.data.startswith("admin_close_"))
 async def handle_admin_close_dialog(callback: CallbackQuery):
@@ -1485,7 +1643,7 @@ async def handle_admin_close_dialog(callback: CallbackQuery):
         dialog_id = int(callback.data.replace("admin_close_", ""))
         
         # Получаем информацию о диалоге
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
@@ -1572,7 +1730,7 @@ async def handle_priority_queue(callback: CallbackQuery):
         dialog_id = int(callback.data.split("_")[1])
         
         # Проверяем что диалог принадлежит пользователю
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",
@@ -1675,7 +1833,7 @@ async def handle_close_dialog(callback: CallbackQuery):
         dialog_id = int(callback.data.split("_")[1])
         
         # Проверяем что диалог принадлежит пользователю
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_id, status FROM support_dialogs WHERE dialog_id = ?",

@@ -4,6 +4,7 @@
 - Автоматически банит при мошенничестве с промокодами
 """
 import asyncio
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 import json
 from datetime import datetime
@@ -55,7 +56,7 @@ async def send_antifraud_alert(alert_type: str, users: list, ip: str):
 
 def get_users_by_ip() -> dict:
     """Получает словарь IP -> список пользователей"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT id, username, ip_addresses FROM users WHERE ip_addresses IS NOT NULL AND ip_addresses != '[]'")
@@ -83,7 +84,7 @@ def get_users_by_ip() -> dict:
 
 def is_ip_ignored(ip: str, user_ids: list) -> bool:
     """Проверяет, игнорируется ли эта комбинация IP + юзеров"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT user_ids FROM antifraud_ignored WHERE ip_address = ?", (ip,))
@@ -106,7 +107,7 @@ def is_ip_ignored(ip: str, user_ids: list) -> bool:
 
 def is_alert_sent(alert_type: str, ip: str, user_ids: list) -> bool:
     """Проверяет, был ли уже отправлен такой алерт"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     user_ids_json = json.dumps(sorted(user_ids))
@@ -123,7 +124,7 @@ def is_alert_sent(alert_type: str, ip: str, user_ids: list) -> bool:
 
 def mark_alert_sent(alert_type: str, ip: str, user_ids: list):
     """Помечает алерт как отправленный"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     user_ids_json = json.dumps(sorted(user_ids))
@@ -138,7 +139,7 @@ def mark_alert_sent(alert_type: str, ip: str, user_ids: list):
 
 def ban_users(user_ids: list):
     """Банит пользователей в миниаппке"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     for user_id in user_ids:
@@ -151,7 +152,7 @@ def ban_users(user_ids: list):
 
 def unban_users(user_ids: list):
     """Разбанивает пользователей"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     for user_id in user_ids:
@@ -164,7 +165,7 @@ def unban_users(user_ids: list):
 
 def ignore_ip_users(ip: str, user_ids: list):
     """Добавляет комбинацию IP + юзеров в игнорируемые"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     user_ids_json = json.dumps(user_ids)
@@ -213,7 +214,7 @@ async def check_promo_fraud(activator_id: int, activator_ip: str, promo_owner_id
     - Активатор и владелец промокода с одного IP
     - Или два активатора с одного IP активировали один промокод
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Получаем IP владельца промокода
@@ -257,7 +258,7 @@ async def check_same_ip_promo_activation(activator_id: int, activator_ip: str, p
     """
     Проверяет, активировал ли кто-то другой этот промокод с того же IP.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Получаем всех, кто активировал этот промокод

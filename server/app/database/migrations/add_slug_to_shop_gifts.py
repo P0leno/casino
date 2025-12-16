@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 #!/usr/bin/env python3
 """
 Миграция: добавление колонки slug в shop_gifts
@@ -13,7 +14,7 @@ from app.config import DB_PATH
 
 def migrate():
     """Добавляет колонку slug в таблицу shop_gifts"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:

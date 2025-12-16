@@ -1,16 +1,17 @@
 @import './Spin.css';
 
 .gift-details-modal {
-  max-height: 90vh;
+  max-height: calc(90vh - env(safe-area-inset-bottom));
   overflow-y: auto;
   background: #1a1a1a;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: calc(70px + env(safe-area-inset-bottom));
 }
 
 .gift-details-modal .sheet-content {
-  padding: 0 16px;
-  padding-bottom: 16px;
+  padding: 0 16px !important;
+  padding-bottom: 0 !important;
 }
 
 .modal-close-btn-on-card {
@@ -212,8 +213,11 @@
 }
 
 .modal-buy-button {
-  width: calc(100% - 32px);
-  margin: 24px auto calc(10px + env(safe-area-inset-bottom));
+  position: fixed;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 16px;
+  right: 16px;
+  width: auto;
   padding: 16px;
   background: #1C404A;
   color: #0FBCE0;
@@ -290,11 +294,14 @@
 
 /* Кнопки для инвентаря */
 .modal-buttons-column {
+  position: fixed;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 16px;
+  right: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 24px 16px 16px;
-  width: calc(100% - 32px);
+  width: auto;
 }
 
 .modal-withdraw-button {
@@ -530,9 +537,10 @@
 .backdrop-modal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
 .backdrop-modal-header h3 {
@@ -540,9 +548,14 @@
   font-weight: 600;
   color: white;
   margin: 0;
+  text-align: center;
 }
 
 .backdrop-modal-close {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 50%;

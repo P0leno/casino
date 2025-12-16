@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 """
 Миграция: Очистка параметров star_min/star_max и paw_min/paw_max
 - star_min/star_max остаются только для подарка 'star'
@@ -15,7 +16,7 @@ DB_PATH = os.path.join(script_dir, '../../../users.db')
 def migrate():
     print("🔄 Запуск миграции: Очистка параметров star_min/star_max и paw_min/paw_max...")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:

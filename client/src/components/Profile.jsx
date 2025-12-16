@@ -7,6 +7,7 @@ import PromoCodeModal from './PromoCodeModal'
 import starStaticIcon from '../assets/star_static.svg'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
+import { useBalance } from '../contexts/BalanceContext'
 
 const giftAnimations = {
   bear: '/gifts/bear.json',
@@ -25,8 +26,8 @@ const giftAnimations = {
 }
 
 function Profile() {
+  const { isAdmin } = useBalance()
   const [user, setUser] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [targetUserId, setTargetUserId] = useState('')
@@ -43,6 +44,10 @@ function Profile() {
   const [deductFromBalance, setDeductFromBalance] = useState(false)
   const [showCrashPanel, setShowCrashPanel] = useState(false)
   const [crashMaxMultiplier, setCrashMaxMultiplier] = useState(1000)
+  const [crashAlwaysProfit, setCrashAlwaysProfit] = useState(false)
+  const [crashMaxDebt, setCrashMaxDebt] = useState(300)
+  const [crashBigBetThreshold, setCrashBigBetThreshold] = useState(100)
+  const [crashBigBetLoseChance, setCrashBigBetLoseChance] = useState(30)
   const [crashState, setCrashState] = useState(null)
   const [exploding, setExploding] = useState(false)
   const adminWsRef = useRef(null)
@@ -87,34 +92,7 @@ function Profile() {
       setUser(tg.initDataUnsafe.user)
     }
 
-    const checkAdmin = async () => {
-      try {
-        const initData = tg?.initData
-        if (!initData) {
-          setLoading(false)
-          return
-        }
-
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-        const response = await fetch(`${apiUrl}/api/check-admin`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData })
-        })
-
-        const data = await response.json()
-        if (data.valid && data.isAdmin) {
-          setIsAdmin(true)
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkAdmin()
-    loadInventory()
+    loadInventory().finally(() => setLoading(false))
   }, [])
 
 
@@ -295,6 +273,10 @@ function Profile() {
       const data = await response.json()
       if (data.valid) {
         setCrashMaxMultiplier(data.maxMultiplier)
+        setCrashAlwaysProfit(data.alwaysProfit || false)
+        setCrashMaxDebt(data.maxDebt || 300)
+        setCrashBigBetThreshold(data.bigBetThreshold || 100)
+        setCrashBigBetLoseChance(data.bigBetLoseChance || 30)
       }
     } catch (error) {
       console.error('Error loading crash settings:', error)
@@ -316,7 +298,14 @@ function Profile() {
       const response = await fetch(`${apiUrl}/api/crash/update-settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, maxMultiplier: parseFloat(crashMaxMultiplier) })
+        body: JSON.stringify({ 
+          initData, 
+          maxMultiplier: parseFloat(crashMaxMultiplier), 
+          alwaysProfit: crashAlwaysProfit, 
+          maxDebt: parseInt(crashMaxDebt),
+          bigBetThreshold: parseInt(crashBigBetThreshold),
+          bigBetLoseChance: parseInt(crashBigBetLoseChance)
+        })
       })
 
       const data = await response.json()
@@ -666,24 +655,13 @@ function Profile() {
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
 
     try {
-      const response = await fetch(`${apiUrl}/api/inventory/get-sell-price`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftSlug: gift.slug })
-      })
-
-      const data = await response.json()
-      
-      if (!data.success) {
-        if (tg?.showAlert) {
-          tg.showAlert(data.message || 'Не удалось получить цену')
-        } else {
-          alert(data.message || 'Не удалось получить цену')
-        }
+      // sell_price уже есть в gift из inventory
+      const sellPrice = gift.sell_price
+      if (!sellPrice || sellPrice <= 0) {
+        tg?.showAlert('Цена продажи не установлена')
         return
       }
 
-      const sellPrice = data.sellPrice
       const confirmMessage = `Продать ${gift.title} за ${sellPrice} ⭐?`
       const confirmed = tg?.showConfirm 
         ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
@@ -691,36 +669,24 @@ function Profile() {
       
       if (!confirmed) return
 
-      const sellResponse = await fetch(`${apiUrl}/api/shop/sell-gift`, {
+      const sellResponse = await fetch(`${apiUrl}/api/inventory/sell`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftSlug: gift.slug })
+        body: JSON.stringify({ initData, slug: gift.slug })
       })
 
       const sellData = await sellResponse.json()
       
       if (sellData.success) {
-        if (tg?.showAlert) {
-          tg.showAlert(`✅ Подарок продан за ${sellPrice} ⭐`)
-        } else {
-          alert(`✅ Подарок продан за ${sellPrice} ⭐`)
-        }
+        tg?.showAlert(`✅ Подарок продан!`)
         loadInventory()
         setShowGiftDetails(false)
       } else {
-        if (tg?.showAlert) {
-          tg.showAlert(sellData.message || 'Не удалось продать подарок')
-        } else {
-          alert(sellData.message || 'Не удалось продать подарок')
-        }
+        tg?.showAlert(sellData.message || sellData.detail || 'Не удалось продать подарок')
       }
     } catch (error) {
       console.error('Sell error:', error)
-      if (tg?.showAlert) {
-        tg.showAlert('Ошибка соединения с сервером')
-      } else {
-        alert('Ошибка соединения с сервером')
-      }
+      tg?.showAlert('Ошибка соединения с сервером')
     }
   }
 
@@ -733,7 +699,7 @@ function Profile() {
       const response = await fetch(`${apiUrl}/api/inventory/sell-nft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, collectibleId: gift.collectible_id })
+        body: JSON.stringify({ initData, slug: gift.slug })
       })
 
       const data = await response.json()
@@ -814,6 +780,13 @@ function Profile() {
       {/* Profile Tabs */}
       <div className="profile-tabs-container">
         <div className="profile-tabs">
+            <div 
+              className="profile-tab-indicator" 
+              style={{ 
+                left: activeProfileTab === 'inventory' ? '2px' : 'calc(50% + 1px)',
+                width: 'calc(50% - 3px)'
+              }} 
+            />
             <label className="profile-tab-label">
               <input 
                 type="radio" 
@@ -1322,6 +1295,69 @@ function Profile() {
                   {exploding ? 'Взрываем...' : '💥 Взорвать сейчас'}
                 </button>
               )}
+              
+              <div className="admin-divider"></div>
+              
+              <div className="admin-toggle-group">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    className="toggle-checkbox"
+                    checked={crashAlwaysProfit}
+                    onChange={(e) => setCrashAlwaysProfit(e.target.checked)}
+                    disabled={actionLoading}
+                  />
+                  <span className="toggle-slider"></span>
+                  <span className="toggle-text">💰 Всегда в плюсе</span>
+                </label>
+                {crashAlwaysProfit && (
+                  <>
+                    <p className="toggle-hint">Система будет компенсировать выигрыши низкими крашами</p>
+                    <div className="admin-input-group" style={{marginTop: '10px'}}>
+                      <label className="admin-label">Порог долга (⭐)</label>
+                      <input
+                        type="number"
+                        className="admin-input"
+                        placeholder="300"
+                        value={crashMaxDebt}
+                        onChange={(e) => setCrashMaxDebt(e.target.value)}
+                        disabled={actionLoading}
+                        min="50"
+                        max="10000"
+                      />
+                    </div>
+                    <div className="admin-input-group" style={{marginTop: '10px'}}>
+                      <label className="admin-label">Порог большой ставки (⭐)</label>
+                      <input
+                        type="number"
+                        className="admin-input"
+                        placeholder="100"
+                        value={crashBigBetThreshold}
+                        onChange={(e) => setCrashBigBetThreshold(e.target.value)}
+                        disabled={actionLoading}
+                        min="10"
+                        max="10000"
+                      />
+                    </div>
+                    <div className="admin-input-group" style={{marginTop: '10px'}}>
+                      <label className="admin-label">Шанс проигрыша на большой ставке (%)</label>
+                      <input
+                        type="number"
+                        className="admin-input"
+                        placeholder="30"
+                        value={crashBigBetLoseChance}
+                        onChange={(e) => setCrashBigBetLoseChance(e.target.value)}
+                        disabled={actionLoading}
+                        min="0"
+                        max="100"
+                      />
+                      <p className="input-hint">
+                        При ставках ≥{crashBigBetThreshold}⭐ - {crashBigBetLoseChance}% шанс раннего краша
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
               
               <div className="admin-divider"></div>
               

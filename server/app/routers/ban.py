@@ -4,7 +4,7 @@ API для управления банами пользователей
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import sqlite3
+from app.utils.database import get_db_connection, DB_PATH
 from app.config import DB_PATH
 from app.routers.auth import verify_init_data
 
@@ -23,7 +23,7 @@ async def check_ban(request: CheckBanRequest):
         
         telegram_id = user_data.get('telegram_id')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT is_banned FROM users WHERE telegram_id = ?", (telegram_id,))
         result = cursor.fetchone()

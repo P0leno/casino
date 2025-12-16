@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 #!/usr/bin/env python3
 """
 Миграция для обновления gift_id в таблице gift_prices и добавления bottle
@@ -10,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from app.config import DB_PATH
 
 def migrate():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     print("🔄 Начинаем миграцию gift_prices...")

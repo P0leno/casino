@@ -45,6 +45,9 @@ start_command_rate_limiter = RateLimiter(max_requests=6, time_window=180)
 # Rate limiter для проверки баланса/промокодов: 1 запрос в 3 секунды
 balance_rate_limiter = RateLimiter(max_requests=1, time_window=3)
 
+# Rate limiter для my-code промокода: 1 запрос в 15 секунд
+promo_mycode_rate_limiter = RateLimiter(max_requests=1, time_window=15)
+
 # Rate limiter для спинов: 1 запрос в 5 секунд
 spin_rate_limiter = RateLimiter(max_requests=1, time_window=5)
 

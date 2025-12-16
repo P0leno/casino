@@ -179,3 +179,18 @@
     gap: 16px;
   }
 }
+
+/* Для десктопов */
+@media (min-width: 1024px) {
+  .shop-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+
+/* Android фиксы - опускаем заголовок ниже */
+.platform-android .shop-title {
+  margin-top: 30px;
+}

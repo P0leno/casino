@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 #!/usr/bin/env python3
 """
 Скрипт для парсинга подарков и сохранения в БД
@@ -54,7 +55,7 @@ async def parse_and_save_gifts():
         me = await app.get_me()
         print(f"✅ Подключено как: {me.first_name}")
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         gifts_count = 0

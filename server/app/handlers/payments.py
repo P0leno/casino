@@ -2,6 +2,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import PreCheckoutQuery, Message
 from aiogram.enums import ParseMode
 import json
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID
 
@@ -60,7 +61,7 @@ async def process_successful_payment(message: Message):
                 return
             
             # Получаем информацию о диалоге
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT username, category FROM support_dialogs WHERE dialog_id = ?",
@@ -77,7 +78,7 @@ async def process_successful_payment(message: Message):
             username, category = dialog_info
             
             # Устанавливаем isPriority = 1
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE support_dialogs SET isPriority = 1 WHERE dialog_id = ?",
@@ -154,7 +155,7 @@ async def process_successful_payment(message: Message):
             )
             return
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))

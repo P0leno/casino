@@ -44,6 +44,10 @@ async def lifespan(app: FastAPI):
     # Инициализация БД
     init_db()
     
+    # Загрузка админов из ENV в Redis
+    from app.utils.redis_models import RedisSettings
+    RedisSettings.load_admins_from_env()
+    
     # Запуск Telegram бота
     bot_task = asyncio.create_task(start_bot())
     

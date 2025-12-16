@@ -6,11 +6,12 @@
 
 .spin-banner-item {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease;
   overflow: hidden;
-  margin-bottom: 1px;
+  margin-bottom: 4px;
   width: 100%;
   max-width: 100%;
+  border-radius: 16px;
 }
 
 /* Убираем hover эффект */
@@ -23,7 +24,28 @@
   height: auto;
   display: block;
   object-fit: contain;
-  /* Гарантируем что баннер 817x278 полностью влезает с отступами 5px */
   max-width: 100%;
   aspect-ratio: 817 / 278;
+  border-radius: 16px;
+}
+
+/* Android фиксы - адаптивные баннеры */
+.platform-android .spin-banner-item {
+  margin-bottom: 8px;
+}
+
+.platform-android .spin-banner-image {
+  border-radius: 12px;
+}
+
+/* Мобильные адаптации */
+@media (max-width: 400px) {
+  .home-page .home-content {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  
+  .spin-banner-item {
+    margin-bottom: 6px;
+  }
 }

@@ -2,13 +2,13 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
-import sqlite3
+from app.utils.database import get_db_connection, DB_PATH
 import secrets
 import string
 from datetime import datetime
 from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
-from app.utils.rate_limit import balance_rate_limiter
+from app.utils.rate_limit import promo_mycode_rate_limiter
 from app.utils.balance import get_user_balance
 
 router = APIRouter(prefix="/api/promocode", tags=["promocode"])
@@ -70,7 +70,7 @@ async def activate_promocode(activate_req: ActivateRequest, request: Request):
     # Получаем IP для антифрод проверки
     client_ip = request.client.host if request.client else "unknown"
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
@@ -188,7 +188,7 @@ async def generate_promocode(request: GenerateRequest):
     user_id = user_data['id']
     promo_type = request.type
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
@@ -268,13 +268,14 @@ async def get_my_promocode(request: GenerateRequest):
     
     user_id = user_data['id']
     
-    # Rate limit: 1 запрос в 3 секунды
-    allowed, remaining_time = balance_rate_limiter.is_allowed(user_id)
+    # Rate limit: 1 запрос в 15 секунд
+    allowed, remaining_time = promo_mycode_rate_limiter.is_allowed(user_id)
     if not allowed:
         return {"success": False, "error": f"Попробуйте через {remaining_time}с"}
+    
     promo_type = request.type
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
@@ -323,7 +324,7 @@ async def get_promo_history(request: GenerateRequest):
     
     user_id = user_data['id']
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
@@ -394,7 +395,7 @@ async def rename_promocode(request: RenameRequest):
     if len(new_name) > 16:
         return {"success": False, "error": "Максимум 16 символов"}
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:

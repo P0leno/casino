@@ -5,6 +5,7 @@ TON Transaction Checker
 
 import asyncio
 import aiohttp
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from datetime import datetime
 from app.config import DB_PATH, BOT_TOKEN
@@ -30,7 +31,7 @@ bot = Bot(token=BOT_TOKEN)
 def get_ton_usd_rate():
     """Получить текущий курс TON/USD из базы данных"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'ton_price_usd'")
         result = cursor.fetchone()
@@ -172,7 +173,7 @@ async def process_transaction(tx):
         print(f"🔍 Found transaction: {ton_amount} TON, comment: '{comment}', tx_hash: {tx.get('hash', 'unknown')[:8]}...")
         
         # Ищем инвойс по коду платежа (регистронезависимо)
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         print(f"🔎 Searching invoice for payment_code: '{comment}'")

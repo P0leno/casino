@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from app.config import DB_PATH, BOT_TOKEN, ADMIN_IDS
 from app.utils.validate import validate_init_data
@@ -55,7 +56,7 @@ async def check_user_maintenance(request: CheckMaintenanceRequest):
         print(f"[MAINTENANCE CHECK] Is admin check: int({user_id}) in {ADMIN_IDS} = {is_admin}")
         
         # Проверяем режим в БД
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")

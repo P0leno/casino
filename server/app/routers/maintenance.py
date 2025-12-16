@@ -4,6 +4,7 @@
 """
 
 from fastapi import APIRouter
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from app.config import DB_PATH
 
@@ -16,7 +17,7 @@ async def check_maintenance():
     Доступен всем без авторизации
     """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
         result = cursor.fetchone()

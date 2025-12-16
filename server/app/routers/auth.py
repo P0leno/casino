@@ -3,10 +3,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
-import sqlite3
 from datetime import datetime
-from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH
+from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
+from app.utils.redis_models import RedisSettings
+from app.utils.database import get_db_connection
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -47,90 +48,41 @@ async def validate(validate_req: ValidateRequest, request: Request):
     if not is_valid:
         return {"valid": False, "isBanned": False}
     
-    # Извлекаем IP адрес и User-Agent
-    client_ip = request.client.host if request.client else "unknown"
+    # Извлекаем IP адрес (приоритет: CF-Connecting-IP > X-Real-IP > X-Forwarded-For > client.host)
+    client_ip = (
+        request.headers.get("cf-connecting-ip") or
+        request.headers.get("x-real-ip") or
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip() or
+        (request.client.host if request.client else "unknown")
+    )
     user_agent = request.headers.get("user-agent", "unknown")
-    
-    # Проверяем режим технических работ ПЕРВЫМ делом
-    print("=" * 80)
-    print("[VALIDATE] Starting maintenance check...")
-    try:
-        parsed = parse_qs(validate_req.initData)
-        user_data = parsed.get('user', [''])[0]
-        
-        if user_data:
-            user = json.loads(user_data)
-            user_id = user.get('id')
-            
-            print(f"[VALIDATE] Parsed user_id: {user_id}")
-            print(f"[VALIDATE] ADMIN_IDS: {ADMIN_IDS}")
-            print(f"[VALIDATE] DB_PATH: {DB_PATH}")
-            
-            # Проверяем maintenance_mode
-            conn = None
-            try:
-                conn = sqlite3.connect(DB_PATH)
-                cursor = conn.cursor()
-                
-                # Сначала проверим что таблица существует
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")
-                table_exists = cursor.fetchone()
-                print(f"[VALIDATE] Settings table exists: {table_exists is not None}")
-                
-                if table_exists:
-                    cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
-                    maintenance_result = cursor.fetchone()
-                    print(f"[VALIDATE] Maintenance result from DB: {maintenance_result}")
-                    
-                    is_admin = user_id in ADMIN_IDS
-                    print(f"[VALIDATE] user_id={user_id}, maintenance_value={maintenance_result[0] if maintenance_result else 'None'}, is_admin={is_admin}")
-                    
-                    # Если режим включен и пользователь не админ - блокируем
-                    if maintenance_result and maintenance_result[0] == '1':
-                        if not is_admin:
-                            print(f"[MAINTENANCE] ⛔ User {user_id} BLOCKED during maintenance - returning 503")
-                            return JSONResponse(
-                                status_code=503,
-                                content={
-                                    "detail": "Технические работы",
-                                    "message": "Ведутся технические работы. Попробуйте позже.",
-                                    "maintenance": True
-                                }
-                            )
-                        else:
-                            print(f"[MAINTENANCE] ✅ Admin {user_id} ALLOWED during maintenance")
-                    else:
-                        print(f"[VALIDATE] Maintenance is OFF or not found, continuing...")
-                else:
-                    print(f"[VALIDATE] WARNING: settings table does not exist!")
-            finally:
-                if conn:
-                    conn.close()
-                    print(f"[VALIDATE] Maintenance DB connection closed")
-        else:
-            print(f"[VALIDATE] No user data in initData")
-    except Exception as e:
-        print(f"[MAINTENANCE] ❌ ERROR checking maintenance: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    print("[VALIDATE] Maintenance check completed, continuing to normal flow...")
-    print("=" * 80)
     
     try:
         parsed = parse_qs(validate_req.initData)
         user_data = parsed.get('user', [''])[0]
         
         if not user_data:
-            return {"valid": True, "isBanned": False}
+            return {"valid": True, "isBanned": False, "isAdmin": False, "maintenance": False}
         
         user = json.loads(user_data)
         user_id = user.get('id')
         username = user.get('username', '')
+        is_admin = RedisSettings.is_admin(user_id)
+        
+        # Проверяем режим тех.работ из Redis
+        maintenance_mode = RedisSettings.get_bool('maintenance_mode', False)
+        if maintenance_mode and not is_admin:
+            return {
+                "valid": True,
+                "isBanned": False,
+                "isAdmin": False,
+                "maintenance": True,
+                "message": "Ведутся технические работы. Попробуйте позже."
+            }
         # Получаем URL аватарки из фото (если есть)
         photo_url = user.get('photo_url', '')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT is_banned, balance, bonus_balance, ip_addresses, user_agents FROM users WHERE id = ?", (user_id,))
@@ -145,14 +97,16 @@ async def validate(validate_req: ValidateRequest, request: Request):
             ip_list = json.loads(result[3]) if result[3] else []
             ua_list = json.loads(result[4]) if result[4] else []
             
-            # Добавляем в начало, удаляем дубликаты, ограничиваем до 6
-            if client_ip not in ip_list:
-                ip_list.insert(0, client_ip)
-                ip_list = ip_list[:6]
+            # Перемещаем в начало (удаляем если есть, добавляем первым), ограничиваем до 5
+            if client_ip in ip_list:
+                ip_list.remove(client_ip)
+            ip_list.insert(0, client_ip)
+            ip_list = ip_list[:5]
             
-            if user_agent not in ua_list:
-                ua_list.insert(0, user_agent)
-                ua_list = ua_list[:6]
+            if user_agent in ua_list:
+                ua_list.remove(user_agent)
+            ua_list.insert(0, user_agent)
+            ua_list = ua_list[:5]
             
             # Обновляем username, avatar_url, IP и User-Agent при каждом логине
             cursor.execute(
@@ -179,14 +133,14 @@ async def validate(validate_req: ValidateRequest, request: Request):
         return {
             "valid": True, 
             "isBanned": is_banned,
+            "isAdmin": is_admin,
+            "maintenance": False,
             "balance": balance,
             "bonusBalance": bonus_balance
         }
     except Exception as e:
-        print(f"[VALIDATE] ❌ ERROR in main validation logic: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"valid": False, "isBanned": False}
+        print(f"[VALIDATE] ❌ ERROR: {e}")
+        return {"valid": False, "isBanned": False, "isAdmin": False, "maintenance": False}
 
 @router.post("/check-admin")
 async def check_admin(request: ValidateRequest):
@@ -204,7 +158,7 @@ async def check_admin(request: ValidateRequest):
             user = json.loads(user_data)
             user_id = user.get('id')
             
-            is_admin = user_id in ADMIN_IDS
+            is_admin = RedisSettings.is_admin(user_id)
             print(f"check-admin: user_id={user_id}, is_admin={is_admin}")
             return {"valid": True, "isAdmin": is_admin}
         
@@ -231,10 +185,10 @@ async def ban_user(request: BanRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Not authorized"}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT id FROM users WHERE id = ?", (request.targetUserId,))
@@ -273,10 +227,10 @@ async def unban_user(request: BanRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Not authorized"}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("SELECT id FROM users WHERE id = ?", (request.targetUserId,))
@@ -315,7 +269,7 @@ async def check_ban(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()

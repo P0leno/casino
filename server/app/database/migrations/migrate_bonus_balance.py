@@ -1,3 +1,4 @@
+from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 import sys
 import os
@@ -5,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from app.config import DB_PATH
 
 def migrate():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:

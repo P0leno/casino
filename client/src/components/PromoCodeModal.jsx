@@ -21,23 +21,12 @@ function PromoCodeModal({ isOpen, onClose }) {
   const [showWithdrawalDialog, setShowWithdrawalDialog] = useState(false)
   const [withdrawalAmount, setWithdrawalAmount] = useState('')
 
-  // Проверяем существующий промокод при открытии секции создания
+  // Проверяем существующий промокод при открытии секции создания (только 1 раз)
   useEffect(() => {
     if (isOpen && showCreateSection && !generatedCode) {
       checkExistingPromoCode()
     }
   }, [isOpen, showCreateSection])
-
-  // Автообновление баланса каждые 3 секунды когда показан промокод
-  useEffect(() => {
-    if (!isOpen || !showCreateSection || !generatedCode) return
-
-    const interval = setInterval(() => {
-      checkExistingPromoCode()
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [isOpen, showCreateSection, generatedCode])
 
   const checkExistingPromoCode = async () => {
     try {

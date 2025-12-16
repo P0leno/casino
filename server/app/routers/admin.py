@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
-import sqlite3
+from app.utils.database import get_db_connection, DB_PATH
 import asyncio
-from app.config import BOT_TOKEN, ADMIN_IDS, DB_PATH
+from app.config import BOT_TOKEN, DB_PATH
+from app.utils.redis_models import RedisSettings
 from app.utils.validate import validate_init_data
 from aiogram import Bot
 from app.crash_game import crash_game
@@ -48,6 +49,10 @@ class RefundPaymentRequest(BaseModel):
 class UpdateCrashSettingsRequest(BaseModel):
     initData: str
     maxMultiplier: float
+    alwaysProfit: bool = False
+    maxDebt: int = 300
+    bigBetThreshold: int = 100
+    bigBetLoseChance: int = 30
 
 class UpdateSettingRequest(BaseModel):
     initData: str
@@ -71,10 +76,10 @@ async def get_chances(request: GetChancesRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"valid": False, "chances": []}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = ?", (request.mode,))
         results = cursor.fetchall()
@@ -102,7 +107,7 @@ async def update_chances(request: UpdateChanceRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Not authorized"}
         
         # Валидация pawMin и pawMax на сервере
@@ -120,7 +125,7 @@ async def update_chances(request: UpdateChanceRequest):
         if star_min > star_max:
             star_min, star_max = star_max, star_min
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = ?",
@@ -151,10 +156,10 @@ async def get_paid_chances(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"valid": False, "chances": []}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT gift_name, visible_chance, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'bazmin'")
         results = cursor.fetchall()
@@ -182,7 +187,7 @@ async def update_paid_chances(request: UpdatePaidChanceRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Not authorized"}
         
         # Валидация pawMin и pawMax на сервере
@@ -200,7 +205,7 @@ async def update_paid_chances(request: UpdatePaidChanceRequest):
         if star_min > star_max:
             star_min, star_max = star_max, star_min
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE gift_chances SET visible_chance = ?, real_chance = ?, paw_min = ?, paw_max = ?, star_min = ?, star_max = ? WHERE gift_name = ? AND mode = 'bazmin'",
@@ -233,7 +238,7 @@ async def refund_payment(request: RefundPaymentRequest):
         admin_id = user.get('id')
         
         # Проверка прав администратора
-        if admin_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(admin_id):
             return {"success": False, "message": "Not authorized"}
         
         # Выполняем возврат через aiogram
@@ -271,7 +276,7 @@ async def refund_payment(request: RefundPaymentRequest):
                 # Списываем с баланса если флаг установлен
                 new_balance = None
                 if request.deductFromBalance and transaction_amount > 0:
-                    conn = sqlite3.connect(DB_PATH)
+                    conn = get_db_connection()
                     cursor = conn.cursor()
                     
                     # Вычитаем сумму транзакции из баланса пользователя
@@ -330,20 +335,43 @@ async def get_crash_settings(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"valid": False, "maxMultiplier": 1000.0}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'max_crash_multiplier'")
         result = cursor.fetchone()
+        max_mult = float(result[0]) if result else 10.0
+        
+        cursor.execute("SELECT value FROM settings WHERE key = 'crash_always_profit'")
+        always_profit_result = cursor.fetchone()
+        always_profit = always_profit_result[0] == '1' if always_profit_result else False
+        
+        cursor.execute("SELECT value FROM settings WHERE key = 'crash_max_debt'")
+        max_debt_result = cursor.fetchone()
+        max_debt = int(max_debt_result[0]) if max_debt_result else 300
+        
+        cursor.execute("SELECT value FROM settings WHERE key = 'crash_big_bet_threshold'")
+        big_bet_threshold_result = cursor.fetchone()
+        big_bet_threshold = int(big_bet_threshold_result[0]) if big_bet_threshold_result else 100
+        
+        cursor.execute("SELECT value FROM settings WHERE key = 'crash_big_bet_lose_chance'")
+        big_bet_lose_chance_result = cursor.fetchone()
+        big_bet_lose_chance = int(big_bet_lose_chance_result[0]) if big_bet_lose_chance_result else 30
         conn.close()
         
-        max_mult = float(result[0]) if result else 10.0
-        return {"valid": True, "maxMultiplier": max_mult}
+        return {
+            "valid": True, 
+            "maxMultiplier": max_mult, 
+            "alwaysProfit": always_profit, 
+            "maxDebt": max_debt,
+            "bigBetThreshold": big_bet_threshold,
+            "bigBetLoseChance": big_bet_lose_chance
+        }
     except Exception as e:
         print(f"Error in get_crash_settings: {e}")
-        return {"valid": False, "maxMultiplier": 10.0}
+        return {"valid": False, "maxMultiplier": 10.0, "alwaysProfit": False, "maxDebt": 300, "bigBetThreshold": 100, "bigBetLoseChance": 30}
 
 @router.post("/crash/update-settings")
 async def update_crash_settings(request: UpdateCrashSettingsRequest):
@@ -362,22 +390,48 @@ async def update_crash_settings(request: UpdateCrashSettingsRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Not authorized"}
         
         if request.maxMultiplier < 2.0 or request.maxMultiplier > 100000.0:
             return {"success": False, "message": "Максимальный коэффициент должен быть от 2.0 до 100000.0"}
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = 'max_crash_multiplier'",
             (str(request.maxMultiplier),)
         )
+        
+        # Обновляем crash_always_profit
+        always_profit_value = '1' if request.alwaysProfit else '0'
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value, description, updated_at) VALUES ('crash_always_profit', ?, 'Режим всегда в плюсе (0/1)', CURRENT_TIMESTAMP)",
+            (always_profit_value,)
+        )
+        
+        # Обновляем crash_max_debt
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value, description, updated_at) VALUES ('crash_max_debt', ?, 'Порог долга для агрессивного режима', CURRENT_TIMESTAMP)",
+            (str(request.maxDebt),)
+        )
+        
+        # Обновляем crash_big_bet_threshold
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value, description, updated_at) VALUES ('crash_big_bet_threshold', ?, 'Порог большой ставки', CURRENT_TIMESTAMP)",
+            (str(request.bigBetThreshold),)
+        )
+        
+        # Обновляем crash_big_bet_lose_chance
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value, description, updated_at) VALUES ('crash_big_bet_lose_chance', ?, 'Шанс проигрыша на большой ставке (%)', CURRENT_TIMESTAMP)",
+            (str(request.bigBetLoseChance),)
+        )
+        
         conn.commit()
         conn.close()
         
-        print(f"✅ Crash max_multiplier updated to {request.maxMultiplier}x by admin {user_id}")
+        print(f"✅ Crash settings updated: max_mult={request.maxMultiplier}x, always_profit={request.alwaysProfit}, max_debt={request.maxDebt}, big_bet_threshold={request.bigBetThreshold}, big_bet_lose_chance={request.bigBetLoseChance}%")
         return {"success": True}
     except Exception as e:
         print(f"Error in update_crash_settings: {e}")
@@ -400,7 +454,7 @@ async def explode_crash(request: ExplodeRequest):
         user_data = json.loads(parsed['user'][0])
         user_id = int(user_data['id'])
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Forbidden"}
         
         if not crash_game.is_running:
@@ -433,11 +487,10 @@ async def get_settings(request: ValidateRequest):
         user_id = user.get('id')
         
         # Проверяем что пользователь админ
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"valid": False, "settings": {}, "error": "Not admin"}
         
         # Читаем из Redis (с fallback на SQLite)
-        from app.utils.redis_models import RedisSettings
         settings = RedisSettings.get_all()
         
         # Извлекаем maintenance_mode для удобства
@@ -471,11 +524,11 @@ async def get_maintenance(request: ValidateRequest):
         user_id = user.get('id')
         
         # Проверка прав админа
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Access denied"}
         
         # Получаем статус
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
         result = cursor.fetchone()
@@ -511,11 +564,11 @@ async def toggle_maintenance(request: ValidateRequest):
         user_id = user.get('id')
         
         # Проверка прав админа
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Access denied"}
         
         # Получаем текущее значение
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
         result = cursor.fetchone()
@@ -561,7 +614,7 @@ async def update_setting(request: UpdateSettingRequest):
         user_id = user.get('id')
         
         # Проверяем что пользователь админ
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             return {"success": False, "message": "Access denied"}
         
         # Серверная валидация значения
@@ -585,7 +638,6 @@ async def update_setting(request: UpdateSettingRequest):
                     return {"success": False, "message": "Некорректное числовое значение"}
         
         # Обновляем через Redis (автоматически обновит БД и Redis)
-        from app.utils.redis_models import RedisSettings
         success = RedisSettings.set(request.key, sanitized_value)
         
         if not success:
@@ -620,7 +672,7 @@ async def restart_server(request: ValidateRequest):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        if user_id not in ADMIN_IDS:
+        if not RedisSettings.is_admin(user_id):
             raise HTTPException(status_code=403, detail="Forbidden: Admin access required")
         
         # Запускаем перезапуск в фоне

@@ -102,3 +102,39 @@
 .app-container.tab-profile {
   background: #1a1a1a;
 }
+
+/* ========== ГЛОБАЛЬНЫЕ ПЛАВНЫЕ АНИМАЦИИ ========== */
+
+/* GPU ускорение для всех интерактивных элементов */
+button,
+.clickable,
+[role="button"] {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Плавные переходы по умолчанию */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Оптимизация скролла */
+.scrollable,
+[style*="overflow"] {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Android специфичные фиксы */
+.platform-android button,
+.platform-android .clickable {
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+
+.platform-android button:active,
+.platform-android .clickable:active {
+  transform: scale(0.97) translateZ(0);
+}
