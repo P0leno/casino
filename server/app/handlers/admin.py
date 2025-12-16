@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 import asyncio
 from app.config import ADMIN_IDS
+from app.utils.error_logger import send_error_log
 
 router = Router()
 
@@ -53,6 +54,7 @@ async def download_models_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in download_models_handler: {e}")
+        await send_error_log(e, "admin.py: download_models_handler")
         import traceback
         traceback.print_exc()
         await callback.answer("❌ Ошибка загрузки", show_alert=True)
@@ -76,6 +78,7 @@ async def decline_models_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in decline_models_handler: {e}")
+        await send_error_log(e, "admin.py: decline_models_handler")
         import traceback
         traceback.print_exc()
 
@@ -119,6 +122,7 @@ async def force_gift_parse_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in force_gift_parse_handler: {e}")
+        await send_error_log(e, "admin.py: force_gift_parse_handler")
         import traceback
         traceback.print_exc()
         await callback.answer("❌ Ошибка при парсинге", show_alert=True)
@@ -151,4 +155,5 @@ async def confirm_gift_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in confirm_gift_handler: {e}")
+        await send_error_log(e, "admin.py: confirm_gift_handler")
         await callback.answer("Ошибка при обработке")

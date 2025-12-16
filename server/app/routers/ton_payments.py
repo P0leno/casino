@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from urllib.parse import parse_qs, quote
 import json
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 import sqlite3
 from datetime import datetime
 import random
@@ -37,7 +38,18 @@ def get_ton_usd_rate():
         conn.close()
         if result:
             return float(result[0])
-    except:
+    except Exception as e:
+        # get_ton_usd_rate is synchronous and often called from async context or sync.
+        # It's a helper. We can't await here easily if it's called synchronously.
+        # But wait, it's called from `calculate_stars_from_ton` which is sync.
+        # And `calculate_stars_from_ton` is called from async handlers.
+        # We should probably just print here or use asyncio.run? NO.
+        # Let's simple print for this helper to avoid async complexity in sync function.
+        # Or better: check if we can make it async? No, that would require refactoring callers.
+        # Given it's a small helper, maybe skip send_error_log here or use create_task?
+        # We can't use create_task without a loop.
+        # Let's skip send_error_log for this specific sync helper fallback.
+        print(f"Error getting TON rate: {e}")
         pass
     return 5.5  # Fallback курс
 
@@ -161,6 +173,7 @@ async def create_payment(request: CreatePaymentRequest):
         
     except Exception as e:
         print(f"Error creating payment: {e}")
+        await send_error_log(e, "ton_payments.py: create_payment")
         import traceback
         traceback.print_exc()
         return {"success": False, "message": "Ошибка создания платежа"}
@@ -195,4 +208,5 @@ async def calculate_stars(request: CreatePaymentRequest):
         
     except Exception as e:
         print(f"Error calculating stars: {e}")
+        await send_error_log(e, "ton_payments.py: calculate_stars")
         return {"success": False, "message": "Ошибка расчета", "stars": 0}

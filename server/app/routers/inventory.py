@@ -9,6 +9,7 @@ from app.utils.balance import get_user_balance
 from app.tasks.price_updater import search_tonnel_resale
 from app.utils.redis_models import RedisSettings, RedisUser
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api", tags=["inventory"])
 
@@ -75,6 +76,12 @@ def get_ton_to_stars_rate():
         return 366.67  # Дефолт ~5.5 / 0.015
     except Exception as e:
         print(f"Error getting TON to Stars rate: {e}")
+        # Async call in sync function? No, this function is sync.
+        # But wait, send_error_log is async.
+        # If this function is called from async context, we can await it?
+        # get_ton_to_stars_rate is sync. It is called from async functions (get_sell_price).
+        # We can't await here.
+        # We should just print or use logging. Or better, just print as before to avoid converting it to async.
         return 366.67
 
 # Список обычных (не NFT) подарков
@@ -210,6 +217,7 @@ async def get_inventory(request: GetInventoryRequest):
         
     except Exception as e:
         print(f"Error getting inventory: {e}")
+        await send_error_log(e, "inventory.py: get_inventory")
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
 @router.post("/inventory/get-sell-price")
@@ -302,6 +310,7 @@ async def get_sell_price(request: GetSellPriceRequest):
         raise
     except Exception as e:
         print(f"Error getting sell price: {e}")
+        await send_error_log(e, "inventory.py: get_sell_price")
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
 @router.post("/inventory/sell-nft")
@@ -410,6 +419,7 @@ async def sell_gift(request: SellGiftRequest):
         raise
     except Exception as e:
         print(f"Error selling gift: {e}")
+        await send_error_log(e, "inventory.py: sell_gift")
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
 
@@ -502,6 +512,7 @@ async def manual_withdraw(request: ManualWithdrawRequest):
         raise
     except Exception as e:
         print(f"Error manual withdraw: {e}")
+        await send_error_log(e, "inventory.py: manual_withdraw")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -595,4 +606,5 @@ async def manual_withdraw_nft(request: ManualWithdrawNFTRequest):
         raise
     except Exception as e:
         print(f"Error manual NFT withdraw: {e}")
+        await send_error_log(e, "inventory.py: manual_withdraw_nft")
         raise HTTPException(status_code=500, detail=str(e))

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from app.config import BOT_TOKEN, DB_PATH
+from app.utils.error_logger import send_error_log
 
 async def check_and_send_spin_notifications():
     """
@@ -110,6 +111,7 @@ async def check_and_send_spin_notifications():
         
     except Exception as e:
         print(f"❌ Ошибка в check_and_send_spin_notifications: {e}")
+        await send_error_log(e, "spin_notifications.py: check_and_send_spin_notifications")
     finally:
         await bot.session.close()
 
@@ -122,6 +124,7 @@ async def spin_notification_loop():
             await check_and_send_spin_notifications()
         except Exception as e:
             print(f"❌ Ошибка в spin_notification_loop: {e}")
+            await send_error_log(e, "spin_notifications.py: spin_notification_loop")
         
         # Ждем 10 минут перед следующей проверкой
         await asyncio.sleep(600)

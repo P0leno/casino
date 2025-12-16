@@ -10,6 +10,8 @@ from datetime import datetime
 from app.config import DB_PATH
 import os
 
+from app.utils.error_logger import send_error_log
+
 COINMARKETCAP_API_KEY = os.getenv('COINMARKETCAP_API_KEY', '')
 
 async def update_ton_price(silent=False):
@@ -94,6 +96,7 @@ async def update_ton_price(silent=False):
     except Exception as e:
         if not silent:
             print(f"❌ Ошибка обновления цены TON: {e}")
+        await send_error_log(e, f"ton_price_updater.py: update_ton_price (silent={silent})")
 
 async def recalculate_gift_prices(silent=False):
     """
@@ -129,6 +132,7 @@ async def recalculate_gift_prices(silent=False):
     except Exception as e:
         if not silent:
             print(f"❌ Ошибка пересчета цен: {e}")
+        await send_error_log(e, f"ton_price_updater.py: recalculate_gift_prices (silent={silent})")
         return {"updated": 0, "total": 0}
 
 async def ton_price_loop():
@@ -149,6 +153,7 @@ async def ton_price_loop():
             
         except Exception as e:
             print(f"[TON_PRICE] ❌ Ошибка в ton_price_loop: {e}")
+            await send_error_log(e, "ton_price_updater.py: ton_price_loop")
             import traceback
             traceback.print_exc()
 

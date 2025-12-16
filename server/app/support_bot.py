@@ -15,6 +15,7 @@ from aiogram.enums import ParseMode
 from app.config import DB_PATH, BOT_TOKEN, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID, ADMIN_IDS, SERVER_URL
 import json
 import os
+from app.utils.error_logger import send_error_log
 
 # Антиспам: счётчики сообщений
 spam_counters = defaultdict(list)  # user_id -> [timestamps]
@@ -287,6 +288,7 @@ async def download_photo(photo_file_id: str, dialog_id: int) -> str:
         return local_path
     except Exception as e:
         print(f"Error downloading photo: {e}")
+        await send_error_log(e, "support_bot.py: download_photo")
         return None
 
 def delete_dialog_photos(dialog_id: int):
@@ -749,10 +751,12 @@ async def handle_admin_reply(message: Message):
                 print(f"⚠️ Не удалось поставить реакцию: {e}")
         except Exception as e:
             print(f"❌ Ошибка отправки пользователю {user_id}: {e}")
+            await send_error_log(e, f"support_bot.py: sending reply to user {user_id}")
             await message.reply(f"❌ Не удалось доставить сообщение: {e}")
     
     except Exception as e:
         print(f"Error handling admin reply: {e}")
+        await send_error_log(e, "support_bot.py: handle_admin_reply")
 
 @dp.callback_query(F.data.startswith("cat_"))
 async def handle_category(callback: CallbackQuery):
@@ -929,6 +933,7 @@ async def handle_user_message(message: Message):
         )
     except Exception as e:
         print(f"Error sending to support group: {e}")
+        await send_error_log(e, f"support_bot.py: handle_user_message (user {user_id})")
         await message.answer("❌ Ошибка отправки сообщения")
 
 @dp.callback_query(F.data == "confirm_withdrawal")
@@ -986,6 +991,7 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
             
         except Exception as e:
             print(f"Error creating appeal dialog: {e}")
+            await send_error_log(e, "support_bot.py: handle_confirm_withdrawal (appeal)")
             await callback.answer("Ошибка создания обращения", show_alert=True)
         
         await callback.answer()
@@ -1041,6 +1047,7 @@ async def handle_confirm_withdrawal(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error creating withdrawal dialog: {e}")
+        await send_error_log(e, "support_bot.py: handle_confirm_withdrawal (withdrawal)")
         await callback.answer("Ошибка создания обращения", show_alert=True)
     
     await callback.answer()
@@ -1104,6 +1111,7 @@ async def handle_block_user(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error blocking user: {e}")
+        await send_error_log(e, "support_bot.py: handle_block_user")
         await callback.answer("Ошибка блокировки", show_alert=True)
 
 @dp.callback_query(F.data.startswith("miniapp_unban_"))
@@ -1179,6 +1187,7 @@ async def handle_miniapp_unban_user(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error with miniapp unban: {e}")
+        await send_error_log(e, "support_bot.py: handle_miniapp_unban_user")
         await callback.answer("Ошибка разблокировки", show_alert=True)
 
 @dp.callback_query(F.data.startswith("reject_appeal_"))
@@ -1278,6 +1287,7 @@ async def handle_reject_appeal(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error rejecting appeal: {e}")
+        await send_error_log(e, "support_bot.py: handle_reject_appeal")
         await callback.answer("Ошибка отклонения обжалования", show_alert=True)
 
 @dp.callback_query(F.data.startswith("unban_"))
@@ -1332,6 +1342,7 @@ async def handle_unban_user(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error unblocking user: {e}")
+        await send_error_log(e, "support_bot.py: handle_unban_user")
         await callback.answer("Ошибка разблокировки", show_alert=True)
 
 @dp.callback_query(F.data.startswith("withdraw_done_"))
@@ -1400,6 +1411,7 @@ async def handle_withdraw_done(callback: CallbackQuery):
             
     except Exception as e:
         print(f"Error marking withdrawal done: {e}")
+        await send_error_log(e, "support_bot.py: handle_withdraw_done")
         await callback.answer("Ошибка", show_alert=True)
 
 async def get_ip_country(ip: str) -> tuple:
@@ -1492,6 +1504,7 @@ async def handle_user_data(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error fetching user data: {e}")
+        await send_error_log(e, "support_bot.py: handle_user_data")
         await bot.send_message(SUPPORT_GROUP_ID, f"❌ Ошибка получения данных: {e}", parse_mode=ParseMode.HTML)
 
 @dp.callback_query(F.data.startswith("user_full_"))
@@ -1576,6 +1589,7 @@ async def handle_user_full_data(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error fetching full user data: {e}")
+        await send_error_log(e, "support_bot.py: handle_user_full_data")
         await callback.answer("Ошибка", show_alert=True)
 
 @dp.callback_query(F.data.startswith("user_hide_"))
@@ -1713,6 +1727,7 @@ async def handle_admin_close_dialog(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error closing dialog from group: {e}")
+        await send_error_log(e, "support_bot.py: handle_admin_close_dialog")
         await callback.answer("Ошибка закрытия обращения", show_alert=True)
 
 @dp.callback_query(F.data.startswith("priority_"))
@@ -1794,10 +1809,12 @@ async def handle_priority_queue(callback: CallbackQuery):
             
         except Exception as e:
             print(f"Error creating priority invoice: {e}")
+            await send_error_log(e, "support_bot.py: handle_priority_queue invoice")
             await callback.answer("Ошибка создания платежа", show_alert=True)
             
     except Exception as e:
         print(f"Error handling priority queue: {e}")
+        await send_error_log(e, "support_bot.py: handle_priority_queue")
         await callback.answer("Ошибка обработки запроса", show_alert=True)
 
 @dp.callback_query(F.data.startswith("cancel_priority_"))
@@ -1921,6 +1938,7 @@ async def handle_close_dialog(callback: CallbackQuery):
     
     except Exception as e:
         print(f"Error closing dialog: {e}")
+        await send_error_log(e, "support_bot.py: handle_close_dialog")
         await callback.answer("Ошибка закрытия обращения", show_alert=True)
 
 async def notify_ban_expired():
@@ -1957,8 +1975,12 @@ async def notify_ban_expired():
 async def update_queue_offset_task():
     """Фоновая задача для обновления надбавки очереди каждые 3 часа"""
     while True:
-        await asyncio.sleep(10800)  # 3 часа = 10800 секунд
-        update_queue_offset()
+        try:
+            await asyncio.sleep(10800)  # 3 часа = 10800 секунд
+            update_queue_offset()
+        except Exception as e:
+            print(f"Error in update_queue_offset_task: {e}")
+            await send_error_log(e, "support_bot.py: update_queue_offset_task")
 
 async def get_group_members() -> list:
     """Получить список участников группы поддержки"""
@@ -2010,5 +2032,6 @@ async def start_support_bot():
         )
     except Exception as e:
         print(f"[SUPPORT_BOT] ❌ Ошибка: {e}")
+        await send_error_log(e, "support_bot.py: start_support_bot polling loop")
     finally:
         print("🛑 Бот поддержки остановлен")

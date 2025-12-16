@@ -6,6 +6,7 @@ from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 import os
 from app.config import API_ID, API_HASH, SESSION_STRING, LOG_BOT_TOKEN, LOGS_ID, ADMIN_IDS
+from app.utils.error_logger import send_error_log
 
 DB_PATH = os.getenv("DB_PATH", "./users.db")
 
@@ -308,12 +309,8 @@ async def parse_gifts(send_log=True):
         return {"updated": gifts_count, "skipped": skipped_count}
         
     except Exception as e:
-        error_message = f"❌ <b>Gift Parser Error</b>\n\n<code>{str(e)}</code>"
         print(f"❌ Ошибка парсинга подарков: {e}")
-        import traceback
-        traceback.print_exc()
-        if send_log:
-            await send_log_to_channel(error_message)
+        await send_error_log(e, "gift_parser.py: parse_gifts")
         return {"updated": 0, "skipped": 0}
     
     finally:
@@ -385,8 +382,7 @@ async def force_parse_and_sync(search_tonnel_resale_func, update_gift_ton_price_
         
     except Exception as e:
         print(f"❌ Ошибка обновления цен: {e}")
-        import traceback
-        traceback.print_exc()
+        await send_error_log(e, "gift_parser.py: force_parse_and_sync")
         return {"prices_updated": 0}
 
 # Глобальная переменная для управления таймером
@@ -450,8 +446,7 @@ async def gift_parser_loop():
         print("[GIFT_PARSER] ✅ Первая синхронизация завершена успешно")
     except Exception as e:
         print(f"[GIFT_PARSER] ❌ Ошибка первой синхронизации: {e}")
-        import traceback
-        traceback.print_exc()
+        await send_error_log(e, "gift_parser.py: gift_parser_loop (first run)")
     
     # Цикл полной синхронизации
     while True:
@@ -465,5 +460,4 @@ async def gift_parser_loop():
             print("[GIFT_PARSER] ✅ Полная синхронизация завершена успешно")
         except Exception as e:
             print(f"[GIFT_PARSER] ❌ Ошибка полной синхронизации: {e}")
-            import traceback
-            traceback.print_exc()
+            await send_error_log(e, "gift_parser.py: gift_parser_loop")

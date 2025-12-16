@@ -7,11 +7,13 @@ import asyncio
 from datetime import datetime, timedelta
 import random
 from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
+from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import spin_rate_limiter
 from app.utils.balance import get_user_balance
 from app.pyrogram_client import get_pyrogram
 from app.utils.gift_sender import send_gift_async
+from app.utils.error_logger import send_error_log
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -263,6 +265,7 @@ async def spin(request: ValidateRequest):
             }
     except Exception as e:
         print(f"Error in spin: {e}")
+        await send_error_log(e, "game.py: spin()")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/bazmin-spin")
@@ -405,6 +408,7 @@ async def bazmin_spin(request: ValidateRequest):
             return {"success": True, "gift": selected_gift}
     except Exception as e:
         print(f"Error in bazmin-spin: {e}")
+        await send_error_log(e, "game.py: bazmin_spin()")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/lapik-spin")
@@ -526,6 +530,7 @@ async def lapik_spin(request: ValidateRequest):
             }
     except Exception as e:
         print(f"Error in lapik-spin: {e}")
+        await send_error_log(e, "game.py: lapik_spin()")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/get-inventory")
@@ -627,6 +632,7 @@ async def sell_gift(request: SellGiftRequest):
             **user_balance
         }
     except Exception as e:
+        await send_error_log(e, "game.py: sell_gift()")
         return {"success": False, "message": str(e)}
 
 # ENDPOINT УДАЛЕН - баланс теперь возвращается во всех операциях через get_user_balance()
@@ -750,6 +756,7 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         return {"success": True, "message": "Подарок успешно отправлен!"}
     except Exception as e:
         print(f"Error in withdraw_gift: {e}")
+        await send_error_log(e, "game.py: withdraw_gift()")
         # При любой ошибке соединение может быть уже закрыто
         try:
             conn.close()

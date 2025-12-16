@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from app.config import DB_PATH
 from app.utils.redis_models import RedisUser, RedisShopGift, RedisPromo, cache
+from app.utils.error_logger import send_error_log
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,11 @@ class RedisSync:
                 
             except Exception as e:
                 logger.error(f"[SYNC] Error: {e}")
+                import asyncio
+                # Run send_error_log as a task to avoid awaiting in this sync loop if it was synchronous, 
+                # but send_error_log is async, so we should await it if we are in async function.
+                # data sync is critical, let's await it.
+                await send_error_log(e, "redis_sync.py: RedisSync loop")
                 self.stats['errors'] += 1
             
             # Ждём следующей синхронизации

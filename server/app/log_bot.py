@@ -54,6 +54,7 @@ async def download_models_handler(callback: CallbackQuery):
         print(f"Error in download_models_handler: {e}")
         import traceback
         traceback.print_exc()
+        await send_message_to_logs(f"❌ Error in download_models_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка загрузки", show_alert=True)
 
 @log_router.callback_query(F.data.startswith("decline_models:"))
@@ -72,6 +73,7 @@ async def decline_models_handler(callback: CallbackQuery):
         print(f"Error in decline_models_handler: {e}")
         import traceback
         traceback.print_exc()
+        await send_message_to_logs(f"❌ Error in decline_models_handler:\n<pre>{traceback.format_exc()}</pre>")
 
 @log_router.callback_query(F.data.startswith("af_ban_"))
 async def antifraud_ban_handler(callback: CallbackQuery):
@@ -98,6 +100,8 @@ async def antifraud_ban_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in antifraud_ban_handler: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in antifraud_ban_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка", show_alert=True)
 
 @log_router.callback_query(F.data.startswith("af_ignore_"))
@@ -125,6 +129,8 @@ async def antifraud_ignore_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in antifraud_ignore_handler: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in antifraud_ignore_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка", show_alert=True)
 
 @log_router.callback_query(F.data.startswith("af_unban_"))
@@ -151,6 +157,8 @@ async def antifraud_unban_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in antifraud_unban_handler: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in antifraud_unban_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка", show_alert=True)
 
 @log_router.callback_query(F.data == "force_gift_parse")
@@ -187,6 +195,7 @@ async def force_gift_parse_handler(callback: CallbackQuery):
         print(f"Error in force_gift_parse_handler: {e}")
         import traceback
         traceback.print_exc()
+        await send_message_to_logs(f"❌ Error in force_gift_parse_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка при парсинге", show_alert=True)
         try:
             await callback.message.edit_text(
@@ -211,6 +220,8 @@ async def manual_withdraw_done_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in manual_withdraw_done_handler: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in manual_withdraw_done_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка", show_alert=True)
 
 @log_router.callback_query(F.data.startswith("manual_nft_done_"))
@@ -228,6 +239,8 @@ async def manual_nft_withdraw_done_handler(callback: CallbackQuery):
         
     except Exception as e:
         print(f"Error in manual_nft_withdraw_done_handler: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in manual_nft_withdraw_done_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка", show_alert=True)
 
 # Подключаем router к dispatcher
@@ -240,6 +253,8 @@ async def start_log_bot():
         await log_dp.start_polling(log_bot, allowed_updates=["callback_query"])
     except Exception as e:
         print(f"[LOG_BOT] Ошибка: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in start_log_bot:\n<pre>{traceback.format_exc()}</pre>")
         raise
 
 async def stop_log_bot():
@@ -249,6 +264,8 @@ async def stop_log_bot():
         await log_bot.session.close()
     except Exception as e:
         print(f"[LOG_BOT] Ошибка остановки: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in stop_log_bot:\n<pre>{traceback.format_exc()}</pre>")
 
 async def send_message_to_logs(text: str, parse_mode: str = "HTML", reply_markup=None):
     """Отправляет сообщение в канал логов"""

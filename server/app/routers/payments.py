@@ -4,6 +4,7 @@ from urllib.parse import parse_qs
 import json
 import asyncio
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import invoice_rate_limiter
@@ -34,6 +35,7 @@ async def create_invoice(request: TopUpRequest):
             return {"success": False, "message": "Данный способ пополнения временно отключен"}
     except Exception as e:
         print(f"Error checking settings: {e}")
+        await send_error_log(e, "payments.py: create_invoice (settings)")
         # Если ошибка - разрешаем (fail-open)
     
     try:
@@ -87,4 +89,5 @@ async def create_invoice(request: TopUpRequest):
         
     except Exception as e:
         print(f"Error creating invoice: {e}")
+        await send_error_log(e, "payments.py: create_invoice")
         return {"success": False, "message": "Ошибка создания платежа"}

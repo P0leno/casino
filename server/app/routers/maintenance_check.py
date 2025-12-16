@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 import sqlite3
 from app.config import DB_PATH, BOT_TOKEN, ADMIN_IDS
 from app.utils.validate import validate_init_data
@@ -88,6 +89,7 @@ async def check_user_maintenance(request: CheckMaintenanceRequest):
         
     except Exception as e:
         print(f"[MAINTENANCE CHECK] Error: {e}")
+        await send_error_log(e, "maintenance_check.py: check_user_maintenance")
         import traceback
         traceback.print_exc()
         print("=" * 80)

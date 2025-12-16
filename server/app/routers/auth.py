@@ -8,6 +8,7 @@ from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 from app.utils.redis_models import RedisSettings
 from app.utils.database import get_db_connection
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -140,6 +141,7 @@ async def validate(validate_req: ValidateRequest, request: Request):
         }
     except Exception as e:
         print(f"[VALIDATE] ❌ ERROR: {e}")
+        await send_error_log(e, "auth.py: validate")
         return {"valid": False, "isBanned": False, "isAdmin": False, "maintenance": False}
 
 @router.post("/check-admin")
@@ -166,6 +168,7 @@ async def check_admin(request: ValidateRequest):
         return {"valid": True, "isAdmin": False}
     except Exception as e:
         print(f"check-admin ERROR: {e}")
+        await send_error_log(e, "auth.py: check_admin")
         return {"valid": False, "isAdmin": False}
 
 @router.post("/ban-user")
@@ -208,6 +211,7 @@ async def ban_user(request: BanRequest):
         return {"success": True}
     except Exception as e:
         print(f"Error in ban_user: {e}")
+        await send_error_log(e, "auth.py: ban_user")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/unban-user")
@@ -250,6 +254,7 @@ async def unban_user(request: BanRequest):
         return {"success": True}
     except Exception as e:
         print(f"Error in ban_user: {e}")
+        await send_error_log(e, "auth.py: unban_user")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/check-ban")
@@ -277,5 +282,6 @@ async def check_ban(request: ValidateRequest):
         
         is_banned = bool(result[0]) if result else False
         return {"valid": True, "isBanned": is_banned}
-    except Exception:
+    except Exception as e:
+        await send_error_log(e, "auth.py: check_ban")
         return {"valid": False, "isBanned": False}

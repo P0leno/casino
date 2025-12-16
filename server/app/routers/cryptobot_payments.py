@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from app.config import DB_PATH, BOT_TOKEN, CRYPTOBOT_API_TOKEN
 from app.utils.validate import validate_init_data
 from aiocryptopay import AioCryptoPay, Networks
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api/cryptobot", tags=["cryptobot"])
 
@@ -111,6 +112,7 @@ async def create_invoice(request: CreateInvoiceRequest):
         
     except Exception as e:
         print(f"Error creating CryptoBot invoice: {e}")
+        await send_error_log(e, "cryptobot_payments.py: create_invoice")
         import traceback
         traceback.print_exc()
         return {"success": False, "message": "Ошибка создания счета"}
@@ -141,4 +143,5 @@ async def calculate_stars(request: CreateInvoiceRequest):
         
     except Exception as e:
         print(f"Error calculating stars: {e}")
+        await send_error_log(e, "cryptobot_payments.py: calculate_stars")
         return {"success": False, "message": "Ошибка расчета", "stars": 0}

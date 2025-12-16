@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 from aiogram import Bot
 from aiogram.enums import ParseMode
+from app.utils.error_logger import send_error_log
 
 load_dotenv()
 
@@ -107,6 +108,7 @@ async def get_transactions(address: str, limit: int = 10):
         print(f"Error fetching transactions: {e}")
         import traceback
         traceback.print_exc()
+        # Не логируем каждую ошибку API, только критические в main loop
         return []
 
 async def notify_user(user_id: int, stars_amount: int, ton_amount: float):
@@ -126,6 +128,7 @@ async def notify_user(user_id: int, stars_amount: int, ton_amount: float):
         print(f"✅ Notification sent to user {user_id}")
     except Exception as e:
         print(f"Error sending notification to user {user_id}: {e}")
+        await send_error_log(e, f"ton_checker.py: notify_user {user_id}")
 
 async def process_transaction(tx):
     """Обработать входящую транзакцию"""
@@ -248,6 +251,7 @@ async def process_transaction(tx):
         
     except Exception as e:
         print(f"Error processing transaction: {e}")
+        await send_error_log(e, "ton_checker.py: process_transaction")
         import traceback
         traceback.print_exc()
 
@@ -293,6 +297,7 @@ async def main():
             await check_new_transactions()
         except Exception as e:
             print(f"Error in main loop: {e}")
+            await send_error_log(e, "ton_checker.py: main loop")
             import traceback
             traceback.print_exc()
         

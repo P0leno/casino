@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.utils.database import get_db_connection, DB_PATH
 from app.config import DB_PATH
 from app.routers.auth import verify_init_data
+from app.utils.error_logger import send_error_log
 
 router = APIRouter()
 
@@ -41,4 +42,6 @@ async def check_ban(request: CheckBanRequest):
     
     except Exception as e:
         print(f"Error checking ban: {e}")
+        # Note: HTTPException breaks flow, so we log first
+        await send_error_log(e, "ban.py: check_ban")
         raise HTTPException(status_code=500, detail=str(e))

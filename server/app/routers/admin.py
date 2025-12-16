@@ -9,6 +9,7 @@ from app.utils.redis_models import RedisSettings
 from app.utils.validate import validate_init_data
 from aiogram import Bot
 from app.crash_game import crash_game
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
@@ -87,7 +88,8 @@ async def get_chances(request: GetChancesRequest):
         
         chances = [{"name": r[0], "visible": r[1], "real": r[2], "pawMin": r[3] or 0, "pawMax": r[4] or 0, "starMin": r[5] or 1, "starMax": r[6] or 5} for r in results]
         return {"valid": True, "chances": chances}
-    except Exception:
+    except Exception as e:
+        await send_error_log(e, "admin.py: get_chances")
         return {"valid": False, "chances": []}
 
 @router.post("/update-chances")
@@ -137,6 +139,7 @@ async def update_chances(request: UpdateChanceRequest):
         return {"success": True}
     except Exception as e:
         print(f"Error in update_chances: {e}")
+        await send_error_log(e, "admin.py: update_chances")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/get-paid-chances")
@@ -167,7 +170,8 @@ async def get_paid_chances(request: ValidateRequest):
         
         chances = [{"name": r[0], "visible": r[1], "real": r[2], "pawMin": r[3] or 0, "pawMax": r[4] or 0, "starMin": r[5] or 1, "starMax": r[6] or 5} for r in results]
         return {"valid": True, "chances": chances}
-    except Exception:
+    except Exception as e:
+        await send_error_log(e, "admin.py: get_paid_chances")
         return {"valid": False, "chances": []}
 
 @router.post("/update-paid-chances")
@@ -217,6 +221,7 @@ async def update_paid_chances(request: UpdatePaidChanceRequest):
         return {"success": True}
     except Exception as e:
         print(f"Error in update_paid_chances: {e}")
+        await send_error_log(e, "admin.py: update_paid_chances")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/admin/refund-payment")
@@ -312,10 +317,12 @@ async def refund_payment(request: RefundPaymentRequest):
             await bot.session.close()
             error_msg = str(e)
             print(f"❌ Refund failed: {error_msg}")
+            await send_error_log(e, "admin.py: refund_payment (inner)")
             return {"success": False, "message": f"Ошибка возврата: {error_msg}"}
             
     except Exception as e:
         print(f"Error in refund_payment: {e}")
+        await send_error_log(e, "admin.py: refund_payment (outer)")
         return {"success": False, "message": "Ошибка сервера"}
 
 @router.post("/crash/get-settings")
@@ -371,6 +378,7 @@ async def get_crash_settings(request: ValidateRequest):
         }
     except Exception as e:
         print(f"Error in get_crash_settings: {e}")
+        await send_error_log(e, "admin.py: get_crash_settings")
         return {"valid": False, "maxMultiplier": 10.0, "alwaysProfit": False, "maxDebt": 300, "bigBetThreshold": 100, "bigBetLoseChance": 30}
 
 @router.post("/crash/update-settings")
@@ -435,6 +443,7 @@ async def update_crash_settings(request: UpdateCrashSettingsRequest):
         return {"success": True}
     except Exception as e:
         print(f"Error in update_crash_settings: {e}")
+        await send_error_log(e, "admin.py: update_crash_settings")
         return {"success": False, "message": "Ошибка сервера"}
 
 
@@ -466,6 +475,7 @@ async def explode_crash(request: ExplodeRequest):
         return {"success": True, "message": "Ракета взорвана"}
     except Exception as e:
         print(f"Error exploding crash: {e}")
+        await send_error_log(e, "admin.py: explode_crash")
         return {"success": False, "message": str(e)}
 
 @router.post("/get-settings")
@@ -503,6 +513,7 @@ async def get_settings(request: ValidateRequest):
         }
     except Exception as e:
         print(f"Error getting settings: {e}")
+        await send_error_log(e, "admin.py: get_settings")
         return {"valid": False, "settings": {}, "error": str(e)}
 
 @router.post("/get-maintenance")
@@ -543,6 +554,7 @@ async def get_maintenance(request: ValidateRequest):
         
     except Exception as e:
         print(f"Error getting maintenance mode: {e}")
+        await send_error_log(e, "admin.py: get_maintenance")
         return {"success": False, "message": "Server error"}
 
 @router.post("/toggle-maintenance")
@@ -593,6 +605,7 @@ async def toggle_maintenance(request: ValidateRequest):
         
     except Exception as e:
         print(f"Error toggling maintenance mode: {e}")
+        await send_error_log(e, "admin.py: toggle_maintenance")
         return {"success": False, "message": "Server error"}
 
 @router.post("/update-setting")
@@ -653,6 +666,7 @@ async def update_setting(request: UpdateSettingRequest):
         return {"success": True, "message": f"Настройка {request.key} обновлена"}
     except Exception as e:
         print(f"Error updating setting: {e}")
+        await send_error_log(e, "admin.py: update_setting")
         return {"success": False, "message": str(e)}
 
 @router.post("/restart-server")
@@ -690,4 +704,5 @@ async def restart_server(request: ValidateRequest):
         raise
     except Exception as e:
         print(f"Error restarting server: {e}")
+        await send_error_log(e, "admin.py: restart_server")
         return {"success": False, "message": str(e)}

@@ -3,6 +3,7 @@
 """
 import asyncio
 from app.pyrogram_client import get_pyrogram
+from app.utils.error_logger import send_error_log
 
 async def send_gift_async(user_id: int, gift_id: str, pyrogram_app = None) -> tuple[bool, str]:
     """
@@ -34,6 +35,7 @@ async def send_gift_async(user_id: int, gift_id: str, pyrogram_app = None) -> tu
         error_name = type(e).__name__
         error_msg = str(e)
         print(f"{error_name} sending gift {gift_id} to {user_id}: {e}")
+        await send_error_log(e, f"gift_sender.py: send_gift_async ({error_name})")
         return (False, f"{error_name}: {error_msg}")
 
 

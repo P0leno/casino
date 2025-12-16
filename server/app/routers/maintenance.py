@@ -5,6 +5,7 @@
 
 from fastapi import APIRouter
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 import sqlite3
 from app.config import DB_PATH
 
@@ -32,6 +33,7 @@ async def check_maintenance():
         
     except Exception as e:
         print(f"Error checking maintenance: {e}")
+        await send_error_log(e, "maintenance.py: check_maintenance")
         return {
             "maintenance": False,
             "message": ""

@@ -10,6 +10,7 @@ from app.config import BOT_TOKEN, DB_PATH
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import promo_mycode_rate_limiter
 from app.utils.balance import get_user_balance
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api/promocode", tags=["promocode"])
 
@@ -174,6 +175,7 @@ async def activate_promocode(activate_req: ActivateRequest, request: Request):
     except Exception as e:
         conn.rollback()
         print(f"Error activating promocode: {e}")
+        await send_error_log(e, "promocode.py: activate_promocode")
         return {"success": False, "error": "Ошибка активации промокода"}
     finally:
         conn.close()
@@ -255,6 +257,7 @@ async def generate_promocode(request: GenerateRequest):
     except Exception as e:
         conn.rollback()
         print(f"Error generating promocode: {e}")
+        await send_error_log(e, "promocode.py: generate_promocode")
         return {"success": False, "error": "Ошибка создания промокода"}
     finally:
         conn.close()
@@ -311,6 +314,7 @@ async def get_my_promocode(request: GenerateRequest):
             }
     except Exception as e:
         print(f"Error getting promocode: {e}")
+        await send_error_log(e, "promocode.py: get_my_promocode")
         return {"success": False, "error": "Ошибка получения промокода"}
     finally:
         conn.close()
@@ -370,6 +374,7 @@ async def get_promo_history(request: GenerateRequest):
         
     except Exception as e:
         print(f"Error getting promo history: {e}")
+        await send_error_log(e, "promocode.py: get_promo_history")
         return {"success": False, "error": "Ошибка получения истории"}
     finally:
         conn.close()
@@ -452,6 +457,7 @@ async def rename_promocode(request: RenameRequest):
     except Exception as e:
         conn.rollback()
         print(f"Error renaming promocode: {e}")
+        await send_error_log(e, "promocode.py: rename_promocode")
         return {"success": False, "error": "Ошибка переименования промокода"}
     finally:
         conn.close()

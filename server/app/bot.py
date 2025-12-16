@@ -2,6 +2,7 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from app.config import BOT_TOKEN
 from app.handlers import start, payments
+from app.utils.error_logger import send_error_log
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -19,6 +20,7 @@ async def start_bot():
         await dp.start_polling(bot)
     except Exception as e:
         print(f"[MAIN_BOT] Ошибка: {e}")
+        await send_error_log(e, "bot.py: start_bot")
         raise
 
 async def stop_bot():
@@ -27,3 +29,4 @@ async def stop_bot():
         await bot.session.close()
     except Exception as e:
         print(f"[MAIN_BOT] Ошибка остановки: {e}")
+        await send_error_log(e, "bot.py: stop_bot")

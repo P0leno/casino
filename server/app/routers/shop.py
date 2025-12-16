@@ -10,6 +10,7 @@ from app.utils.balance import get_user_balance
 from app.utils.shop_cache import get_cached_shop_gifts, invalidate_shop_cache
 from app.utils.redis_models import RedisUser
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api", tags=["shop"])
 
@@ -106,6 +107,7 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
         
     except Exception as e:
         print(f"Error fetching shop gifts: {e}")
+        await send_error_log(e, "shop.py: get_shop_gifts")
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
 @router.get("/shop/gift/{gift_id}")
@@ -130,6 +132,7 @@ async def get_gift_details(gift_id: str):
         raise
     except Exception as e:
         print(f"Error fetching gift details: {e}")
+        await send_error_log(e, "shop.py: get_gift_details")
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
 @router.post("/shop/buy-gift")
@@ -262,6 +265,7 @@ async def buy_gift(request: BuyGiftRequest):
                 "gift_slug": slug
             }
         except Exception as e:
+            await send_error_log(e, "shop.py: buy_gift (inner)")
             conn.rollback()
             conn.close()
             raise
@@ -270,4 +274,5 @@ async def buy_gift(request: BuyGiftRequest):
         raise
     except Exception as e:
         print(f"Error buying gift: {e}")
+        await send_error_log(e, "shop.py: buy_gift (outer)")
         raise HTTPException(status_code=500, detail=sanitize_error(e))

@@ -5,6 +5,7 @@ import json
 from app.utils.database import get_db_connection, DB_PATH
 import sqlite3
 from app.config import DB_PATH, SUPPORT_BOT_TOKEN, SUPPORT_GROUP_ID
+from app.utils.error_logger import send_error_log
 
 router = Router()
 
@@ -38,6 +39,7 @@ async def process_pre_checkout_query(pre_checkout_query: PreCheckoutQuery):
         await pre_checkout_query.answer(ok=True)
     except Exception as e:
         print(f"Error in pre_checkout: {e}")
+        await send_error_log(e, "payments.py: process_pre_checkout_query")
         await pre_checkout_query.answer(
             ok=False,
             error_message="Ошибка обработки платежа. Попробуйте снова."
@@ -133,6 +135,7 @@ async def process_successful_payment(message: Message):
                     
                 except Exception as e:
                     print(f"Error notifying support group: {e}")
+                    await send_error_log(e, "payments.py: notifying support group")
             
             return
         
@@ -216,6 +219,7 @@ async def process_successful_payment(message: Message):
                         print(f"✅ Начислено {ref_bonus}⭐ рефбонуса владельцу {owner_id} от пополнения {user_id}")
         except Exception as e:
             print(f"Error processing ref bonus: {e}")
+            await send_error_log(e, "payments.py: ref bonus processing")
         
         conn.close()
         
@@ -223,4 +227,5 @@ async def process_successful_payment(message: Message):
         
     except Exception as e:
         print(f"Error processing payment: {e}")
+        await send_error_log(e, "payments.py: process_successful_payment")
         # Ошибку тоже не отправляем в чат

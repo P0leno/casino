@@ -10,6 +10,7 @@ import sqlite3
 from datetime import datetime
 from curl_cffi.requests import AsyncSession
 from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
+from app.utils.error_logger import send_error_log
 
 async def send_log_to_channel(message):
     """Отправляет сообщение в канал логов через постоянный log_bot"""
@@ -251,11 +252,8 @@ async def update_all_prices(send_log=True):
         return {"updated": updated_count, "failed": failed_count, "total": len(gifts)}
         
     except Exception as e:
-        error_message = f"❌ <b>Price Updater Error</b>\n\n<code>{str(e)}</code>"
         print(f"❌ Критическая ошибка обновления цен: {e}")
-        import traceback
-        traceback.print_exc()
-        await send_log_to_channel(error_message)
+        await send_error_log(e, "price_updater.py: update_all_prices")
         return {"updated": 0, "failed": 0, "total": 0}
 
 async def price_update_loop():
@@ -268,6 +266,7 @@ async def price_update_loop():
             await update_all_prices()
         except Exception as e:
             print(f"❌ Ошибка в price_update_loop: {e}")
+            await send_error_log(e, "price_updater.py: price_update_loop")
         
         # Следующее обновление - еще через час
         print(f"⏳ Следующее обновление цен с Tonnel через 1 час...")

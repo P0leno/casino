@@ -9,6 +9,7 @@ from urllib.parse import parse_qs
 import json
 import asyncio
 from typing import List
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api/crash", tags=["crash"])
 
@@ -28,6 +29,7 @@ class ConnectionManager:
                 print(f"🔌 Закрыто старое соединение для user_id={user_id}")
             except Exception as e:
                 print(f"⚠️ Ошибка закрытия старого соединения: {e}")
+                await send_error_log(e, "crash.py: ConnectionManager.connect (close old)")
         
         # Принимаем новое соединение
         await websocket.accept()
@@ -48,6 +50,7 @@ class ConnectionManager:
                 await connection.close(code=1001, reason="Server restarting")
             except Exception as e:
                 print(f"❌ Ошибка закрытия WebSocket для user_id={user_id}: {e}")
+                await send_error_log(e, "crash.py: ConnectionManager.disconnect_all")
         self.active_connections.clear()
         print("✅ Все WebSocket соединения закрыты")
     
@@ -59,6 +62,7 @@ class ConnectionManager:
                 await connection.send_json(message)
             except Exception as e:
                 print(f"❌ Ошибка отправки в WebSocket для user_id={user_id}: {e}")
+                await send_error_log(e, "crash.py: ConnectionManager.broadcast")
                 disconnected_users.append(user_id)
         
         # Удаляем отключенные соединения
@@ -105,7 +109,8 @@ async def place_bet(bet: BetRequest):
         user_id = user.get('id')
         username = user.get('first_name') or user.get('username', 'User')
         avatar = user.get('photo_url')
-    except Exception:
+    except Exception as e:
+        await send_error_log(e, "crash.py: place_bet (user data)")
         raise HTTPException(status_code=403, detail="Invalid user data")
     
     # Валидация: только целые числа и положительные значения
@@ -157,6 +162,7 @@ async def place_bet(bet: BetRequest):
         
         return result
     except sqlite3.Error as e:
+        await send_error_log(e, "crash.py: place_bet (db)")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.post("/cashout")
@@ -194,6 +200,7 @@ async def cashout(request: CashoutRequest):
             user_balance = get_user_balance(user_id)
             result.update(user_balance)
         except sqlite3.Error as e:
+            await send_error_log(e, "crash.py: cashout (db)")
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
     return result
@@ -229,6 +236,7 @@ async def cancel_bet(request: CancelBetRequest):
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
+            await send_error_log(e, "crash.py: cancel_bet (db)")
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
     return result
@@ -287,6 +295,7 @@ async def websocket_crash(websocket: WebSocket, initData: str = None):
         pass
     except Exception as e:
         print(f"WebSocket error: {e}")
+        await send_error_log(e, "crash.py: websocket_crash")
     finally:
         manager.disconnect(user_id)
 
@@ -341,6 +350,7 @@ async def admin_websocket_endpoint(websocket: WebSocket, initData: str = None):
         print(f"🔐 Admin WebSocket tunnel disconnected: {user_id}")
     except Exception as e:
         print(f"Admin WebSocket error: {e}")
+        await send_error_log(e, "crash.py: admin_websocket_endpoint")
         try:
             await websocket.close()
         except:

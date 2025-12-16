@@ -10,6 +10,7 @@ from app.utils.rate_limit import tasks_rate_limiter
 from app.utils.balance import get_user_balance
 from app.utils.redis_models import RedisUser
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.error_logger import send_error_log
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -120,6 +121,7 @@ async def check_bot_admin_rights(channel_identifier: str) -> bool:
                     return False
     except Exception as e:
         print(f"❌ Error checking bot permissions: {e}")
+        await send_error_log(e, "tasks.py: check_bot_admin_rights")
         return False
 
 # Проверка подписки пользователя на канал (публичный или частный)
@@ -154,6 +156,7 @@ async def check_user_subscription(user_id: int, channel_identifier: str) -> bool
                 return False
     except Exception as e:
         print(f"Error checking user subscription: {e}")
+        await send_error_log(e, "tasks.py: check_user_subscription")
         return False
 
 # Получить invite link для частного канала
@@ -176,6 +179,7 @@ async def get_channel_invite_link(channel_id: str) -> str:
                 return ""
     except Exception as e:
         print(f"Error getting invite link: {e}")
+        await send_error_log(e, "tasks.py: get_channel_invite_link")
         return ""
 
 # Получить все задания (для админки)
@@ -246,6 +250,7 @@ async def get_tasks_list(request: ValidateRequest):
         return {"valid": True, "tasks": tasks}
     except Exception as e:
         print(f"Error fetching tasks: {e}")
+        await send_error_log(e, "tasks.py: get_tasks_list")
         return {"valid": False, "tasks": []}
 
 # Проверить права бота в канале
@@ -288,6 +293,7 @@ async def create_task(request: CreateTaskRequest):
         return {"success": True, "message": "Task created", "taskId": task_id}
     except Exception as e:
         print(f"❌ Error creating task: {e}")
+        await send_error_log(e, "tasks.py: create_task")
         import traceback
         traceback.print_exc()
         return {"success": False, "message": f"Error: {str(e)}"}
@@ -309,6 +315,7 @@ async def delete_task(request: DeleteTaskRequest):
         return {"success": True, "message": "Task deleted"}
     except Exception as e:
         print(f"Error deleting task: {e}")
+        await send_error_log(e, "tasks.py: delete_task")
         return {"success": False, "message": "Database error"}
 
 # Получить invite link для частного канала
@@ -348,6 +355,7 @@ async def get_invite_link(request: GetInviteLinkRequest):
         return {"success": True, "inviteLink": invite_link}
     except Exception as e:
         print(f"Error getting invite link: {e}")
+        await send_error_log(e, "tasks.py: get_invite_link")
         return {"success": False, "message": "Database error"}
 
 
@@ -494,4 +502,5 @@ async def complete_task(request: CompleteTaskRequest):
         }
     except Exception as e:
         print(f"Error completing task: {e}")
+        await send_error_log(e, "tasks.py: complete_task")
         return {"success": False, "message": "Database error"}

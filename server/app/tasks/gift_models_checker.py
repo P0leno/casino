@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 import aiohttp
 from app.config import DB_PATH, LOG_BOT_TOKEN, LOGS_ID
+from app.utils.error_logger import send_error_log
 
 BASE_API = "https://api.changes.tg"
 MODELS_DIR = "/var/www/shell/gifts/models"
@@ -493,6 +494,7 @@ async def gift_models_checker_loop():
         await sync_folders_with_json()
     except Exception as e:
         print(f"❌ Ошибка sync_folders_with_json: {e}")
+        await send_error_log(e, "gift_models_checker.py: startup sync_folders_with_json")
         import traceback
         traceback.print_exc()
     
@@ -509,6 +511,7 @@ async def gift_models_checker_loop():
         await check_new_gifts()
     except Exception as e:
         print(f"❌ Ошибка check_new_gifts при старте: {e}")
+        await send_error_log(e, "gift_models_checker.py: startup check_new_gifts")
         import traceback
         traceback.print_exc()
     
@@ -521,6 +524,7 @@ async def gift_models_checker_loop():
             await verify_gift_folders()
         except Exception as e:
             print(f"❌ Ошибка в gift_models_checker_loop: {e}")
+            await send_error_log(e, "gift_models_checker.py: gift_models_checker_loop")
             import traceback
             traceback.print_exc()
 

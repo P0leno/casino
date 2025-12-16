@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from app.config import DB_PATH
+from app.utils.error_logger import send_error_log
 
 async def send_antifraud_alert(alert_type: str, users: list, ip: str):
     """Отправляет алерт в канал логов"""
@@ -310,6 +311,7 @@ async def antifraud_task():
             await check_duplicate_ips()
         except Exception as e:
             print(f"[ANTIFRAUD] Ошибка: {e}")
+            await send_error_log(e, "antifraud.py: antifraud_task loop")
             import traceback
             traceback.print_exc()
         
