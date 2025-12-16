@@ -22,6 +22,7 @@ from app.support_bot import start_support_bot
 from app.tasks.redis_sync import start_redis_sync, stop_redis_sync
 from app.utils.redis_client import cache, redis_client
 from app.restart_monitor import start_restart_monitor, stop_restart_monitor, get_restart_message_id, clear_restart_message_id, send_status_to_channel
+from app.utils.aiosqlite_pool import db_pool
 
 bot_task = None
 log_bot_task = None
@@ -43,6 +44,10 @@ async def lifespan(app: FastAPI):
     
     # Инициализация БД
     init_db()
+    
+    # Инициализация асинхронного пула соединений
+    await db_pool.init()
+    print("✅ Async DB pool initialized")
     
     # Загрузка админов из ENV в Redis
     from app.utils.redis_models import RedisSettings
@@ -183,6 +188,11 @@ async def lifespan(app: FastAPI):
         print("🛑 Останавливаем мониторинг перезапуска...")
         await stop_restart_monitor()
         print("✅ Мониторинг перезапуска остановлен")
+    
+    # КРИТИЧНО: Закрываем async DB pool
+    print("💾 Closing async DB pool...")
+    await db_pool.close()
+    print("✅ Async DB pool closed")
     
     # КРИТИЧНО: Останавливаем Redis sync ПЕРВЫМ (сохраняем данные)
     if redis_sync_task:

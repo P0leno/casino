@@ -15,11 +15,15 @@ DB_PATH = os.getenv("DB_PATH", "./users.db")
 SQLITE_TIMEOUT = 60
 
 def _get_conn():
-    """Получить оптимизированное соединение"""
-    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT)
+    """Получить оптимизированное соединение с полными PRAGMA настройками"""
+    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
-    conn.execute("PRAGMA busy_timeout=60000")
+    conn.execute("PRAGMA cache_size=-64000")      # 64MB кэш
+    conn.execute("PRAGMA temp_store=MEMORY")       # Временные таблицы в памяти
+    conn.execute("PRAGMA mmap_size=268435456")     # 256MB memory-mapped I/O
+    conn.execute("PRAGMA busy_timeout=60000")      # 60 секунд busy timeout
+    conn.execute("PRAGMA wal_autocheckpoint=1000") # Checkpoint каждые 1000 страниц
     return conn
 
 # TTL константы (в секундах)

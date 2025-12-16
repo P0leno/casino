@@ -150,30 +150,39 @@ async def spin(request: ValidateRequest):
                 conn.close()
                 return {"success": False, "message": "Spin not available yet"}
         
-        cursor.execute("SELECT gift_name, real_chance FROM gift_chances WHERE mode = 'free_spin'")
+        cursor.execute("SELECT gift_name, real_chance, paw_min, paw_max, star_min, star_max FROM gift_chances WHERE mode = 'free_spin'")
         chances = cursor.fetchall()
+        
+        # Закрываем соединение ПЕРЕД sleep
+        conn.close()
         
         total = sum(chance[1] for chance in chances)
         rand = random.uniform(0, total)
         current = 0
         selected_gift = chances[0][0]
+        selected_row = chances[0]
         
-        for gift_name, chance in chances:
-            current += chance
+        for row in chances:
+            gift_name, real_chance, paw_min, paw_max, star_min, star_max = row
+            current += real_chance
             if rand <= current:
                 selected_gift = gift_name
+                selected_row = row
                 break
         
         # Задержка 3 секунды - даем время показать анимацию "Вы выиграли"
+        # ВАЖНО: БД уже закрыта, блокировки нет!
         await asyncio.sleep(3)
+        
+        # Открываем новое соединение для обновления
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         # Проверяем является ли это лапкой
         if selected_gift == "paw":
-            # Получаем диапазон лапок для этого подарка
-            cursor.execute("SELECT paw_min, paw_max FROM gift_chances WHERE gift_name = ? AND mode = 'free_spin'", (selected_gift,))
-            paw_range = cursor.fetchone()
-            paw_min = paw_range[0] if paw_range and paw_range[0] else 1
-            paw_max = paw_range[1] if paw_range and paw_range[1] else 10
+            # Используем данные из уже загруженной строки
+            paw_min = selected_row[2] if selected_row[2] else 1
+            paw_max = selected_row[3] if selected_row[3] else 10
             
             # Генерируем случайное количество лапок
             paw_count = random.randint(paw_min, paw_max)
@@ -201,11 +210,9 @@ async def spin(request: ValidateRequest):
             }
         # Проверяем является ли это звездой
         elif selected_gift == "star":
-            # Получаем диапазон звезд для этого подарка
-            cursor.execute("SELECT star_min, star_max FROM gift_chances WHERE gift_name = ? AND mode = 'free_spin'", (selected_gift,))
-            star_range = cursor.fetchone()
-            star_min = star_range[0] if star_range and star_range[0] else 1
-            star_max = star_range[1] if star_range and star_range[1] else 5
+            # Используем данные из уже загруженной строки
+            star_min = selected_row[4] if selected_row[4] else 1
+            star_max = selected_row[5] if selected_row[5] else 5
             
             # Генерируем случайное количество звезд
             star_count = random.randint(star_min, star_max)
