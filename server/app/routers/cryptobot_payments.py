@@ -3,7 +3,7 @@ CryptoBot Payment Router
 Создание счетов через CryptoPay API
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
@@ -14,6 +14,7 @@ from app.config import DB_PATH, BOT_TOKEN, CRYPTOBOT_API_TOKEN
 from app.utils.validate import validate_init_data
 from aiocryptopay import AioCryptoPay, Networks
 from app.utils.error_logger import send_error_log
+from app.utils.limiter import limiter
 
 router = APIRouter(prefix="/api/cryptobot", tags=["cryptobot"])
 
@@ -46,7 +47,8 @@ def calculate_stars_from_usdt(usdt_amount: float) -> int:
     return stars_with_bonus
 
 @router.post("/create-invoice")
-async def create_invoice(request: CreateInvoiceRequest):
+@limiter.limit("1/5minute")
+async def create_invoice(request: CreateInvoiceRequest, req: Request):
     """Создать счет CryptoBot для оплаты"""
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
     
@@ -118,7 +120,8 @@ async def create_invoice(request: CreateInvoiceRequest):
         return {"success": False, "message": "Ошибка создания счета"}
 
 @router.post("/calculate-stars")
-async def calculate_stars(request: CreateInvoiceRequest):
+@limiter.limit("2/5minute")
+async def calculate_stars(request: CreateInvoiceRequest, req: Request):
     """Рассчитать количество Stars из USDT с +5% бонусом"""
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
     

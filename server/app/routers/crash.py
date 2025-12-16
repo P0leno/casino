@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Request
 from pydantic import BaseModel
 from app.crash_game import crash_game
 from app.config import BOT_TOKEN, ADMIN_IDS
@@ -10,6 +10,7 @@ import json
 import asyncio
 from typing import List
 from app.utils.error_logger import send_error_log
+from app.utils.limiter import limiter
 
 router = APIRouter(prefix="/api/crash", tags=["crash"])
 
@@ -81,20 +82,19 @@ class CashoutRequest(BaseModel):
 class CancelBetRequest(BaseModel):
     initData: str
 
-@router.get("/state")
-async def get_crash_state():
-    """Возвращает текущее состояние краш-игры"""
-    return crash_game.get_state()
+
 
 @router.get("/history")
-async def get_crash_history():
+@limiter.limit("3/5minute")
+async def get_crash_history(request: Request):
     """Возвращает полную историю краш-игры"""
     return {
         "history": crash_game.history[-50:]
     }
 
 @router.post("/bet")
-async def place_bet(bet: BetRequest):
+@limiter.limit("100/35minute")
+async def place_bet(bet: BetRequest, request: Request):
     """Размещает ставку"""
     # Проверяем initData
     is_valid = validate_init_data(bet.initData, BOT_TOKEN)
@@ -166,7 +166,8 @@ async def place_bet(bet: BetRequest):
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.post("/cashout")
-async def cashout(request: CashoutRequest):
+@limiter.limit("100/25minute")
+async def cashout(request: CashoutRequest, req: Request):
     """Забирает выигрыш"""
     # Проверяем initData
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
@@ -205,43 +206,10 @@ async def cashout(request: CashoutRequest):
     
     return result
 
-@router.post("/cancel")
-async def cancel_bet(request: CancelBetRequest):
-    """Отменяет ставку"""
-    # Проверяем initData
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
-    if not is_valid:
-        raise HTTPException(status_code=403, detail="Invalid init data")
-    
-    # Извлекаем user_id из initData
-    try:
-        parsed = parse_qs(request.initData)
-        user_data = parsed.get('user', [''])[0]
-        user = json.loads(user_data)
-        user_id = user.get('id')
-    except Exception:
-        raise HTTPException(status_code=403, detail="Invalid user data")
-    
-    result = crash_game.cancel_bet(user_id)
-    
-    if result["success"]:
-        # Возвращаем деньги
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
-            current_balance = cursor.fetchone()[0]
-            new_balance = int(round(current_balance + result["refund"]))
-            cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
-            conn.commit()
-            conn.close()
-        except sqlite3.Error as e:
-            await send_error_log(e, "crash.py: cancel_bet (db)")
-            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    
-    return result
+
 
 @router.websocket("/ws")
+@limiter.limit("3/5minute")
 async def websocket_crash(websocket: WebSocket, initData: str = None):
     """WebSocket endpoint для краш игры"""
     # initData передается как query параметр для авторизации

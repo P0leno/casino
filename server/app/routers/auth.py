@@ -10,6 +10,8 @@ from app.utils.redis_models import RedisSettings
 from app.utils.database import get_db_connection
 from app.utils.error_logger import send_error_log
 
+from app.utils.limiter import limiter
+
 router = APIRouter(prefix="/api", tags=["auth"])
 
 class ValidateRequest(BaseModel):
@@ -43,6 +45,7 @@ def verify_init_data(init_data: str):
         return None
 
 @router.post("/validate")
+@limiter.limit("1/minute")
 async def validate(validate_req: ValidateRequest, request: Request):
     is_valid = validate_init_data(validate_req.initData, BOT_TOKEN)
     
@@ -144,32 +147,7 @@ async def validate(validate_req: ValidateRequest, request: Request):
         await send_error_log(e, "auth.py: validate")
         return {"valid": False, "isBanned": False, "isAdmin": False, "maintenance": False}
 
-@router.post("/check-admin")
-async def check_admin(request: ValidateRequest):
-    try:
-        is_valid = validate_init_data(request.initData, BOT_TOKEN)
-        
-        if not is_valid:
-            print("check-admin: Invalid init data")
-            return {"valid": False, "isAdmin": False}
-        
-        parsed = parse_qs(request.initData)
-        user_data = parsed.get('user', [''])[0]
-        
-        if user_data:
-            user = json.loads(user_data)
-            user_id = user.get('id')
-            
-            is_admin = RedisSettings.is_admin(user_id)
-            print(f"check-admin: user_id={user_id}, is_admin={is_admin}")
-            return {"valid": True, "isAdmin": is_admin}
-        
-        print("check-admin: No user data")
-        return {"valid": True, "isAdmin": False}
-    except Exception as e:
-        print(f"check-admin ERROR: {e}")
-        await send_error_log(e, "auth.py: check_admin")
-        return {"valid": False, "isAdmin": False}
+
 
 @router.post("/ban-user")
 async def ban_user(request: BanRequest):
@@ -257,31 +235,4 @@ async def unban_user(request: BanRequest):
         await send_error_log(e, "auth.py: unban_user")
         return {"success": False, "message": "Ошибка сервера"}
 
-@router.post("/check-ban")
-async def check_ban(request: ValidateRequest):
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
-    
-    if not is_valid:
-        return {"valid": False, "isBanned": False}
-    
-    try:
-        parsed = parse_qs(request.initData)
-        user_data = parsed.get('user', [''])[0]
-        
-        if not user_data:
-            return {"valid": True, "isBanned": False}
-        
-        user = json.loads(user_data)
-        user_id = user.get('id')
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT is_banned FROM users WHERE id = ?", (user_id,))
-        result = cursor.fetchone()
-        conn.close()
-        
-        is_banned = bool(result[0]) if result else False
-        return {"valid": True, "isBanned": is_banned}
-    except Exception as e:
-        await send_error_log(e, "auth.py: check_ban")
-        return {"valid": False, "isBanned": False}
+

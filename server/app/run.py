@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
-from app.routers import auth, game, admin, payments, crash, ton_payments, tasks, shop, inventory, promocode, ban, maintenance, cryptobot_payments, maintenance_check
+from app.routers import auth, game, admin, payments, crash, tasks, shop, inventory, promocode, ban, cryptobot_payments
 from app.bot import start_bot, stop_bot
 from app.log_bot import start_log_bot, stop_log_bot
 from app.pyrogram_client import start_pyrogram, stop_pyrogram
@@ -17,12 +17,17 @@ from app.tasks.gift_parser import gift_parser_loop
 from app.tasks.ton_price_updater import ton_price_loop
 from app.tasks.gift_models_checker import gift_models_checker_loop
 from app.tasks.antifraud import antifraud_task
-from app.crash_game import start_crash_game_loop
+from app.crash_game import start_crash_game_loop, crash_game
 from app.support_bot import start_support_bot
 from app.tasks.redis_sync import start_redis_sync, stop_redis_sync
 from app.utils.redis_client import cache, redis_client
 from app.restart_monitor import start_restart_monitor, stop_restart_monitor, get_restart_message_id, clear_restart_message_id, send_status_to_channel
 from app.utils.aiosqlite_pool import db_pool
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.utils.limiter import limiter
+
+# Инициализация лимитера (перенесена в app.utils.limiter)
 
 bot_task = None
 log_bot_task = None
@@ -98,6 +103,9 @@ async def lifespan(app: FastAPI):
     print("2️⃣  Полная синхронизация подарков (Telegram + Tonnel + пересчет цен)...")
     print("   ⏭️  Пропущено - будет выполнено в фоновом режиме через минуту")
     
+    # 3. Синхронизируем состояние краш игры и базы банвордов
+    # Это выполняется внутри start_crash_game_loop
+    
     # НЕ запускаем синхронизацию при старте - слишком долго (20 минут)
     # Будет выполнена автоматически фоновой задачей
     
@@ -111,17 +119,17 @@ async def lifespan(app: FastAPI):
     # ЗАПУСК ЦИКЛИЧЕСКИХ ЗАДАЧ
     # ========================================
     
-    # Полная синхронизация подарков (каждый час): parse_gifts + Tonnel + новые/удаленные
+    # Запуск проверки полученных подарков (gift parser)
     gift_parser_task = asyncio.create_task(gift_parser_loop())
-    print("✅ Запущена полная синхронизация подарков (каждый час)")
+    print("✅ Запущен парсер подарков")
     
-    # Обновление цены TON + пересчет (каждые 5 минут)
+    # Запуск обновления цены TON
     ton_price_task = asyncio.create_task(ton_price_loop())
-    print("✅ Запущено обновление цены TON + пересчет (каждые 5 минут)")
+    print("✅ Запущен авто-апдейтер цены TON")
     
-    # Мониторинг моделей подарков (каждый час)
+    # Запуск проверки моделей подарков (Lottie)
     gift_models_task = asyncio.create_task(gift_models_checker_loop())
-    print("✅ Запущен мониторинг моделей подарков (каждый час)")
+    print("✅ Запущен чекер моделей подарков (Lottie)")
     
     # Бот поддержки (polling mode)
     support_bot_task = asyncio.create_task(start_support_bot())
@@ -180,7 +188,7 @@ async def lifespan(app: FastAPI):
     else:
         # Обычный запуск (не рестарт) — отправляем сообщение в логи
         try:
-            from app.log_bot import log_bot, send_message_to_logs
+            from app.log_bot import send_message_to_logs
             import os
             LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))
             if LOG_CHANNEL_ID:
@@ -193,28 +201,62 @@ async def lifespan(app: FastAPI):
                 print("✅ Отправлено сообщение о запуске в логи")
         except Exception as e:
             print(f"⚠️ Ошибка отправки сообщения о запуске: {e}")
+            import traceback
+            traceback.print_exc()
     
-    yield
+    try:
+        yield
+    except asyncio.CancelledError:
+        print("🛑 Lifespan cancelled (shutting down)...")
     
-    # Graceful shutdown
-    print("🛑 Начинается остановка сервисов...")
-    
-    # Останавливаем restart monitor
-    if restart_monitor_task:
-        print("🛑 Останавливаем мониторинг перезапуска...")
-        await stop_restart_monitor()
-        print("✅ Мониторинг перезапуска остановлен")
-    
-    # КРИТИЧНО: Закрываем async DB pool
-    print("💾 Closing async DB pool...")
-    await db_pool.close()
-    print("✅ Async DB pool closed")
-    
-    # КРИТИЧНО: Останавливаем Redis sync ПЕРВЫМ (сохраняем данные)
-    if redis_sync_task:
-        print("💾 Сохранение данных из Redis...")
-        await stop_redis_sync()
-        print("✅ Redis синхронизация остановлена")
+    # Graceful shutdown logic defined purely
+    async def shutdown_cleanup():
+        print("🛑 Начинается остановка сервисов (cleanup)...")
+        
+        # 1. Останавливаем мониторинг (быстро)
+        if restart_monitor_task:
+            await stop_restart_monitor()
+        
+        # 2. Crash Game Graceful Shutdown (ДОЛГО - до 30с)
+        print("🛑 Останавливаем краш-игру (ждем конца раунда)...")
+        try:
+             # Shielding не нужен здесь, так как мы уже внутри shielded shutdown_cleanup
+            await asyncio.wait_for(crash_game.shutdown_gracefully(), timeout=30.0)
+        except Exception as e:
+            print(f"⚠️ Ошибка shutdown краш-игры: {e}")
+            
+        if crash_task:
+            crash_task.cancel()
+
+        # 3. Redis Sync (сохранение данных)
+        if redis_sync_task:
+            print("💾 Сохранение данных из Redis...")
+            try:
+                await stop_redis_sync()
+            except Exception as e:
+                 print(f"⚠️ Redis sync stop error: {e}")
+
+        # 4. Закрываем DB pool (в самом конце)
+        print("💾 Closing async DB pool...")
+        try:
+            await db_pool.close()
+            print("✅ Async DB pool closed")
+        except Exception as e:
+            print(f"⚠️ DB pool close error: {e}")
+
+    try:
+        # Запускаем cleanup в защищенном режиме, чтобы CancelledError основного таска не прервал его
+        # В Python 3.12 asyncio.shield работает надежно
+        await asyncio.shield(shutdown_cleanup())
+    except asyncio.CancelledError:
+        # Если shield не помог (иногда бывает), мы все равно ждем завершения
+        # Но shield должен работать.
+        print("⚠️ Lifespan cancelled, but cleanup should have finished via shield.")
+        pass
+    except Exception as e:
+        print(f"⚠️ Ошибка при shutdown cleanup: {e}")
+
+    # После этого продолжаем закрывать остальные некритичные таски
     
     # Закрываем Redis connection pool
     if redis_client:
@@ -338,13 +380,17 @@ async def lifespan(app: FastAPI):
     
     print("✅ Все сервисы остановлены")
 
-def create_app():
+def create_app() -> FastAPI:
     app = FastAPI(
-        lifespan=lifespan,
-        docs_url=None,  # Отключаем /docs
-        redoc_url=None,  # Отключаем /redoc
+        title="Shell Api",
+        docs_url="/docs",
+        redoc_url=None,
         openapi_url=None  # Отключаем /openapi.json
     )
+
+    # Подключаем Limiter к приложению
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     app.add_middleware(
         CORSMiddleware,
@@ -356,12 +402,12 @@ def create_app():
     
     # Middleware для проверки бана
     from app.middlewares.ban_check import ban_check_middleware
-    from app.middlewares.maintenance import maintenance_middleware
     
     # Middleware проверки бана
     app.middleware("http")(ban_check_middleware)
     
-    # Middleware для проверки технических работ
+    # Middleware для технических работ
+    from app.middlewares.maintenance import maintenance_middleware
     app.middleware("http")(maintenance_middleware)
 
     app.include_router(auth.router)
@@ -369,23 +415,12 @@ def create_app():
     app.include_router(admin.router)
     app.include_router(payments.router)
     app.include_router(crash.router)
-    app.include_router(ton_payments.router)
     app.include_router(tasks.router)
     app.include_router(shop.router)
     app.include_router(inventory.router)
     app.include_router(promocode.router)
     app.include_router(ban.router)
-    app.include_router(maintenance.router)
     app.include_router(cryptobot_payments.router)
-    app.include_router(maintenance_check.router)
-
-    @app.get("/")
-    async def root():
-        return {"message": "Welcome to Shell Api"}
-
-    @app.get("/api/health")
-    async def health():
-        return {"status": "ok"}
     
     return app
 
@@ -402,4 +437,14 @@ def run_server():
         timeout_graceful_shutdown=10  # Даем 10 секунд на graceful shutdown
     )
     server = uvicorn.Server(config)
-    server.run()
+    try:
+        server.run()
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    except Exception as e:
+        print(f"Server stopped with error: {e}")
+    finally:
+        # Принудительно завершаем процесс, чтобы systemd мог его перезапустить
+        print("🛑 Uvicorn stopped, forcing exit...")
+        import os
+        os._exit(0)

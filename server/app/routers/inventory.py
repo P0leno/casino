@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import json
 import os
+import sqlite3
 from datetime import datetime
 from app.routers.auth import verify_init_data
 from app.utils.rate_limit import get_inventory_rate_limiter

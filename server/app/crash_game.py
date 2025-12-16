@@ -347,6 +347,54 @@ class CrashGame:
             return {"success": True, "refund": amount}
         return {"success": False, "error": "Нет ставки для отмены"}
     
+    async def shutdown_gracefully(self):
+        """
+        Корректное завершение работы:
+        1. Устанавливаем флаг завершения (новые раунды не начнутся)
+        2. Ждем окончания текущего раунда
+        3. Возвращаем все ставки на следующий раунд
+        """
+        print("🛑 CrashGame: инициализация graceful shutdown...")
+        self.shutting_down = True
+        
+        # Ждем окончания текущего раунда
+        while self.is_running:
+            print(f"⏳ CrashGame: ждем окончания раунда #{self.game_id} (x{self.current_multiplier:.2f})...")
+            await asyncio.sleep(1)
+            
+        print("✅ CrashGame: раунд завершен или не был активен")
+        
+        # Возвращаем ставки на следующий раунд
+        if self.next_round_bets:
+            print(f"💸 CrashGame: Возврат {len(self.next_round_bets)} ставок на следующий раунд...")
+            
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                refunded_count = 0
+                for user_id, bet in self.next_round_bets.items():
+                    amount = bet["amount"]
+                    try:
+                        # Возвращаем средства на баланс
+                        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
+                        refunded_count += 1
+                        print(f"   ↩️ Возврат {amount} пользователю {user_id}")
+                    except Exception as e:
+                        print(f"❌ Ошибка возврата ставки пользователю {user_id}: {e}")
+                
+                conn.commit()
+                conn.close()
+                print(f"✅ CrashGame: Успешно возвращено {refunded_count} ставок")
+                self.next_round_bets.clear()
+                
+            except Exception as e:
+                print(f"❌ CrashGame: Критическая ошибка при возврате ставок: {e}")
+        else:
+            print("INFO: Нет ставок на следующий раунд для возврата")
+
+        return True
+
     def get_state(self, user_id=None) -> Dict:
         """Возвращает текущее состояние игры (опционально для конкретного пользователя)"""
         # Если игра идет - отправляем время начала для клиентского расчета
