@@ -6,7 +6,7 @@ import time
 import asyncio
 from typing import Dict, List
 import math
-from app.utils.database import get_db_connection
+from app.utils.aiosqlite_pool import db_pool
 from app.utils.redis_models import RedisSettings
 
 class CrashGame:
@@ -369,24 +369,21 @@ class CrashGame:
             print(f"💸 CrashGame: Возврат {len(self.next_round_bets)} ставок на следующий раунд...")
             
             try:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                
-                refunded_count = 0
-                for user_id, bet in self.next_round_bets.items():
-                    amount = bet["amount"]
-                    try:
-                        # Возвращаем средства на баланс
-                        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
-                        refunded_count += 1
-                        print(f"   ↩️ Возврат {amount} пользователю {user_id}")
-                    except Exception as e:
-                        print(f"❌ Ошибка возврата ставки пользователю {user_id}: {e}")
-                
-                conn.commit()
-                conn.close()
-                print(f"✅ CrashGame: Успешно возвращено {refunded_count} ставок")
-                self.next_round_bets.clear()
+                async with db_pool.connection() as conn:
+                    refunded_count = 0
+                    for user_id, bet in self.next_round_bets.items():
+                        amount = bet["amount"]
+                        try:
+                            # Возвращаем средства на баланс
+                            await conn.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
+                            refunded_count += 1
+                            print(f"   ↩️ Возврат {amount} пользователю {user_id}")
+                        except Exception as e:
+                            print(f"❌ Ошибка возврата ставки пользователю {user_id}: {e}")
+                    
+                    await conn.commit()
+                    print(f"✅ CrashGame: Успешно возвращено {refunded_count} ставок")
+                    self.next_round_bets.clear()
                 
             except Exception as e:
                 print(f"❌ CrashGame: Критическая ошибка при возврате ставок: {e}")

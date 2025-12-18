@@ -2,8 +2,24 @@ import asyncio
 import uvicorn
 import signal
 import sys
+import logging
+
+# Ensure logs are flushed immediately
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+
+# Configure logging to show INFO level and above
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("app.run")
+logger.info("=== RUN.PY LOADED ===")
+
+
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
@@ -158,34 +174,41 @@ async def lifespan(app: FastAPI):
     else:
         print("⚠️  Redis недоступен, работаем только с SQLite")
     
-    # Запуск мониторинга перезапуска через канал логов
+    # Запуск монитора перезапуска
     await start_restart_monitor()
-    print("✅ Мониторинг перезапуска запущен (команда: 'рестарт' в канале логов)")
     
-    # Проверяем, был ли рестарт - обновляем сообщение в канале
-    restart_message_id = get_restart_message_id()
-    if restart_message_id:
-        print(f"🔄 Обнаружен рестарт, обновляю сообщение {restart_message_id}...")
+    # Проверяем, был ли это рестарт
+    restart_msg_id = await get_restart_message_id()
+    logger.info(f"DEBUG: Startup check - Restart Msg ID from DB: {restart_msg_id}")
+    
+    if restart_msg_id:
+        logger.info(f"🔄 Обнаружен рестарт (msg_id={restart_msg_id}). Обновляем статус...")
         try:
+            # Небольшая задержка чтобы бот успел подключиться
+            await asyncio.sleep(2.0)
+            
+            # Мы используем log_bot который уже запущен в start_log_bot
+            # Но нам нужен объект бота. Импортируем его
             from app.log_bot import log_bot
             
-            # Отправляем финальное сообщение об успешном старте
+            logger.info(f"DEBUG: Calling send_status_to_channel for msg {restart_msg_id}")
             await send_status_to_channel(
                 log_bot,
-                "✅ <b>Сервер успешно запущен!</b>\n\n"
-                "🚀 Все системы работают\n"
-                "🎲 Краш-игра запущена\n"
-                "🤖 Боты подключены\n"
-                "💎 Синхронизация активна",
-                restart_message_id
+                "✅ <b>Сервер успешно перезапущен!</b>\n\n"
+                "🚀 Все системы работают в штатном режиме.\n"
+                "🎲 Краш-игра готова к приему ставок.",
+                restart_msg_id
             )
-            
-            # Очищаем message_id из БД
-            clear_restart_message_id()
-            print("✅ Сообщение о рестарте обновлено")
+            logger.info("DEBUG: send_status_to_channel finished")
+            await clear_restart_message_id()
+            logger.info("DEBUG: clear_restart_message_id finished")
         except Exception as e:
-            print(f"⚠️ Ошибка обновления сообщения о рестарте: {e}")
+            logger.error(f"⚠️ Ошибка обновления статуса рестарта: {e}")
+            import traceback
+            # Log traceback to logger instead of stdout if possible, or just use logger.exception
+            logger.error("Traceback:", exc_info=True)
     else:
+        logger.info("DEBUG: No restart message ID found. Normal startup or ID lost.")
         # Обычный запуск (не рестарт) — отправляем сообщение в логи
         try:
             from app.log_bot import send_message_to_logs
@@ -211,50 +234,60 @@ async def lifespan(app: FastAPI):
     
     # Graceful shutdown logic defined purely
     async def shutdown_cleanup():
-        print("🛑 Начинается остановка сервисов (cleanup)...")
+        logger.info("🛑 SHUTDOWN_CLEANUP: Начинается остановка сервисов...")
         
         # 1. Останавливаем мониторинг (быстро)
+        logger.info("🛑 SHUTDOWN_CLEANUP: Step 1 - Stopping restart_monitor...")
         if restart_monitor_task:
             await stop_restart_monitor()
+        logger.info("🛑 SHUTDOWN_CLEANUP: Step 1 - DONE")
         
         # 2. Crash Game Graceful Shutdown (ДОЛГО - до 30с)
-        print("🛑 Останавливаем краш-игру (ждем конца раунда)...")
+        logger.info("🛑 SHUTDOWN_CLEANUP: Step 2 - Stopping crash game (waiting for round end)...")
         try:
-             # Shielding не нужен здесь, так как мы уже внутри shielded shutdown_cleanup
             await asyncio.wait_for(crash_game.shutdown_gracefully(), timeout=30.0)
+            logger.info("🛑 SHUTDOWN_CLEANUP: Step 2 - Crash game stopped SUCCESSFULLY")
+        except asyncio.TimeoutError:
+            logger.error("⚠️ SHUTDOWN_CLEANUP: Crash game shutdown TIMEOUT (30s)")
         except Exception as e:
-            print(f"⚠️ Ошибка shutdown краш-игры: {e}")
+            logger.error(f"⚠️ SHUTDOWN_CLEANUP: Crash game error: {e}")
             
         if crash_task:
+            logger.info("🛑 SHUTDOWN_CLEANUP: Cancelling crash_task...")
             crash_task.cancel()
 
         # 3. Redis Sync (сохранение данных)
+        logger.info("🛑 SHUTDOWN_CLEANUP: Step 3 - Stopping Redis sync...")
         if redis_sync_task:
-            print("💾 Сохранение данных из Redis...")
             try:
                 await stop_redis_sync()
             except Exception as e:
-                 print(f"⚠️ Redis sync stop error: {e}")
+                logger.error(f"⚠️ Redis sync stop error: {e}")
+        logger.info("🛑 SHUTDOWN_CLEANUP: Step 3 - DONE")
 
         # 4. Закрываем DB pool (в самом конце)
-        print("💾 Closing async DB pool...")
+        logger.info("� SHUTDOWN_CLEANUP: Step 4 - Closing DB pool...")
         try:
             await db_pool.close()
-            print("✅ Async DB pool closed")
+            logger.info("✅ SHUTDOWN_CLEANUP: DB pool closed")
         except Exception as e:
-            print(f"⚠️ DB pool close error: {e}")
+            logger.error(f"⚠️ DB pool close error: {e}")
+        
+        logger.info("🛑 SHUTDOWN_CLEANUP: ALL STEPS COMPLETE")
 
     try:
+        logger.info("🛑 LIFESPAN SHUTDOWN: Starting cleanup with asyncio.shield...")
         # Запускаем cleanup в защищенном режиме, чтобы CancelledError основного таска не прервал его
         # В Python 3.12 asyncio.shield работает надежно
         await asyncio.shield(shutdown_cleanup())
+        logger.info("🛑 LIFESPAN SHUTDOWN: Cleanup finished successfully")
     except asyncio.CancelledError:
         # Если shield не помог (иногда бывает), мы все равно ждем завершения
         # Но shield должен работать.
-        print("⚠️ Lifespan cancelled, but cleanup should have finished via shield.")
+        logger.warning("⚠️ Lifespan cancelled, but cleanup should have finished via shield.")
         pass
     except Exception as e:
-        print(f"⚠️ Ошибка при shutdown cleanup: {e}")
+        logger.error(f"⚠️ Ошибка при shutdown cleanup: {e}")
 
     # После этого продолжаем закрывать остальные некритичные таски
     
@@ -383,9 +416,10 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Shell Api",
-        docs_url="/docs",
+        docs_url=None,
         redoc_url=None,
-        openapi_url=None  # Отключаем /openapi.json
+        openapi_url=None,  # Отключаем /openapi.json
+        lifespan=lifespan  # ВАЖНО: подключаем lifespan для graceful shutdown
     )
 
     # Подключаем Limiter к приложению

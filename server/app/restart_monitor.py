@@ -5,7 +5,7 @@
 import os
 import sys
 import asyncio
-from app.utils.database import get_db_connection, DB_PATH
+from app.utils.aiosqlite_pool import db_pool
 import sqlite3
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -46,46 +46,43 @@ async def send_status_to_channel(bot: Bot, message: str, message_id: int = None)
         return None
 
 
-def save_restart_message_id(message_id: int):
-    """Сохранить message_id сообщения о рестарте в БД"""
+async def save_restart_message_id(message_id: int):
+    ""Сохранить message_id сообщения о рестарте в БД"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO settings (key, value, description)
-            VALUES ('restart_message_id', ?, 'ID сообщения о последнем рестарте')
-        """, (str(message_id),))
-        conn.commit()
-        conn.close()
+        logger.info(f"DEBUG: Saving restart_message_id {message_id} to DB...")
+        async with db_pool.connection() as conn:
+            await conn.execute("""
+                INSERT OR REPLACE INTO settings (key, value, description)
+                VALUES ('restart_message_id', ?, 'ID сообщения о последнем рестарте')
+            """, (str(message_id),))
+            await conn.commit()
         logger.info(f"Saved restart_message_id: {message_id}")
+        logger.info(f"DEBUG: Saved restart_message_id: {message_id} successfully")
     except Exception as e:
         logger.error(f"Error saving restart_message_id: {e}")
+        logger.info(f"DEBUG: Error saving restart_message_id: {e}"))
 
 
-def get_restart_message_id():
+async def get_restart_message_id():
     """Получить message_id последнего рестарта"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT value FROM settings WHERE key = 'restart_message_id'")
-        result = cursor.fetchone()
-        conn.close()
-        if result:
-            return int(result[0])
-        return None
+        async with db_pool.connection() as conn:
+            cursor = await conn.execute("SELECT value FROM settings WHERE key = 'restart_message_id'")
+            result = await cursor.fetchone()
+            if result:
+                return int(result[0])
+            return None
     except Exception as e:
         logger.error(f"Error getting restart_message_id: {e}")
         return None
 
 
-def clear_restart_message_id():
+async def clear_restart_message_id():
     """Очистить message_id после успешного старта"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM settings WHERE key = 'restart_message_id'")
-        conn.commit()
-        conn.close()
+        async with db_pool.connection() as conn:
+            await conn.execute("DELETE FROM settings WHERE key = 'restart_message_id'")
+            await conn.commit()
         logger.info("Cleared restart_message_id")
     except Exception as e:
         logger.error(f"Error clearing restart_message_id: {e}")
@@ -112,7 +109,7 @@ async def handle_restart_command(message: types.Message, bot: Bot):
         message_id = status_msg.message_id
         
         # 2. Сохраняем message_id для обновления после старта
-        save_restart_message_id(message_id)
+        await save_restart_message_id(message_id)
         
         # 3. Делаем небольшую паузу
         await asyncio.sleep(1.0)

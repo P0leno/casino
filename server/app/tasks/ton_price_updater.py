@@ -4,12 +4,10 @@
 Запускается каждые 15 минут
 """
 import asyncio
-from app.utils.database import get_db_connection, DB_PATH
-import sqlite3
 from datetime import datetime
-from app.config import DB_PATH
 import os
 
+from app.utils.aiosqlite_pool import db_pool
 from app.utils.error_logger import send_error_log
 
 COINMARKETCAP_API_KEY = os.getenv('COINMARKETCAP_API_KEY', '')
@@ -70,25 +68,22 @@ async def update_ton_price(silent=False):
         if not silent:
             print(f"✅ Цена TON: ${price_usd}")
         
-        # Сохраняем в БД
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            UPDATE settings 
-            SET value = ?, updated_at = CURRENT_TIMESTAMP 
-            WHERE key = 'ton_price_usd'
-        """, (str(price_usd),))
-        
-        if cursor.rowcount == 0:
-            # Если настройка не существует - создаем
-            cursor.execute("""
-                INSERT INTO settings (key, value, description)
-                VALUES ('ton_price_usd', ?, 'Цена TON в USD (CoinMarketCap)')
+        # Сохраняем в БД (используем async db_pool)
+        async with db_pool.connection() as conn:
+            cursor = await conn.execute("""
+                UPDATE settings 
+                SET value = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE key = 'ton_price_usd'
             """, (str(price_usd),))
-        
-        conn.commit()
-        conn.close()
+            
+            if cursor.rowcount == 0:
+                # Если настройка не существует - создаем
+                await conn.execute("""
+                    INSERT INTO settings (key, value, description)
+                    VALUES ('ton_price_usd', ?, 'Цена TON в USD (CoinMarketCap)')
+                """, (str(price_usd),))
+            
+            await conn.commit()
         
         if not silent:
             print(f"💾 Цена сохранена в БД: {price_usd} USD")
@@ -113,14 +108,11 @@ async def recalculate_gift_prices(silent=False):
         from app.utils.shop_cache import invalidate_shop_cache
         invalidate_shop_cache()
         
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Получаем количество подарков для отчета
-        cursor.execute("SELECT COUNT(*) FROM shop_gifts WHERE ton_price IS NOT NULL AND ton_price > 0")
-        result = cursor.fetchone()
-        total_gifts = result[0] if result else 0
-        conn.close()
+        # Используем async db_pool
+        async with db_pool.connection() as conn:
+            cursor = await conn.execute("SELECT COUNT(*) FROM shop_gifts WHERE ton_price IS NOT NULL AND ton_price > 0")
+            result = await cursor.fetchone()
+            total_gifts = result[0] if result else 0
         
         if not silent:
             print(f"✅ Кэш инвалидирован для {total_gifts} подарков")
