@@ -97,8 +97,12 @@ async def parse_and_save_gifts():
                     attr_name = attr_dict.get('name', '')
                     attr_type = str(attr_dict.get('type', ''))
                     
+                    # Пропускаем ORIGINAL_DETAILS (комментарии к подаркам)
+                    if 'ORIGINAL_DETAILS' in attr_type:
+                        continue
+                    
                     # MODEL type
-                    if 'MODEL' in attr_type or (hasattr(attr, 'sticker') and hasattr(attr, 'name') and not hasattr(attr, 'center_color')):
+                    if 'MODEL' in attr_type:
                         model_name = attr_name
                         rarity_model = attr_dict.get('rarity', 0)
                         # Формируем путь к анимации
@@ -110,8 +114,8 @@ async def parse_and_save_gifts():
                         symbol_name = attr_name
                         rarity_symbol = attr_dict.get('rarity', 0)
                     
-                    # BACKDROP type - определяем по наличию center_color
-                    elif hasattr(attr, 'center_color') or 'BACKDROP' in attr_type:
+                    # BACKDROP type - приоритет по типу, затем по center_color
+                    elif 'BACKDROP' in attr_type or hasattr(attr, 'center_color'):
                         backdrop_name = attr_name
                         rarity_backdrop = attr_dict.get('rarity', 0)
                         

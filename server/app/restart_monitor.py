@@ -47,7 +47,7 @@ async def send_status_to_channel(bot: Bot, message: str, message_id: int = None)
 
 
 async def save_restart_message_id(message_id: int):
-    ""Сохранить message_id сообщения о рестарте в БД"""
+    """Сохранить message_id сообщения о рестарте в БД"""
     try:
         logger.info(f"DEBUG: Saving restart_message_id {message_id} to DB...")
         async with db_pool.connection() as conn:
@@ -60,7 +60,7 @@ async def save_restart_message_id(message_id: int):
         logger.info(f"DEBUG: Saved restart_message_id: {message_id} successfully")
     except Exception as e:
         logger.error(f"Error saving restart_message_id: {e}")
-        logger.info(f"DEBUG: Error saving restart_message_id: {e}"))
+        logger.info(f"DEBUG: Error saving restart_message_id: {e}")
 
 
 async def get_restart_message_id():

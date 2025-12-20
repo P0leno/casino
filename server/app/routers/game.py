@@ -709,7 +709,10 @@ async def withdraw_gift(request: WithdrawGiftRequest):
             return {"success": False, "message": "Invalid index"}
         
         # Проверяем совпадение подарка
-        if inventory[request.index] != request.giftName:
+        inventory_gift = inventory[request.index]
+        requested_gift = request.giftName
+        if inventory_gift != requested_gift:
+            print(f"❌ Gift mismatch DEBUG: inventory[{request.index}]='{inventory_gift}' vs request.giftName='{requested_gift}'")
             conn.close()
             return {"success": False, "message": "Gift mismatch"}
         
@@ -803,7 +806,10 @@ async def request_manual_withdraw(request: ManualWithdrawRequest):
             return {"success": False, "message": "Invalid index"}
         
         # Проверяем совпадение подарка
-        if inventory[request.index] != request.giftName:
+        inventory_gift = inventory[request.index]
+        requested_gift = request.giftName
+        if inventory_gift != requested_gift:
+            print(f"❌ Gift mismatch DEBUG (sell): inventory[{request.index}]='{inventory_gift}' vs request.giftName='{requested_gift}'")
             conn.close()
             return {"success": False, "message": "Gift mismatch"}
         
@@ -940,6 +946,10 @@ async def get_nft_gifts(request: ValidateRequest):
                     for attr in gift.attributes:
                         attr_type = str(getattr(attr, 'type', ''))
                         attr_name = getattr(attr, 'name', '')
+                        
+                        # Пропускаем ORIGINAL_DETAILS (комментарии к подаркам)
+                        if 'ORIGINAL_DETAILS' in attr_type:
+                            continue
                         
                         if 'MODEL' in attr_type:
                             model_name = attr_name

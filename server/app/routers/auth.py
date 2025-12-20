@@ -45,7 +45,7 @@ def verify_init_data(init_data: str):
         return None
 
 @router.post("/validate")
-@limiter.limit("1/minute")
+@limiter.limit("3/minute")
 async def validate(validate_req: ValidateRequest, request: Request):
     is_valid = validate_init_data(validate_req.initData, BOT_TOKEN)
     

@@ -167,16 +167,16 @@ async def place_bet(bet: BetRequest, request: Request):
 
 @router.post("/cashout")
 @limiter.limit("100/25minute")
-async def cashout(request: CashoutRequest, req: Request):
+async def cashout(cashout_request: CashoutRequest, request: Request):
     """Забирает выигрыш"""
     # Проверяем initData
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    is_valid = validate_init_data(cashout_request.initData, BOT_TOKEN)
     if not is_valid:
         raise HTTPException(status_code=403, detail="Invalid init data")
     
     # Извлекаем user_id из initData
     try:
-        parsed = parse_qs(request.initData)
+        parsed = parse_qs(cashout_request.initData)
         user_data = parsed.get('user', [''])[0]
         user = json.loads(user_data)
         user_id = user.get('id')
@@ -209,7 +209,6 @@ async def cashout(request: CashoutRequest, req: Request):
 
 
 @router.websocket("/ws")
-@limiter.limit("3/5minute")
 async def websocket_crash(websocket: WebSocket, initData: str = None):
     """WebSocket endpoint для краш игры"""
     # initData передается как query параметр для авторизации

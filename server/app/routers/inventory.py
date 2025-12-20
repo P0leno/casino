@@ -9,6 +9,7 @@ from app.utils.rate_limit import get_inventory_rate_limiter
 from app.utils.balance import get_user_balance
 from app.tasks.price_updater import search_tonnel_resale
 from app.utils.redis_models import RedisSettings, RedisUser
+from app.utils.redis_client import cache
 from app.utils.database import get_db_connection, DB_PATH
 from app.utils.error_logger import send_error_log
 
@@ -327,6 +328,15 @@ async def sell_gift(request: SellGiftRequest):
     user_id = user_data['id']
     
     try:
+        # Защита от двойной продажи - Redis lock
+        lock_key = f"sell_lock:{user_id}"
+        if cache.is_available():
+            # Проверяем есть ли блокировка
+            if cache.client.get(lock_key):
+                raise HTTPException(status_code=429, detail="Подождите, предыдущая операция ещё выполняется")
+            # Устанавливаем блокировку на 5 секунд
+            cache.client.setex(lock_key, 5, "1")
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         
@@ -410,6 +420,10 @@ async def sell_gift(request: SellGiftRequest):
         
         print(f"✅ Продан подарок {title} за {stars_price}⭐ (цена: {current_price}⭐, комиссия: {sell_commission}%)")
         
+        # Снимаем блокировку
+        if cache.is_available():
+            cache.client.delete(lock_key)
+        
         return {
             "success": True,
             "newBalance": new_balance,
@@ -417,8 +431,14 @@ async def sell_gift(request: SellGiftRequest):
         }
         
     except HTTPException:
+        # Снимаем блокировку при ошибке
+        if cache.is_available():
+            cache.client.delete(f"sell_lock:{user_id}")
         raise
     except Exception as e:
+        # Снимаем блокировку при ошибке
+        if cache.is_available():
+            cache.client.delete(f"sell_lock:{user_id}")
         print(f"Error selling gift: {e}")
         await send_error_log(e, "inventory.py: sell_gift")
         raise HTTPException(status_code=500, detail=sanitize_error(e))

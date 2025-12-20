@@ -48,15 +48,15 @@ def calculate_stars_from_usdt(usdt_amount: float) -> int:
 
 @router.post("/create-invoice")
 @limiter.limit("1/5minute")
-async def create_invoice(request: CreateInvoiceRequest, req: Request):
+async def create_invoice(invoice_request: CreateInvoiceRequest, request: Request):
     """Создать счет CryptoBot для оплаты"""
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    is_valid = validate_init_data(invoice_request.initData, BOT_TOKEN)
     
     if not is_valid:
         return {"success": False, "message": "Invalid initData"}
     
     try:
-        parsed = parse_qs(request.initData)
+        parsed = parse_qs(invoice_request.initData)
         user_data = parsed.get('user', [''])[0]
         
         if not user_data:
@@ -65,7 +65,7 @@ async def create_invoice(request: CreateInvoiceRequest, req: Request):
         user = json.loads(user_data)
         user_id = user.get('id')
         
-        usdt_amount = request.usdtAmount
+        usdt_amount = invoice_request.usdtAmount
         
         if usdt_amount < 1:
             return {"success": False, "message": "Минимальная сумма 1 USDT"}
@@ -121,15 +121,15 @@ async def create_invoice(request: CreateInvoiceRequest, req: Request):
 
 @router.post("/calculate-stars")
 @limiter.limit("2/5minute")
-async def calculate_stars(request: CreateInvoiceRequest, req: Request):
+async def calculate_stars(calc_request: CreateInvoiceRequest, request: Request):
     """Рассчитать количество Stars из USDT с +5% бонусом"""
-    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    is_valid = validate_init_data(calc_request.initData, BOT_TOKEN)
     
     if not is_valid:
         return {"success": False, "message": "Invalid initData"}
     
     try:
-        usdt_amount = request.usdtAmount
+        usdt_amount = calc_request.usdtAmount
         
         if usdt_amount < 1:
             return {"success": False, "message": "Минимальная сумма 1 USDT", "stars": 0}
