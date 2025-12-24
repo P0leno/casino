@@ -92,7 +92,7 @@
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  background: rgba(40, 40, 40, 0.6);
+  background: radial-gradient(circle, #363738, #0e0f0f);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
 }
@@ -109,8 +109,8 @@
 }
 
 .gift-card-inventory-regular:hover {
-  background: rgba(50, 50, 50, 0.7);
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .lottie-container {
@@ -229,6 +229,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -254,6 +255,7 @@
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }

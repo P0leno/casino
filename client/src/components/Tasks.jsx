@@ -17,10 +17,10 @@ function Tasks({ onNavigateToTopUp }) {
   const [removingTaskId, setRemovingTaskId] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
-  
-  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
-                   window.Telegram?.WebApp?.platform === 'ios'
-  
+
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
+    window.Telegram?.WebApp?.platform === 'ios'
+
   const tg = window.Telegram?.WebApp
   const safeAreaTop = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
   // Отступ = safe area + 20px (отступ баланс баров) + 36px (высота баланс бара с padding) + 10px (gap)
@@ -88,7 +88,7 @@ function Tasks({ onNavigateToTopUp }) {
 
       // Открываем канал
       tg.openTelegramLink(`https://t.me/${channelUsername}`)
-      
+
       // Ждем 5 секунд чтобы пользователь успел подписаться
       setTimeout(() => {
         completeTask(task.id)
@@ -108,7 +108,7 @@ function Tasks({ onNavigateToTopUp }) {
         if (data.success && data.inviteLink) {
           // Открываем invite link
           tg.openTelegramLink(data.inviteLink)
-          
+
           // Ждем 5 секунд чтобы пользователь успел подписаться
           setTimeout(() => {
             completeTask(task.id)
@@ -130,7 +130,7 @@ function Tasks({ onNavigateToTopUp }) {
         url = 'https://' + url
       }
       tg.openLink(url)
-      
+
       // Для open_url сразу засчитываем без проверки
       completeTask(task.id)
     }
@@ -150,12 +150,12 @@ function Tasks({ onNavigateToTopUp }) {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         updateBalance(data)
         // Запускаем анимацию удаления без уведомлений
         setRemovingTaskId(taskId)
-        
+
         // Через 0.5 секунды убираем задание из списка
         setTimeout(() => {
           setTasks(tasks.filter(t => t.id !== taskId))
@@ -163,7 +163,7 @@ function Tasks({ onNavigateToTopUp }) {
         }, 500)
       }
       // Если не success - просто ничего не делаем, никаких уведомлений
-      
+
       setCompletingTask(null)
     } catch (error) {
       console.error('Error completing task:', error)
@@ -198,7 +198,7 @@ function Tasks({ onNavigateToTopUp }) {
                 </div>
                 <div className="task-right">
                   <div className="task-reward">
-                    <LottieAnimation 
+                    <LottieAnimation
                       animationData={task.currency === 'paws' ? pawAnim : starAnim}
                       width={24}
                       height={24}
@@ -206,7 +206,7 @@ function Tasks({ onNavigateToTopUp }) {
                     <span className="task-reward-amount">{task.award}</span>
                   </div>
                   <div className="task-actions">
-                    {task.type === 'subscribe' && (
+                    {(task.type === 'subscribe' || task.type === 'open_url' || task.type === 'private_channel') && (
                       <button
                         className="task-details-btn"
                         onClick={() => {
@@ -237,19 +237,21 @@ function Tasks({ onNavigateToTopUp }) {
           <div className="promo-modal-backdrop" onClick={() => setShowDetailsModal(false)} />
           <div className="promo-modal-sheet task-details-modal">
             <button className="promo-close-btn" onClick={() => setShowDetailsModal(false)}>×</button>
-            
+
             <div className="promo-modal-content">
               <h2 className="promo-modal-title">Подробности задания</h2>
-              
+
               <div className="task-detail-section">
-                <div className="task-detail-label">Канал/Группа:</div>
+                <div className="task-detail-label">
+                  {selectedTask.type === 'open_url' ? 'Ссылка:' : 'Канал/Группа:'}
+                </div>
                 <div className="task-detail-value">{selectedTask.target}</div>
               </div>
 
               <div className="task-detail-section">
                 <div className="task-detail-label">Награда:</div>
                 <div className="task-detail-reward">
-                  <LottieAnimation 
+                  <LottieAnimation
                     animationData={selectedTask.currency === 'paws' ? pawAnim : starAnim}
                     width={24}
                     height={24}
@@ -258,7 +260,7 @@ function Tasks({ onNavigateToTopUp }) {
                 </div>
               </div>
 
-              <button 
+              <button
                 className="promo-modal-action-btn"
                 onClick={() => setShowDetailsModal(false)}
               >

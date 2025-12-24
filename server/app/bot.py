@@ -12,7 +12,9 @@ dp.include_router(payments.router)
 
 # Подключаем админ-обработчики (для кнопок в логах)
 from app.handlers import admin as admin_handlers
+from app.handlers import gift_callbacks
 dp.include_router(admin_handlers.router)
+dp.include_router(gift_callbacks.router)
 
 async def start_bot():
     try:

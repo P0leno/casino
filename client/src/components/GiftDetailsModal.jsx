@@ -8,7 +8,7 @@ const BACKDROPS_URL = 'https://shelloch.xyz/gifts/backdrops.json'
 
 function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInventory = false }) {
   if (!gift) return null
-  
+
   const [purchasing, setPurchasing] = useState(false)
   const [selling, setSelling] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
@@ -16,7 +16,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
   const [availableModels, setAvailableModels] = useState([])
   const [showBackdropModal, setShowBackdropModal] = useState(false)
   const [backdrops, setBackdrops] = useState([])
-  
+
   // Загрузка списка моделей для этого подарка
   useEffect(() => {
     const loadModels = async () => {
@@ -32,12 +32,12 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
         console.error('Error loading models:', error)
       }
     }
-    
+
     if (gift.title) {
       loadModels()
     }
   }, [gift.title])
-  
+
   // Загрузка списка фонов
   useEffect(() => {
     const loadBackdrops = async () => {
@@ -51,7 +51,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
         console.error('Error loading backdrops:', error)
       }
     }
-    
+
     loadBackdrops()
   }, [])
 
@@ -60,7 +60,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
   const isShopGift = gift.gift_id !== undefined && gift.price !== undefined
 
   // Формируем ссылку на NFT
-  const nftUrl = isNFTGift 
+  const nftUrl = isNFTGift
     ? `https://t.me/nft/${gift.name}`
     : `https://t.me/nft/${gift.slug || gift.gift_id}`
 
@@ -68,7 +68,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
     e.preventDefault()
     // Используем Telegram WebApp API если доступен
     const tg = window.Telegram?.WebApp
-    
+
     // openTelegramLink открывает внутри Telegram (для t.me ссылок)
     if (tg && tg.openTelegramLink) {
       tg.openTelegramLink(nftUrl)
@@ -94,19 +94,19 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
 
   const handlePurchase = async () => {
     if (purchasing) return
-    
+
     const tg = window.Telegram?.WebApp
-    
+
     // Подтверждение покупки
     const confirmMessage = `Купить "${gift.title}" за ${gift.price} ⭐?`
-    const confirmed = tg?.showConfirm 
+    const confirmed = tg?.showConfirm
       ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
       : window.confirm(confirmMessage)
-    
+
     if (!confirmed) return
-    
+
     setPurchasing(true)
-    
+
     try {
       if (onPurchase) {
         await onPurchase(gift)
@@ -120,9 +120,9 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
 
   const handleSell = async () => {
     if (selling) return
-    
+
     setSelling(true)
-    
+
     try {
       if (onSell) {
         await onSell(gift)
@@ -136,9 +136,9 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
 
   const handleWithdraw = async () => {
     if (withdrawing) return
-    
+
     setWithdrawing(true)
-    
+
     try {
       if (onWithdraw) {
         await onWithdraw(gift)
@@ -156,27 +156,27 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
       <div className="overlay-sheet gift-details-modal">
         <div className="sheet-content">
           {/* Карточка подарка с фоном */}
-          <div 
+          <div
             className="gift-card-preview"
             style={{
-              background: gift.center_color && gift.edge_color 
+              background: gift.center_color && gift.edge_color
                 ? `linear-gradient(135deg, ${gift.center_color} 0%, ${gift.edge_color} 100%)`
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                : 'radial-gradient(circle, #363738, #0e0f0f)'
             }}
           >
             <button className="modal-close-btn-on-card" onClick={onClose}>✕</button>
-            
-            <a 
-              href={nftUrl} 
+
+            <a
+              href={nftUrl}
               onClick={handleOpenLink}
               className="modal-open-link"
             >
               Открыть
             </a>
-            
+
             {gift.model_path && (
               <div className="gift-animation">
-                <LottieAnimation 
+                <LottieAnimation
                   animationData={gift.model_path}
                   width={80}
                   height={80}
@@ -221,7 +221,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
               {/* Модели - expandable полоса */}
               {availableModels.length > 0 && (
                 <div className="attribute-expandable">
-                  <div 
+                  <div
                     className="attribute-header"
                     onClick={() => setModelsExpanded(!modelsExpanded)}
                   >
@@ -241,8 +241,8 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
                   {modelsExpanded && (
                     <div className="attribute-list">
                       {availableModels.map((model, index) => (
-                        <div 
-                          key={index} 
+                        <div
+                          key={index}
                           className={`attribute-item ${gift.model_name === model ? 'current' : ''}`}
                         >
                           {model}
@@ -255,7 +255,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
 
               {/* Фон - кнопка открывающая модальное окно */}
               {gift.backdrop_name && (
-                <div 
+                <div
                   className="attribute-button"
                   onClick={() => setShowBackdropModal(true)}
                 >
@@ -283,15 +283,15 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
                 <>
                   <div className="withdraw-info-text">
                     <span className="withdraw-info-regular">Этот подарок можно </span>
-                    <span 
-                      className="withdraw-info-link" 
+                    <span
+                      className="withdraw-info-link"
                       onClick={handleWithdraw}
                     >
                       вывести
                     </span>
                   </div>
-                  <button 
-                    className="spin-button-fixed modal-sell-button-full" 
+                  <button
+                    className="spin-button-fixed modal-sell-button-full"
                     onClick={handleSell}
                     disabled={selling}
                   >
@@ -307,8 +307,8 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
                 </>
               ) : (
                 // NFT подарок - только Продать
-                <button 
-                  className="spin-button-fixed modal-sell-button-full" 
+                <button
+                  className="spin-button-fixed modal-sell-button-full"
                   onClick={handleSell}
                   disabled={selling}
                 >
@@ -326,8 +326,8 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
           ) : (
             // Кнопки для магазина
             isShopGift && gift.price > 0 && (
-              <button 
-                className="spin-button-fixed modal-buy-button" 
+              <button
+                className="spin-button-fixed modal-buy-button"
                 onClick={handlePurchase}
                 disabled={purchasing}
               >
@@ -344,7 +344,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
           )}
         </div>
       </div>
-      
+
       {/* Модальное окно с фонами */}
       {showBackdropModal && (
         <div className="backdrop-modal-overlay" onClick={() => setShowBackdropModal(false)}>
@@ -355,11 +355,11 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
             </div>
             <div className="backdrop-modal-grid">
               {backdrops.map((backdrop, index) => (
-                <div 
+                <div
                   key={index}
                   className={`backdrop-modal-item ${gift.backdrop_name === backdrop.name ? 'current' : ''}`}
                 >
-                  <div 
+                  <div
                     className="backdrop-circle-large"
                     style={{
                       background: `radial-gradient(circle, ${backdrop.hex.centerColor}, ${backdrop.hex.edgeColor})`

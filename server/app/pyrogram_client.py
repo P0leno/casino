@@ -69,6 +69,46 @@ async def stop_pyrogram():
             print(f"⚠️  Ошибка остановки Pyrogram: {e}")
 
 
+async def reconnect_pyrogram():
+    """
+    Переподключает Pyrogram клиент при потере соединения.
+    Используется при ошибках TCPTransport closed.
+    """
+    global pyrogram_app
+    
+    print("🔄 Переподключение Pyrogram...")
+    
+    # Сначала пробуем остановить текущий клиент
+    if pyrogram_app:
+        try:
+            if pyrogram_app.is_connected:
+                await pyrogram_app.stop()
+        except Exception as e:
+            print(f"⚠️ Ошибка при остановке перед переподключением: {e}")
+        
+        # Пробуем запустить заново
+        try:
+            await pyrogram_app.start()
+            print("✅ Pyrogram переподключён")
+            return pyrogram_app
+        except Exception as e:
+            print(f"❌ Не удалось переподключиться: {e}")
+            return None
+    
+    # Если клиент не был инициализирован
+    init_pyrogram()
+    if pyrogram_app:
+        try:
+            await pyrogram_app.start()
+            print("✅ Pyrogram инициализирован и запущен")
+            return pyrogram_app
+        except Exception as e:
+            print(f"❌ Ошибка запуска нового клиента: {e}")
+            return None
+    
+    return None
+
+
 def get_pyrogram():
     """Возвращает глобальный Pyrogram клиент"""
     return pyrogram_app

@@ -69,6 +69,7 @@
 }
 
 @media (max-width: 768px) {
+
   .profile-header-avatar,
   .profile-header-avatar-placeholder {
     width: 35px;
@@ -171,6 +172,11 @@
 
 .button-icon {
   font-size: 24px;
+}
+
+.button-icon-img {
+  width: 24px;
+  height: 24px;
 }
 
 .button-text {
@@ -581,15 +587,15 @@
   transition: transform 0.3s ease;
 }
 
-.toggle-checkbox:checked + .toggle-slider {
+.toggle-checkbox:checked+.toggle-slider {
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
-.toggle-checkbox:checked + .toggle-slider::before {
+.toggle-checkbox:checked+.toggle-slider::before {
   transform: translateX(22px);
 }
 
-.toggle-checkbox:disabled + .toggle-slider {
+.toggle-checkbox:disabled+.toggle-slider {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -817,8 +823,15 @@
 }
 
 @keyframes crashPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .crash-info-label {
@@ -961,7 +974,7 @@
 
 
 .gift-card-inventory-regular {
-  border: 2px solid rgba(255, 215, 0, 0.5);
+  /* Без отдельной рамки - как у NFT */
 }
 
 .lottie-container,
@@ -1021,10 +1034,11 @@
 }
 
 .profile-tabs {
-  width: fit-content;
+  width: auto;
+  min-width: 280px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: stretch;
   background: transparent;
   backdrop-filter: blur(1.25rem);
   border-radius: 3rem;
@@ -1042,17 +1056,18 @@
   height: calc(100% - 4px);
   background: #1C3F48;
   border-radius: 3rem;
-  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   top: 2px;
   z-index: 0;
   pointer-events: none;
 }
 
 .profile-tab-label {
-  padding: 10px 10px;
+  flex: 1;
+  padding: 10px 20px;
   transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -1081,7 +1096,7 @@
   font-weight: 600;
 }
 
-.profile-tab-label > span {
+.profile-tab-label>span {
   transition: all 0.3s ease;
 }
 

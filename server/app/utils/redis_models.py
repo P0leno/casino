@@ -12,19 +12,37 @@ logger = logging.getLogger(__name__)
 
 # Database settings
 DB_PATH = os.getenv("DB_PATH", "./users.db")
-SQLITE_TIMEOUT = 60
+SQLITE_TIMEOUT = 120
+MAX_RETRIES = 3
+RETRY_DELAY = 0.5
 
 def _get_conn():
-    """Получить оптимизированное соединение с полными PRAGMA настройками"""
-    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    conn.execute("PRAGMA cache_size=-64000")      # 64MB кэш
-    conn.execute("PRAGMA temp_store=MEMORY")       # Временные таблицы в памяти
-    conn.execute("PRAGMA mmap_size=268435456")     # 256MB memory-mapped I/O
-    conn.execute("PRAGMA busy_timeout=60000")      # 60 секунд busy timeout
-    conn.execute("PRAGMA wal_autocheckpoint=1000") # Checkpoint каждые 1000 страниц
-    return conn
+    """Получить оптимизированное соединение с retry логикой при блокировках"""
+    import time
+    
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT, check_same_thread=False, isolation_level=None)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute("PRAGMA cache_size=-64000")      # 64MB кэш
+            conn.execute("PRAGMA temp_store=MEMORY")       # Временные таблицы в памяти
+            conn.execute("PRAGMA mmap_size=268435456")     # 256MB memory-mapped I/O
+            conn.execute("PRAGMA busy_timeout=120000")     # 120 секунд busy timeout
+            conn.execute("PRAGMA wal_autocheckpoint=1000") # Checkpoint каждые 1000 страниц
+            conn.execute("PRAGMA read_uncommitted=1")      # Грязное чтение для ускорения
+            return conn
+        except sqlite3.OperationalError as e:
+            last_error = e
+            if "database is locked" in str(e) and attempt < MAX_RETRIES - 1:
+                delay = RETRY_DELAY * (2 ** attempt)
+                logger.warning(f"[DB] Database locked, retry {attempt + 1}/{MAX_RETRIES} after {delay}s")
+                time.sleep(delay)
+            else:
+                raise
+    
+    raise last_error
 
 # TTL константы (в секундах)
 TTL_USER = 1800  # 30 минут

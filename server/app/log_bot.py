@@ -243,6 +243,118 @@ async def manual_nft_withdraw_done_handler(callback: CallbackQuery):
         await send_message_to_logs(f"❌ Error in manual_nft_withdraw_done_handler:\n<pre>{traceback.format_exc()}</pre>")
         await callback.answer("❌ Ошибка", show_alert=True)
 
+
+@log_router.callback_query(F.data.startswith("admin_confirm_gift:"))
+async def admin_confirm_gift_handler(callback: CallbackQuery):
+    """Обработка кнопки 'Подтвердить выдачу' от администратора"""
+    try:
+        parts = callback.data.split(":")
+        if len(parts) < 3:
+            await callback.answer("Ошибка данных", show_alert=True)
+            return
+        
+        user_id = int(parts[1])
+        gift_name = parts[2]
+        admin_id = callback.from_user.id
+        admin_name = callback.from_user.username or callback.from_user.first_name
+        
+        await callback.answer("⏳ Обрабатываю...")
+        
+        # Импортируем нужные модули
+        import json
+        from app.utils.database import get_db_connection
+        from app.utils.gift_sender import send_gift_async
+        from app.pyrogram_client import get_pyrogram
+        from app.utils.redis_client import cache
+        
+        # Снимаем блокировку help запроса
+        help_lock_key = f"help_request:{user_id}:{gift_name}"
+        if cache.is_available():
+            cache.client.delete(help_lock_key)
+        
+        # Проверяем наличие подарка в инвентаре
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            conn.close()
+            await callback.message.edit_text(
+                f"❌ Пользователь {user_id} не найден"
+            )
+            return
+        
+        inventory = json.loads(result[0]) if result[0] else []
+        
+        if gift_name not in inventory:
+            conn.close()
+            await callback.message.edit_text(
+                f"❌ <b>Подарок не найден в инвентаре</b>\n\n"
+                f"Возможно, он уже был отправлен.\n"
+                f"👤 User ID: {user_id}\n"
+                f"🎁 Подарок: {gift_name}",
+                parse_mode="HTML"
+            )
+            return
+        
+        # Получаем gift_id
+        cursor.execute("SELECT gift_id FROM gift_prices WHERE gift_name = ?", (gift_name,))
+        gift_result = cursor.fetchone()
+        
+        if not gift_result or not gift_result[0]:
+            conn.close()
+            await callback.message.edit_text(f"❌ Gift ID для '{gift_name}' не найден")
+            return
+        
+        gift_id = gift_result[0]
+        
+        # Удаляем подарок из инвентаря
+        inventory.remove(gift_name)
+        cursor.execute(
+            "UPDATE users SET inventory = ? WHERE id = ?",
+            (json.dumps(inventory), user_id)
+        )
+        conn.commit()
+        
+        # Отправляем подарок
+        pyrogram_app = get_pyrogram()
+        send_success, error_msg, is_peer_invalid = await send_gift_async(user_id, gift_id, pyrogram_app)
+        
+        if send_success:
+            conn.close()
+            await callback.message.edit_text(
+                f"✅ <b>Подарок успешно выдан!</b>\n\n"
+                f"👤 User ID: <code>{user_id}</code>\n"
+                f"🎁 Подарок: <b>{gift_name}</b>\n"
+                f"👮 Выдал: @{admin_name}",
+                parse_mode="HTML"
+            )
+        else:
+            # При ошибке возвращаем подарок
+            inventory.append(gift_name)
+            cursor.execute(
+                "UPDATE users SET inventory = ? WHERE id = ?",
+                (json.dumps(inventory), user_id)
+            )
+            conn.commit()
+            conn.close()
+            
+            await callback.message.edit_text(
+                f"❌ <b>Не удалось отправить подарок</b>\n\n"
+                f"👤 User ID: <code>{user_id}</code>\n"
+                f"🎁 Подарок: <b>{gift_name}</b>\n"
+                f"⚠️ Ошибка: {error_msg}",
+                parse_mode="HTML"
+            )
+        
+    except Exception as e:
+        print(f"Error in admin_confirm_gift_handler: {e}")
+        import traceback
+        await send_message_to_logs(f"❌ Error in admin_confirm_gift_handler:\n<pre>{traceback.format_exc()}</pre>")
+        await callback.answer("❌ Ошибка", show_alert=True)
+
+
 # Подключаем router к dispatcher
 log_dp.include_router(log_router)
 

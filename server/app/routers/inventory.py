@@ -412,11 +412,11 @@ async def sell_gift(request: SellGiftRequest):
         conn.commit()
         conn.close()
         
-        # Получаем обновленный баланс
-        user_balance = get_user_balance(user_id)
-        
-        # Инвалидируем кэш пользователя в Redis
+        # Инвалидируем кэш пользователя в Redis СРАЗУ после изменения в БД
         RedisUser.invalidate(user_id)
+        
+        # Получаем обновленный баланс (теперь без кеша, напрямую из БД)
+        user_balance = get_user_balance(user_id)
         
         print(f"✅ Продан подарок {title} за {stars_price}⭐ (цена: {current_price}⭐, комиссия: {sell_commission}%)")
         

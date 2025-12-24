@@ -5,6 +5,8 @@ import Settings from './Settings'
 import GiftDetailsModal from './GiftDetailsModal'
 import PromoCodeModal from './PromoCodeModal'
 import starStaticIcon from '../assets/star_static.svg'
+import giftIcon from '../assets/gift.svg'
+import supIcon from '../assets/sup.svg'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
 import { useBalance } from '../contexts/BalanceContext'
@@ -76,7 +78,7 @@ function Profile() {
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
-    
+
     // Получаем safe area insets
     if (tg) {
       const safeArea = {
@@ -156,7 +158,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/ban-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,7 +184,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/get-chances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,7 +206,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/update-chances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -237,7 +239,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/unban-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -263,7 +265,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/crash/get-settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -294,14 +296,14 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/crash/update-settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          initData, 
-          maxMultiplier: parseFloat(crashMaxMultiplier), 
-          alwaysProfit: crashAlwaysProfit, 
+        body: JSON.stringify({
+          initData,
+          maxMultiplier: parseFloat(crashMaxMultiplier),
+          alwaysProfit: crashAlwaysProfit,
           maxDebt: parseInt(crashMaxDebt),
           bigBetThreshold: parseInt(crashBigBetThreshold),
           bigBetLoseChance: parseInt(crashBigBetLoseChance)
@@ -358,10 +360,10 @@ function Profile() {
       return
     }
 
-    const confirmText = deductFromBalance 
+    const confirmText = deductFromBalance
       ? `Вернуть платеж для пользователя ${refundUserId}?\nTransaction: ${refundTransactionId}\n\n⚠️ Баланс пользователя будет уменьшен (может уйти в минус)`
       : `Вернуть платеж для пользователя ${refundUserId}?\nTransaction: ${refundTransactionId}`
-    
+
     const confirmed = confirm(confirmText)
     if (!confirmed) return
 
@@ -370,12 +372,12 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/admin/refund-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          initData, 
+        body: JSON.stringify({
+          initData,
           userId: parseInt(refundUserId),
           transactionId: refundTransactionId,
           deductFromBalance: deductFromBalance
@@ -411,7 +413,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/tasks/list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -438,12 +440,12 @@ function Profile() {
 
     setCheckingPermissions(true)
     setBotPermissionStatus('Проверка...')
-    
+
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/admin/tasks/check-bot-permissions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -494,7 +496,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/admin/tasks/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -539,7 +541,7 @@ function Profile() {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      
+
       const response = await fetch(`${apiUrl}/api/admin/tasks/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -606,12 +608,12 @@ function Profile() {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-    
+
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
-    const confirmed = tg?.showConfirm 
+    const confirmed = tg?.showConfirm
       ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
       : window.confirm(confirmMessage)
-    
+
     if (!confirmed) return
 
     try {
@@ -622,7 +624,7 @@ function Profile() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         if (tg?.showAlert) {
           tg.showAlert('✅ Подарок успешно отправлен!')
@@ -663,10 +665,10 @@ function Profile() {
       }
 
       const confirmMessage = `Продать ${gift.title} за ${sellPrice} ⭐?`
-      const confirmed = tg?.showConfirm 
+      const confirmed = tg?.showConfirm
         ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
         : window.confirm(confirmMessage)
-      
+
       if (!confirmed) return
 
       const sellResponse = await fetch(`${apiUrl}/api/inventory/sell`, {
@@ -676,7 +678,7 @@ function Profile() {
       })
 
       const sellData = await sellResponse.json()
-      
+
       if (sellData.success) {
         tg?.showAlert(`✅ Подарок продан!`)
         loadInventory()
@@ -703,7 +705,7 @@ function Profile() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         if (tg?.showAlert) {
           tg.showAlert(`✅ NFT продан за ${data.sellPrice} ⭐`)
@@ -729,9 +731,9 @@ function Profile() {
     }
   }
 
-  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
-                   window.Telegram?.WebApp?.platform === 'ios'
-  
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
+    window.Telegram?.WebApp?.platform === 'ios'
+
   const tg = window.Telegram?.WebApp
   const safeAreaTopValue = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
   const contentPadding = isMobile ? (safeAreaTopValue + 20) : 5
@@ -780,34 +782,34 @@ function Profile() {
       {/* Profile Tabs */}
       <div className="profile-tabs-container">
         <div className="profile-tabs">
-            <div 
-              className="profile-tab-indicator" 
-              style={{ 
-                left: activeProfileTab === 'inventory' ? '2px' : 'calc(50% + 1px)',
-                width: 'calc(50% - 3px)'
-              }} 
+          <div
+            className="profile-tab-indicator"
+            style={{
+              left: activeProfileTab === 'inventory' ? '3px' : 'calc(50%)',
+              width: 'calc(50% - 3px)'
+            }}
+          />
+          <label className="profile-tab-label">
+            <input
+              type="radio"
+              name="profile-tab"
+              value="inventory"
+              checked={activeProfileTab === 'inventory'}
+              onChange={(e) => setActiveProfileTab(e.target.value)}
             />
-            <label className="profile-tab-label">
-              <input 
-                type="radio" 
-                name="profile-tab" 
-                value="inventory"
-                checked={activeProfileTab === 'inventory'}
-                onChange={(e) => setActiveProfileTab(e.target.value)}
-              />
-              <span>Инвентарь</span>
-            </label>
-            
-            <label className="profile-tab-label">
-              <input 
-                type="radio" 
-                name="profile-tab" 
-                value="admin"
-                checked={activeProfileTab === 'admin'}
-                onChange={(e) => setActiveProfileTab(e.target.value)}
-              />
-              <span>Прочее</span>
-            </label>
+            <span>Инвентарь</span>
+          </label>
+
+          <label className="profile-tab-label">
+            <input
+              type="radio"
+              name="profile-tab"
+              value="admin"
+              checked={activeProfileTab === 'admin'}
+              onChange={(e) => setActiveProfileTab(e.target.value)}
+            />
+            <span>Прочее</span>
+          </label>
         </div>
       </div>
 
@@ -816,10 +818,10 @@ function Profile() {
         <div className="profile-other-section" style={{ display: activeProfileTab === 'admin' ? 'block' : 'none' }}>
           <div className="profile-actions">
             <button className="action-button" onClick={() => setShowPromoCodeModal(true)}>
-              <span className="button-icon">🎁</span>
+              <img src={giftIcon} alt="promo" className="button-icon-img" />
               <span className="button-text">Промокод</span>
             </button>
-            
+
             <button className="action-button" onClick={() => {
               const tg = window.Telegram?.WebApp
               if (tg && tg.openTelegramLink) {
@@ -828,10 +830,10 @@ function Profile() {
                 window.open('https://t.me/helpshellbot', '_blank')
               }
             }}>
-              <span className="button-icon">👤</span>
+              <img src={supIcon} alt="support" className="button-icon-img" />
               <span className="button-text">Поддержка</span>
             </button>
-            
+
             {!loading && isAdmin && (
               <>
                 <button className="action-button admin-button" onClick={() => setShowAdminPanel(true)}>
@@ -860,19 +862,19 @@ function Profile() {
                 const isRegular = gift.is_regular_gift === true
 
                 return (
-                  <div 
+                  <div
                     key={index}
                     className={isRegular ? "gift-card-inventory-regular" : "gift-card-inventory"}
                     style={{
-                      background: gift.center_color && gift.edge_color 
+                      background: gift.center_color && gift.edge_color
                         ? `linear-gradient(135deg, ${gift.center_color} 0%, ${gift.edge_color} 100%)`
-                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                        : 'radial-gradient(circle, #363738, #0e0f0f)'
                     }}
                     onClick={() => handleViewGift(gift)}
                   >
                     {gift.model_path && (
                       <div className={isRegular ? "lottie-container-regular" : "lottie-container"}>
-                        <LottieAnimation 
+                        <LottieAnimation
                           animationData={gift.model_path}
                           width={isRegular ? 80 : 100}
                           height={isRegular ? 80 : 100}
@@ -899,10 +901,10 @@ function Profile() {
           <div className="overlay-backdrop" onClick={() => setShowAdminPanel(false)} />
           <div className="overlay-sheet admin-panel-sheet">
             <button className="close-panel-btn" onClick={() => setShowAdminPanel(false)}>✕</button>
-            
+
             <div className="sheet-content">
               <h2 className="admin-panel-title">Админ панель</h2>
-              
+
               <div className="admin-input-group">
                 <label className="admin-label">User ID</label>
                 <input
@@ -916,15 +918,15 @@ function Profile() {
               </div>
 
               <div className="admin-buttons">
-                <button 
-                  className="admin-action-button ban-button" 
+                <button
+                  className="admin-action-button ban-button"
                   onClick={handleBanUser}
                   disabled={actionLoading}
                 >
                   {actionLoading ? 'Загрузка...' : 'Забанить'}
                 </button>
-                <button 
-                  className="admin-action-button unban-button" 
+                <button
+                  className="admin-action-button unban-button"
                   onClick={handleUnbanUser}
                   disabled={actionLoading}
                 >
@@ -934,11 +936,11 @@ function Profile() {
 
               <div className="admin-divider"></div>
 
-              <button 
-                className="admin-chances-button" 
-                onClick={() => { 
-                  loadChances(selectedSpinMode); 
-                  setShowChancesPanel(true); 
+              <button
+                className="admin-chances-button"
+                onClick={() => {
+                  loadChances(selectedSpinMode);
+                  setShowChancesPanel(true);
                 }}
                 disabled={actionLoading}
               >
@@ -948,8 +950,8 @@ function Profile() {
 
               <div className="admin-divider"></div>
 
-              <button 
-                className="admin-chances-button refund-panel-button" 
+              <button
+                className="admin-chances-button refund-panel-button"
                 onClick={() => setShowRefundPanel(true)}
                 disabled={actionLoading}
               >
@@ -960,11 +962,11 @@ function Profile() {
               <div className="admin-divider"></div>
 
               <div className="admin-button-row">
-                <button 
-                  className="admin-chances-button crash-panel-button half-width" 
-                  onClick={() => { 
-                    loadCrashSettings(); 
-                    setShowCrashPanel(true); 
+                <button
+                  className="admin-chances-button crash-panel-button half-width"
+                  onClick={() => {
+                    loadCrashSettings();
+                    setShowCrashPanel(true);
                   }}
                   disabled={actionLoading}
                 >
@@ -972,11 +974,11 @@ function Profile() {
                   <span className="button-text">Краш</span>
                 </button>
 
-                <button 
-                  className="admin-chances-button crash-panel-button half-width" 
-                  onClick={() => { 
-                    loadTasks(); 
-                    setShowTasksPanel(true); 
+                <button
+                  className="admin-chances-button crash-panel-button half-width"
+                  onClick={() => {
+                    loadTasks();
+                    setShowTasksPanel(true);
                   }}
                   disabled={actionLoading}
                 >
@@ -987,8 +989,8 @@ function Profile() {
 
               <div className="admin-divider"></div>
 
-              <button 
-                className="admin-chances-button settings-panel-button" 
+              <button
+                className="admin-chances-button settings-panel-button"
                 onClick={() => setShowSettingsPanel(true)}
                 disabled={actionLoading}
               >
@@ -1005,14 +1007,14 @@ function Profile() {
           <div className="overlay-backdrop" onClick={() => setShowChancesPanel(false)} />
           <div className="overlay-sheet chances-panel-sheet">
             <button className="close-panel-btn" onClick={() => setShowChancesPanel(false)}>✕</button>
-            
+
             <div className="sheet-content">
               <h2 className="admin-panel-title">Управление шансами</h2>
-              
+
               <div className="spin-mode-selector">
                 <label className="spin-mode-label">Режим спина:</label>
-                <select 
-                  value={selectedSpinMode} 
+                <select
+                  value={selectedSpinMode}
                   onChange={(e) => {
                     setSelectedSpinMode(e.target.value);
                     loadChances(e.target.value);
@@ -1028,7 +1030,7 @@ function Profile() {
                   <option value="promik">Промик (Promik)</option>
                 </select>
               </div>
-              
+
               <div className="chances-list">
                 {chances.map((chance) => (
                   <div key={chance.name} className="chance-item">
@@ -1132,7 +1134,7 @@ function Profile() {
                     <div className="chance-actions">
                       {editingGift === chance.name ? (
                         <>
-                          <button 
+                          <button
                             className="chance-btn save-btn"
                             onClick={() => {
                               const visible = parseFloat(document.getElementById(`visible-${chance.name}`).value)
@@ -1152,7 +1154,7 @@ function Profile() {
                           >
                             ✓
                           </button>
-                          <button 
+                          <button
                             className="chance-btn cancel-btn"
                             onClick={() => setEditingGift(null)}
                             disabled={actionLoading}
@@ -1161,7 +1163,7 @@ function Profile() {
                           </button>
                         </>
                       ) : (
-                        <button 
+                        <button
                           className="chance-btn edit-btn"
                           onClick={() => setEditingGift(chance.name)}
                         >
@@ -1182,10 +1184,10 @@ function Profile() {
           <div className="overlay-backdrop" onClick={() => setShowRefundPanel(false)} />
           <div className="overlay-sheet refund-panel-sheet">
             <button className="close-panel-btn" onClick={() => setShowRefundPanel(false)}>✕</button>
-            
+
             <div className="sheet-content">
               <h2 className="admin-panel-title">Возврат платежа</h2>
-              
+
               <div className="admin-input-group">
                 <label className="admin-label">User ID</label>
                 <input
@@ -1227,8 +1229,8 @@ function Profile() {
                 )}
               </div>
 
-              <button 
-                className="admin-action-button refund-button" 
+              <button
+                className="admin-action-button refund-button"
                 onClick={handleRefund}
                 disabled={refundLoading || !refundUserId || !refundTransactionId}
               >
@@ -1244,10 +1246,10 @@ function Profile() {
           <div className="overlay-backdrop" onClick={() => setShowCrashPanel(false)} />
           <div className="overlay-sheet crash-settings-panel">
             <button className="close-panel-btn" onClick={() => setShowCrashPanel(false)}>✕</button>
-            
+
             <div className="sheet-content">
               <h2 className="admin-panel-title">Настройки краш-игры</h2>
-              
+
               {crashState && (
                 <div className="crash-game-info">
                   <div className="crash-info-card">
@@ -1258,7 +1260,7 @@ function Profile() {
                       {!crashState.crashed && crashState.isRunning && '🚀 В полете'}
                     </div>
                   </div>
-                  
+
                   {crashState.isRunning && !crashState.crashed && (
                     <div className="crash-info-card highlight">
                       <div className="crash-info-label">Текущий коэффициент</div>
@@ -1267,7 +1269,7 @@ function Profile() {
                       </div>
                     </div>
                   )}
-                  
+
                   {crashState.crashed && crashState.crashedAt && (
                     <div className="crash-info-card crashed">
                       <div className="crash-info-label">Взорвалась на</div>
@@ -1276,7 +1278,7 @@ function Profile() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="crash-info-card">
                     <div className="crash-info-label">Активных ставок</div>
                     <div className="crash-info-value">
@@ -1287,17 +1289,17 @@ function Profile() {
               )}
 
               {crashState?.isRunning && !crashState?.crashed && (
-                <button 
-                  className="admin-action-button explode-button" 
+                <button
+                  className="admin-action-button explode-button"
                   onClick={handleExplode}
                   disabled={exploding}
                 >
                   {exploding ? 'Взрываем...' : '💥 Взорвать сейчас'}
                 </button>
               )}
-              
+
               <div className="admin-divider"></div>
-              
+
               <div className="admin-toggle-group">
                 <label className="toggle-label">
                   <input
@@ -1313,7 +1315,7 @@ function Profile() {
                 {crashAlwaysProfit && (
                   <>
                     <p className="toggle-hint">Система будет компенсировать выигрыши низкими крашами</p>
-                    <div className="admin-input-group" style={{marginTop: '10px'}}>
+                    <div className="admin-input-group" style={{ marginTop: '10px' }}>
                       <label className="admin-label">Порог долга (⭐)</label>
                       <input
                         type="number"
@@ -1326,7 +1328,7 @@ function Profile() {
                         max="10000"
                       />
                     </div>
-                    <div className="admin-input-group" style={{marginTop: '10px'}}>
+                    <div className="admin-input-group" style={{ marginTop: '10px' }}>
                       <label className="admin-label">Порог большой ставки (⭐)</label>
                       <input
                         type="number"
@@ -1339,7 +1341,7 @@ function Profile() {
                         max="10000"
                       />
                     </div>
-                    <div className="admin-input-group" style={{marginTop: '10px'}}>
+                    <div className="admin-input-group" style={{ marginTop: '10px' }}>
                       <label className="admin-label">Шанс проигрыша на большой ставке (%)</label>
                       <input
                         type="number"
@@ -1358,9 +1360,9 @@ function Profile() {
                   </>
                 )}
               </div>
-              
+
               <div className="admin-divider"></div>
-              
+
               <div className="admin-input-group">
                 <label className="admin-label">Максимальный коэффициент</label>
                 <input
@@ -1379,8 +1381,8 @@ function Profile() {
                 </p>
               </div>
 
-              <button 
-                className="admin-action-button save-button" 
+              <button
+                className="admin-action-button save-button"
                 onClick={handleUpdateCrashSettings}
                 disabled={actionLoading}
               >
@@ -1396,14 +1398,14 @@ function Profile() {
           <div className="overlay-backdrop" onClick={() => setShowTasksPanel(false)} />
           <div className="overlay-sheet tasks-panel-sheet">
             <button className="close-panel-btn" onClick={() => setShowTasksPanel(false)}>✕</button>
-            
+
             <div className="sheet-content">
               <h2 className="admin-panel-title">Управление заданиями</h2>
 
               {!showAddTaskForm ? (
                 <>
-                  <button 
-                    className="admin-action-button add-task-button" 
+                  <button
+                    className="admin-action-button add-task-button"
                     onClick={() => setShowAddTaskForm(true)}
                     disabled={actionLoading || tasksLoading}
                   >
@@ -1420,7 +1422,7 @@ function Profile() {
                         <div key={task.id} className="task-item-admin">
                           <div className="task-item-header">
                             <span className="task-type-badge">{getTaskTypeLabel(task.type)}</span>
-                            <button 
+                            <button
                               className="task-delete-btn"
                               onClick={() => handleDeleteTask(task.id)}
                               disabled={actionLoading}
@@ -1546,8 +1548,8 @@ function Profile() {
                   )}
 
                   <div className="form-actions-row">
-                    <button 
-                      className="admin-action-button cancel-button" 
+                    <button
+                      className="admin-action-button cancel-button"
                       onClick={() => {
                         setShowAddTaskForm(false)
                         setTaskTarget('')
@@ -1562,8 +1564,8 @@ function Profile() {
                     >
                       Отмена
                     </button>
-                    <button 
-                      className="admin-action-button save-button" 
+                    <button
+                      className="admin-action-button save-button"
                       onClick={handleCreateTask}
                       disabled={actionLoading || checkingPermissions}
                     >
@@ -1582,7 +1584,7 @@ function Profile() {
           <div className="overlay-backdrop" onClick={() => setShowSettingsPanel(false)} />
           <div className="overlay-sheet settings-panel-sheet">
             <button className="close-panel-btn" onClick={() => setShowSettingsPanel(false)}>✕</button>
-            
+
             <div className="sheet-content">
               <Settings />
             </div>
@@ -1592,7 +1594,7 @@ function Profile() {
 
       {/* Safe Area Визуализация */}
       {showSafeArea && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: `${safeAreaInset.top}px`,
@@ -1638,7 +1640,7 @@ function Profile() {
       )}
 
       {/* Модальное окно промокода */}
-      <PromoCodeModal 
+      <PromoCodeModal
         isOpen={showPromoCodeModal}
         onClose={() => setShowPromoCodeModal(false)}
       />

@@ -11,6 +11,7 @@ from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import spin_rate_limiter
 from app.utils.balance import get_user_balance
+from app.utils.redis_models import RedisUser
 from app.pyrogram_client import get_pyrogram
 from app.utils.gift_sender import send_gift_async
 from app.utils.error_logger import send_error_log
@@ -255,6 +256,9 @@ async def spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
+            # Инвалидируем Redis кеш
+            RedisUser.invalidate(user_id)
+            
             # Получаем обновленный баланс
             user_balance = get_user_balance(user_id)
             
@@ -405,6 +409,9 @@ async def bazmin_spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
+            # Инвалидируем Redis кеш
+            RedisUser.invalidate(user_id)
+            
             return {"success": True, "gift": selected_gift}
     except Exception as e:
         print(f"Error in bazmin-spin: {e}")
@@ -520,6 +527,9 @@ async def lapik_spin(request: ValidateRequest):
             conn.commit()
             conn.close()
             
+            # Инвалидируем Redis кеш
+            RedisUser.invalidate(user_id)
+            
             # Получаем обновленный баланс
             user_balance = get_user_balance(user_id)
             
@@ -622,6 +632,9 @@ async def sell_gift(request: SellGiftRequest):
         conn.commit()
         conn.close()
         
+        # Инвалидируем Redis кеш
+        RedisUser.invalidate(user_id)
+        
         # Получаем обновленный баланс
         user_balance = get_user_balance(user_id)
         
@@ -703,18 +716,12 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         
         inventory = json.loads(result[0]) if result[0] else []
         
-        # Проверяем индекс
-        if request.index < 0 or request.index >= len(inventory):
-            conn.close()
-            return {"success": False, "message": "Invalid index"}
-        
-        # Проверяем совпадение подарка
-        inventory_gift = inventory[request.index]
+        # Проверяем что подарок есть в инвентаре (игнорируем index, ищем по имени)
         requested_gift = request.giftName
-        if inventory_gift != requested_gift:
-            print(f"❌ Gift mismatch DEBUG: inventory[{request.index}]='{inventory_gift}' vs request.giftName='{requested_gift}'")
+        if requested_gift not in inventory:
+            print(f"❌ Gift not in inventory: '{requested_gift}' not in {inventory}")
             conn.close()
-            return {"success": False, "message": "Gift mismatch"}
+            return {"success": False, "message": "Gift not found in inventory"}
         
         # Получаем gift_id
         cursor.execute("SELECT gift_id FROM gift_prices WHERE gift_name = ?", (request.giftName,))
@@ -726,8 +733,8 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         
         gift_id = gift_result[0]
         
-        # СНАЧАЛА удаляем подарок из инвентаря (защита от двойного вывода)
-        removed_gift = inventory.pop(request.index)
+        # Удаляем подарок из инвентаря по имени (первое вхождение)
+        inventory.remove(requested_gift)
         
         cursor.execute(
             "UPDATE users SET inventory = ? WHERE id = ?",
@@ -735,12 +742,15 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         )
         conn.commit()
         
+        # Инвалидируем Redis кеш
+        RedisUser.invalidate(user_id)
+        
         # ПОТОМ отправляем подарок через Pyrogram
-        send_success, error_msg = await send_gift_async(user_id, gift_id, pyrogram_app)
+        send_success, error_msg, is_peer_invalid = await send_gift_async(user_id, gift_id, pyrogram_app)
         
         if not send_success:
-            # Если не удалось отправить - ВОЗВРАЩАЕМ подарок обратно
-            inventory.insert(request.index, removed_gift)
+            # Возвращаем подарок обратно в инвентарь
+            inventory.append(requested_gift)
             cursor.execute(
                 "UPDATE users SET inventory = ? WHERE id = ?",
                 (json.dumps(inventory), user_id)
@@ -748,11 +758,40 @@ async def withdraw_gift(request: WithdrawGiftRequest):
             conn.commit()
             conn.close()
             
+            # Инвалидируем Redis кеш (вернули подарок)
+            RedisUser.invalidate(user_id)
+            
+            # Если ошибка PeerIdInvalid - отправляем уведомление через основной бот
+            if is_peer_invalid:
+                try:
+                    bot = Bot(token=BOT_TOKEN)
+                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                        [
+                            InlineKeyboardButton(text="🔄 Попробовать ещё раз", callback_data=f"retry_gift:{user_id}:{requested_gift}"),
+                            InlineKeyboardButton(text="❓ Помощь", callback_data=f"help_gift:{user_id}:{requested_gift}")
+                        ]
+                    ])
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text=(
+                            "❌ <b>Ошибка отправки подарка</b>\n\n"
+                            "Не удалось отправить подарок. Убедитесь, что вы начали чат с ботом "
+                            "@shellrelayer и попробуйте ещё раз.\n\n"
+                            f"🎁 Подарок: <b>{requested_gift}</b>"
+                        ),
+                        parse_mode="HTML",
+                        reply_markup=keyboard
+                    )
+                    await bot.session.close()
+                except Exception as bot_error:
+                    print(f"Error sending PeerIdInvalid notification: {bot_error}")
+            
             return {
                 "success": False, 
                 "message": "Подарок не отправился из-за ошибки",
                 "error": error_msg or "Неизвестная ошибка",
-                "needsManual": True
+                "needsManual": True,
+                "isPeerInvalid": is_peer_invalid
             }
         
         conn.close()
@@ -800,18 +839,12 @@ async def request_manual_withdraw(request: ManualWithdrawRequest):
         
         inventory = json.loads(result[0]) if result[0] else []
         
-        # Проверяем индекс
-        if request.index < 0 or request.index >= len(inventory):
-            conn.close()
-            return {"success": False, "message": "Invalid index"}
-        
-        # Проверяем совпадение подарка
-        inventory_gift = inventory[request.index]
+        # Проверяем что подарок есть в инвентаре (игнорируем index, ищем по имени)
         requested_gift = request.giftName
-        if inventory_gift != requested_gift:
-            print(f"❌ Gift mismatch DEBUG (sell): inventory[{request.index}]='{inventory_gift}' vs request.giftName='{requested_gift}'")
+        if requested_gift not in inventory:
+            print(f"❌ Gift not in inventory (sell): '{requested_gift}' not in {inventory}")
             conn.close()
-            return {"success": False, "message": "Gift mismatch"}
+            return {"success": False, "message": "Gift not found in inventory"}
         
         # Получаем gift_id
         cursor.execute("SELECT gift_id FROM gift_prices WHERE gift_name = ?", (request.giftName,))
@@ -823,8 +856,8 @@ async def request_manual_withdraw(request: ManualWithdrawRequest):
         
         gift_id = gift_result[0]
         
-        # Удаляем подарок из инвентаря
-        inventory.pop(request.index)
+        # Удаляем подарок из инвентаря по имени (первое вхождение)
+        inventory.remove(requested_gift)
         
         cursor.execute(
             "UPDATE users SET inventory = ? WHERE id = ?",

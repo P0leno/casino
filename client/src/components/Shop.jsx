@@ -22,15 +22,15 @@ function Shop({ onNavigateToTopUp }) {
   const [appliedFilters, setAppliedFilters] = useState([])
   const [filterCategory, setFilterCategory] = useState(null) // Категория для которой применены фильтры
   const [modelsList, setModelsList] = useState({}) // Список всех моделей из models_list.json
-  
-  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
-                   window.Telegram?.WebApp?.platform === 'ios'
-  
+
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
+    window.Telegram?.WebApp?.platform === 'ios'
+
   const tg = window.Telegram?.WebApp
   const safeAreaTop = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
   // Отступ = safe area + 20px (отступ баланс баров) + 50px (высота баланс бара) + 10px (gap)
   const contentPadding = isMobile ? (safeAreaTop + 80) : 50
-  
+
   console.log('Shop - safeAreaTop:', safeAreaTop, 'contentPadding:', contentPadding, 'isMobile:', isMobile)
 
   const categories = [
@@ -60,13 +60,13 @@ function Shop({ onNavigateToTopUp }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData || ''
-      
+
       const response = await fetch(`${API_URL}/api/shop/gifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setGifts(data)
@@ -113,9 +113,9 @@ function Shop({ onNavigateToTopUp }) {
       const response = await fetch(`${API_URL}/api/shop/buy-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initData,
-          slug: gift.slug 
+          slug: gift.slug
         })
       })
 
@@ -169,7 +169,7 @@ function Shop({ onNavigateToTopUp }) {
         <div style={{ paddingTop: `${contentPadding}px` }}>
           <h1 className="shop-title">Магазин 🛒</h1>
         </div>
-        
+
         {/* Категории */}
         <div className="shop-categories">
           {categories.map(category => (
@@ -195,21 +195,21 @@ function Shop({ onNavigateToTopUp }) {
             <div className="shop-empty">Подарки не найдены</div>
           ) : (
             getFilteredGifts().map(gift => (
-              <div 
-                key={gift.gift_id} 
+              <div
+                key={gift.gift_id}
                 className="shop-item-card"
                 onClick={() => handleGiftClick(gift)}
               >
-                <div 
+                <div
                   className="shop-item-image"
                   style={{
-                    background: gift.center_color && gift.edge_color 
+                    background: gift.center_color && gift.edge_color
                       ? `linear-gradient(135deg, ${gift.center_color} 0%, ${gift.edge_color} 100%)`
-                      : 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
+                      : 'radial-gradient(circle, #363738, #0e0f0f)'
                   }}
                 >
                   {gift.model_path && (
-                    <LottieAnimation 
+                    <LottieAnimation
                       animationData={gift.model_path}
                       width="30%"
                       height="30%"
@@ -229,8 +229,8 @@ function Shop({ onNavigateToTopUp }) {
       </div>
 
       {showGiftDetails && selectedGift && (
-        <GiftDetailsModal 
-          gift={selectedGift} 
+        <GiftDetailsModal
+          gift={selectedGift}
           onClose={() => {
             setShowGiftDetails(false)
             setSelectedGift(null)
@@ -240,7 +240,7 @@ function Shop({ onNavigateToTopUp }) {
       )}
 
       {showFilterModal && (
-        <ShopFilterModal 
+        <ShopFilterModal
           category={activeCategory}
           currentFilters={filterCategory === activeCategory ? appliedFilters : []} // Передаем фильтры только если категория совпадает
           modelsList={modelsList} // Передаем список моделей
