@@ -100,7 +100,13 @@ async def check_and_send_spin_notifications():
                                 print(f"✅ Отправлено уведомление пользователю {user_id}")
                                 
                             except Exception as e:
-                                print(f"❌ Ошибка отправки уведомления {user_id}: {e}")
+                                error_msg = str(e)
+                                print(f"❌ Ошибка отправки уведомления {user_id}: {error_msg}")
+                                
+                                # Если бот заблокирован пользователем
+                                if "blocked by the user" in error_msg or "user is deactivated" in error_msg:
+                                    from app.utils.cleanup import delete_blocked_user
+                                    delete_blocked_user(user_id)
                 
             except Exception as e:
                 print(f"❌ Ошибка обработки пользователя {user_id}: {e}")

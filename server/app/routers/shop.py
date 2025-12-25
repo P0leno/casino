@@ -96,8 +96,12 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
         
         # Фильтруем: убираем те, что в инвентаре
         gifts = []
+        print(f"[DEBUG] User {user_id} inventory: {inventory_slugs}")
         for gift in all_gifts:
-            if gift['slug'] and gift['slug'] in inventory_slugs:
+            slug = gift.get('slug')
+            # print(f"[DEBUG] Checking gift {slug}: in_inventory={slug in inventory_slugs}, available={gift.get('available_amount')}")
+            
+            if slug and slug in inventory_slugs:
                 continue  # Пропускаем подарки из инвентаря
             
             if gift['available_amount'] > 0:
@@ -211,6 +215,10 @@ async def buy_gift(request: BuyGiftRequest):
         except:
             inventory = []
         
+        if slug in inventory:
+            conn.close()
+            raise HTTPException(status_code=400, detail="У вас уже есть этот подарок")
+
         # Добавляем slug в инвентарь
         inventory.append(slug)
         

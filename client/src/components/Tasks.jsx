@@ -40,7 +40,8 @@ function Tasks({ onNavigateToTopUp }) {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/tasks/list`, {
+      const cacheBuster = Date.now()
+      const response = await fetch(`${apiUrl}/api/tasks/list?_=${cacheBuster}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })

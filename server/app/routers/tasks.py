@@ -212,20 +212,23 @@ async def get_tasks_list(request: ValidateRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        if admin_check:
+        if False: # admin_check: ОТКЛЮЧЕНО: Админ тоже должен видеть отфильтрованный список в клиенте
             # Админ видит все задания
             cursor.execute("SELECT id, target, type, award, currency FROM tasks")
             results = cursor.fetchall()
             conn.close()
-            tasks = [{"id": r[0], "target": r[1], "type": r[2], "award": r[3], "currency": r[4]} for r in results]
+            tasks = [{"id": int(r[0]), "target": r[1], "type": r[2], "award": r[3], "currency": r[4]} for r in results]
         else:
             # КРИТИЧНО: Всегда берем completed_tasks из БД (источник истины)
             cursor.execute("SELECT completed_tasks FROM users WHERE id = ?", (user_id,))
             result = cursor.fetchone()
             
             if result:
-                completed_tasks = json.loads(result[0] or "[]")
-                print(f"[TASKS/LIST] User {user_id} completed_tasks from DB: {completed_tasks}")
+                try:
+                    completed_tasks_raw = json.loads(result[0] or "[]")
+                except:
+                    completed_tasks_raw = []
+                # print(f"[TASKS/LIST] User {user_id} completed_tasks from DB: {completed_tasks_raw}")
             else:
                 conn.close()
                 return {"valid": False, "tasks": [], "error": "User not found"}
@@ -234,18 +237,31 @@ async def get_tasks_list(request: ValidateRequest):
             all_tasks = cursor.fetchall()
             conn.close()
             
-            # Приводим completed_tasks к int для корректного сравнения
-            completed_ids = set(int(t) for t in completed_tasks)
-            all_task_ids = [t[0] for t in all_tasks]
+            # Приводим completed_tasks к int для корректного сравнения (защита от строк)
+            completed_ids = set()
+            for t in completed_tasks_raw:
+                try:
+                    completed_ids.add(int(t))
+                except (ValueError, TypeError):
+                    continue
             
-            print(f"[TASKS/LIST] All task IDs: {all_task_ids}, Completed IDs: {completed_ids}")
+            # Фильтруем
+            tasks = []
+            for t in all_tasks:
+                try:
+                    task_id = int(t[0])
+                    if task_id not in completed_ids:
+                        tasks.append({
+                            "id": task_id, 
+                            "target": t[1], 
+                            "type": t[2], 
+                            "award": t[3], 
+                            "currency": t[4]
+                        })
+                except ValueError:
+                    continue
             
-            tasks = [
-                {"id": t[0], "target": t[1], "type": t[2], "award": t[3], "currency": t[4]}
-                for t in all_tasks if t[0] not in completed_ids
-            ]
-            
-            print(f"[TASKS/LIST] User {user_id} filtered tasks: {[t['id'] for t in tasks]}")
+            print(f"[TASKS/LIST] User {user_id}: all_tasks={len(all_tasks)}, completed={completed_ids}, returning={len(tasks)} tasks")
         
         return {"valid": True, "tasks": tasks}
     except Exception as e:

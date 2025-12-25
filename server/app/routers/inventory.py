@@ -136,45 +136,56 @@ async def get_inventory(request: GetInventoryRequest):
         
         inventory_gifts = []
         
-        # Получаем обычные подарки из gift_prices
+        # Получаем информацию о ценах для обычных подарков (загружаем справочник)
         if regular_gift_names:
-            placeholders = ','.join(['?'] * len(regular_gift_names))
+            # Получаем уникальные имена для запроса цен
+            unique_names = list(set(regular_gift_names))
+            placeholders = ','.join(['?'] * len(unique_names))
             cursor.execute(f"""
                 SELECT gift_name, price, gift_id
                 FROM gift_prices
                 WHERE gift_name IN ({placeholders})
-            """, regular_gift_names)
+            """, unique_names)
             
+            # Создаём справочник цен
+            prices_dict = {}
             for row in cursor.fetchall():
                 gift_name, price, gift_id = row
-                
-                # Рассчитываем sell_price с комиссией для обычных подарков
                 sell_price = None
                 if price and price > 0:
                     sell_price = int(price * (1 - sell_commission / 100))
-                    sell_price = max(1, sell_price)  # Минимум 1 звезда
-                
-                # Формируем данные для обычного подарка
-                inventory_gifts.append({
+                    sell_price = max(1, sell_price)
+                prices_dict[gift_name] = {
                     'gift_id': gift_id,
-                    'slug': gift_name,  # Для обычных подарков slug = gift_name
-                    'title': gift_name.capitalize(),
-                    'model_name': None,
-                    'model_path': f"/gifts/{gift_name}.json",  # Путь к Lottie анимации
-                    'symbol_name': None,
-                    'backdrop_name': None,
-                    'center_color': None,
-                    'edge_color': None,
-                    'pattern_color': None,
-                    'text_color': None,
-                    'rarity_model': None,
-                    'rarity_symbol': None,
-                    'rarity_backdrop': None,
-                    'ton_price': None,
                     'price': price,
-                    'sell_price': sell_price,
-                    'is_regular_gift': True
-                })
+                    'sell_price': sell_price
+                }
+            
+            # Добавляем КАЖДЫЙ подарок из инвентаря (включая дубликаты)
+            for idx, gift_name in enumerate(regular_gift_names):
+                if gift_name in prices_dict:
+                    info = prices_dict[gift_name]
+                    inventory_gifts.append({
+                        'gift_id': info['gift_id'],
+                        'slug': gift_name,
+                        'title': gift_name.capitalize(),
+                        'model_name': None,
+                        'model_path': f"/gifts/{gift_name}.json",
+                        'symbol_name': None,
+                        'backdrop_name': None,
+                        'center_color': None,
+                        'edge_color': None,
+                        'pattern_color': None,
+                        'text_color': None,
+                        'rarity_model': None,
+                        'rarity_symbol': None,
+                        'rarity_backdrop': None,
+                        'ton_price': None,
+                        'price': info['price'],
+                        'sell_price': info['sell_price'],
+                        'is_regular_gift': True,
+                        'inventory_index': idx  # Индекс для идентификации при продаже
+                    })
         
         # Получаем NFT подарки из shop_gifts
         if nft_slugs:
@@ -332,10 +343,10 @@ async def sell_gift(request: SellGiftRequest):
         lock_key = f"sell_lock:{user_id}"
         if cache.is_available():
             # Проверяем есть ли блокировка
-            if cache.client.get(lock_key):
+            if cache.get(lock_key):
                 raise HTTPException(status_code=429, detail="Подождите, предыдущая операция ещё выполняется")
             # Устанавливаем блокировку на 5 секунд
-            cache.client.setex(lock_key, 5, "1")
+            cache.set(lock_key, "1", 5)
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -402,12 +413,20 @@ async def sell_gift(request: SellGiftRequest):
         inventory.remove(request.slug)
         
         # Обновляем баланс и инвентарь
+        # Обновляем баланс и инвентарь
         new_balance = balance + stars_price
         cursor.execute("""
             UPDATE users 
             SET inventory = ?, balance = ? 
             WHERE id = ?
         """, (json.dumps(inventory), new_balance, user_id))
+        
+        # Если это NFT (из shop_gifts) - просто продаем, но не возвращаем в "наличие" (по просьбе пользователя)
+        # if is_nft:
+        #    cursor.execute("UPDATE shop_gifts SET available_amount = available_amount + 1 WHERE slug = ?", (request.slug,))
+        #    from app.utils.shop_cache import invalidate_shop_cache
+        #    invalidate_shop_cache()
+        #    print(f"✅ NFT {request.slug} возвращен в магазин (available +1)")
         
         conn.commit()
         conn.close()
@@ -422,7 +441,7 @@ async def sell_gift(request: SellGiftRequest):
         
         # Снимаем блокировку
         if cache.is_available():
-            cache.client.delete(lock_key)
+            cache.delete(lock_key)
         
         return {
             "success": True,
@@ -433,12 +452,12 @@ async def sell_gift(request: SellGiftRequest):
     except HTTPException:
         # Снимаем блокировку при ошибке
         if cache.is_available():
-            cache.client.delete(f"sell_lock:{user_id}")
+            cache.delete(f"sell_lock:{user_id}")
         raise
     except Exception as e:
         # Снимаем блокировку при ошибке
         if cache.is_available():
-            cache.client.delete(f"sell_lock:{user_id}")
+            cache.delete(f"sell_lock:{user_id}")
         print(f"Error selling gift: {e}")
         await send_error_log(e, "inventory.py: sell_gift")
         raise HTTPException(status_code=500, detail=sanitize_error(e))

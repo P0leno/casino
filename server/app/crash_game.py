@@ -199,9 +199,45 @@ class CrashGame:
         print(f"🎮 Раунд #{self.game_id} начался! Crash point: {self.crash_point}x, Ставок: {len(self.bets)}")
         
         # Игра идет пока не достигнут crash_point
+        boost_activated = False
+        
         while self.is_running and self.current_multiplier < self.crash_point:
             elapsed = time.time() - self.start_time
             self.current_multiplier = self.calculate_multiplier(elapsed)
+            
+            # Логика буста коэффициента
+            # Если ставки БЫЛИ, но сейчас ВСЕ активные игроки вышли (cashout_at is not None)
+            # И буст еще не активирован
+            if not boost_activated and self.bets:
+                active_players = sum(1 for bet in self.bets.values() if bet["cashout_at"] is None)
+                if active_players == 0:
+                    # Все вышли! Шанс 30% на буст
+                    if random.random() < 0.30:
+                        max_mult = self.get_max_multiplier()
+                        # Бустим только если есть куда расти
+                        if self.crash_point < max_mult:
+                            old_crash = self.crash_point
+                            # Генерируем новый краш от текущего до максимума
+                            # Используем экспоненциальное распределение смещенное к низу, чтобы не всегда x1000
+                            # Но пользователь просил "вплоть до максимального"
+                            
+                            # Вариант 1: Равномерное
+                            # self.crash_point = round(random.uniform(old_crash, max_mult), 2)
+                            
+                            # Вариант 2 (поинтереснее): Гарантированный x1.5-x5 от текущего, но не больше max
+                            boost_factor = random.uniform(1.2, 5.0)
+                            potential_crash = old_crash * boost_factor
+                            
+                            # Или иногда даем огромный буст если max позволяет
+                            if random.random() < 0.1: # 10% шанс на мега-буст
+                                potential_crash = random.uniform(old_crash, max_mult)
+                                
+                            self.crash_point = round(min(potential_crash, max_mult), 2)
+                            
+                            print(f"🚀 [BOOST] Все вышли! Коэффициент увеличен с {old_crash}x до {self.crash_point}x")
+                    
+                    # Помечаем что попытка буста была (даже если не сработал рандом, чтобы не проверять каждый тик)
+                    boost_activated = True
             
             # Обновления каждые 100ms
             await asyncio.sleep(0.1)

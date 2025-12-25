@@ -17,7 +17,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("app.run")
-logger.info("=== RUN.PY LOADED ===")
+logger.info("=== RUN.PY LOADED === VERSION: 2024-12-24-v2 ===")
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -114,6 +114,11 @@ async def lifespan(app: FastAPI):
     # 1. Обновляем курс TON сначала
     print("1️⃣  Обновление цены TON с CoinMarketCap...")
     await update_ton_price()
+    
+    # 2. Синхронизируем количество подарков в магазине (восстанавливаем консистентность)
+    from app.utils.shop_sync import sync_shop_amounts
+    print("2️⃣  Синхронизация количества подарков (Shop Consistency Check)...")
+    await asyncio.to_thread(sync_shop_amounts)
     
     print()
     print("2️⃣  Полная синхронизация подарков (Telegram + Tonnel + пересчет цен)...")

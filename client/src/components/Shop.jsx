@@ -8,7 +8,7 @@ import ShopFilterModal from './ShopFilterModal'
 import { useBalance } from '../contexts/BalanceContext'
 import starStaticBlackIcon from '../assets/starstatic_black.svg'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
 const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
 
 function Shop({ onNavigateToTopUp }) {
@@ -61,7 +61,10 @@ function Shop({ onNavigateToTopUp }) {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData || ''
 
-      const response = await fetch(`${API_URL}/api/shop/gifts`, {
+      const cacheBuster = Date.now()
+      console.log('Fetching gifts from:', `${API_URL}/api/shop/gifts`)
+
+      const response = await fetch(`${API_URL}/api/shop/gifts?_=${cacheBuster}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })

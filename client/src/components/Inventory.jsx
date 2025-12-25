@@ -21,14 +21,14 @@ function Inventory({ onNavigateToTopUp }) {
   const observerRef = useRef(null)
 
   // Проверяем мобильную платформу и рассчитываем отступ
-  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
-                   window.Telegram?.WebApp?.platform === 'ios'
-  
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
+    window.Telegram?.WebApp?.platform === 'ios'
+
   const tg = window.Telegram?.WebApp
   const safeAreaTop = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
   // Отступ = safe area + 20px (отступ баланс баров) + 50px (высота баланс бара) + 20px (gap)
   const topPadding = isMobile ? (safeAreaTop + 90) : 50
-  
+
   console.log('Inventory - safeAreaTop:', safeAreaTop, 'topPadding:', topPadding, 'isMobile:', isMobile)
 
   useEffect(() => {
@@ -75,7 +75,10 @@ function Inventory({ onNavigateToTopUp }) {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-      const response = await fetch(`${apiUrl}/api/inventory/get`, {
+      const cacheBuster = Date.now()
+      console.log('Fetching inventory from:', `${apiUrl}/api/inventory/get`)
+
+      const response = await fetch(`${apiUrl}/api/inventory/get?_=${cacheBuster}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
@@ -102,13 +105,13 @@ function Inventory({ onNavigateToTopUp }) {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-    
+
     // Подтверждение
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
-    const confirmed = tg?.showConfirm 
+    const confirmed = tg?.showConfirm
       ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
       : window.confirm(confirmMessage)
-    
+
     if (!confirmed) return
 
     try {
@@ -119,7 +122,7 @@ function Inventory({ onNavigateToTopUp }) {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         if (tg?.showAlert) {
           tg.showAlert('✅ Подарок успешно отправлен!')
@@ -166,7 +169,7 @@ function Inventory({ onNavigateToTopUp }) {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         if (tg?.showAlert) {
           tg.showAlert(`Продано! +${data.price} ⭐ к балансу`)
@@ -198,28 +201,28 @@ function Inventory({ onNavigateToTopUp }) {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-    
+
     // Подтверждение
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
-    const confirmed = tg?.showConfirm 
+    const confirmed = tg?.showConfirm
       ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
       : window.confirm(confirmMessage)
-    
+
     if (!confirmed) return
 
     try {
       const response = await fetch(`${apiUrl}/api/withdraw-nft-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          initData, 
+        body: JSON.stringify({
+          initData,
           slug: gift.slug,
           messageId: gift.message_id
         })
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         if (tg?.showAlert) {
           tg.showAlert('✅ Подарок успешно отправлен!')
@@ -254,13 +257,13 @@ function Inventory({ onNavigateToTopUp }) {
   // Продажа NFT подарков
   const handleSellNFT = async (gift) => {
     if (sellingGift) return
-    
+
     setSellingGift(gift.slug)
-    
+
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-    
+
     try {
       // Проверяем что есть sell_price
       if (!gift.sell_price || gift.sell_price <= 0) {
@@ -269,8 +272,8 @@ function Inventory({ onNavigateToTopUp }) {
 
       // Диалоговое окно подтверждения (sell_price уже рассчитан с комиссией)
       const confirmMessage = `Продать "${gift.title}"?\n\nВы получите: ${gift.sell_price}⭐`
-      
-      const confirmed = tg?.showConfirm 
+
+      const confirmed = tg?.showConfirm
         ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
         : window.confirm(confirmMessage)
 
@@ -334,8 +337,8 @@ function Inventory({ onNavigateToTopUp }) {
         ) : (
           <div className="inventory-grid" ref={gridRef}>
             {inventory.map((gift, index) => (
-              <div 
-                key={`${gift.slug}-${index}`} 
+              <div
+                key={`${gift.slug}-${index}`}
                 className={gift.is_regular_gift ? "gift-card-inventory-regular" : "gift-card-inventory"}
                 style={!gift.is_regular_gift && gift.center_color && gift.edge_color ? {
                   background: `linear-gradient(135deg, ${gift.center_color} 0%, ${gift.edge_color} 100%)`
@@ -343,17 +346,17 @@ function Inventory({ onNavigateToTopUp }) {
               >
                 {gift.model_path && (
                   <div className={gift.is_regular_gift ? "lottie-container-regular" : "lottie-container"}>
-                    <LottieAnimation 
+                    <LottieAnimation
                       animationData={gift.model_path}
                       width={gift.is_regular_gift ? 100 : 80}
                       height={gift.is_regular_gift ? 100 : 80}
-                      loop={true}
-                      autoplay={true}
+                      loop={false}
+                      autoplay={false}
                     />
                   </div>
                 )}
-                
-                <button 
+
+                <button
                   className="gift-view-btn"
                   onClick={() => handleViewGift(gift)}
                 >
@@ -366,7 +369,7 @@ function Inventory({ onNavigateToTopUp }) {
       </div>
 
       {showGiftDetails && selectedGift && (
-        <GiftDetailsModal 
+        <GiftDetailsModal
           gift={selectedGift}
           isInventory={true}
           onClose={() => {
@@ -383,14 +386,14 @@ function Inventory({ onNavigateToTopUp }) {
           <div className="promo-modal-backdrop" onClick={() => setShowErrorModal(false)} />
           <div className="promo-modal-sheet" style={{ paddingBottom: `${20}px` }}>
             <button className="promo-close-btn" onClick={() => setShowErrorModal(false)}>×</button>
-            
+
             <div className="promo-modal-content">
               <h2 className="promo-modal-title">Ошибка отправки</h2>
-              
+
               <div className="error-instruction" style={{ marginBottom: '20px', textAlign: 'center' }}>
                 <p style={{ margin: '0 0 10px 0' }}>
                   Убедитесь, что вы начали чат с{' '}
-                  <span 
+                  <span
                     style={{ color: '#3390ec', cursor: 'pointer', textDecoration: 'underline' }}
                     onClick={() => {
                       const tg = window.Telegram?.WebApp
@@ -403,14 +406,14 @@ function Inventory({ onNavigateToTopUp }) {
               </div>
 
               <div className="error-buttons" style={{ display: 'flex', gap: '10px' }}>
-                <button 
+                <button
                   className="error-btn help-btn"
-                  style={{ 
-                    flex: 1, 
-                    padding: '12px', 
-                    borderRadius: '10px', 
-                    border: 'none', 
-                    background: '#2a2a2a', 
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#2a2a2a',
                     color: 'white',
                     fontSize: '14px',
                     cursor: 'pointer'
@@ -419,35 +422,35 @@ function Inventory({ onNavigateToTopUp }) {
                     const tg = window.Telegram?.WebApp
                     const initData = tg?.initData
                     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-                    
+
                     try {
                       // Разные эндпоинты для обычных и NFT подарков
                       const isNFT = errorData.type === 'withdrawNFT'
-                      const endpoint = isNFT 
+                      const endpoint = isNFT
                         ? `${apiUrl}/api/inventory/manual-withdraw-nft`
                         : `${apiUrl}/api/inventory/manual-withdraw`
-                      
-                      const body = isNFT 
-                        ? { 
-                            initData, 
-                            slug: errorData.gift.slug,
-                            giftTitle: errorData.gift.title,
-                            messageId: errorData.gift.message_id
-                          }
-                        : { 
-                            initData, 
-                            slug: errorData.gift.slug,
-                            giftTitle: errorData.gift.title
-                          }
-                      
+
+                      const body = isNFT
+                        ? {
+                          initData,
+                          slug: errorData.gift.slug,
+                          giftTitle: errorData.gift.title,
+                          messageId: errorData.gift.message_id
+                        }
+                        : {
+                          initData,
+                          slug: errorData.gift.slug,
+                          giftTitle: errorData.gift.title
+                        }
+
                       const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
                       })
-                      
+
                       const data = await response.json()
-                      
+
                       if (data.needsUsername) {
                         tg?.showAlert('Установите юзернейм в Telegram и попробуйте снова')
                       } else if (data.success) {
@@ -460,20 +463,20 @@ function Inventory({ onNavigateToTopUp }) {
                       console.error('Manual withdraw error:', error)
                       tg?.showAlert('Ошибка соединения с сервером')
                     }
-                    
+
                     setShowErrorModal(false)
                   }}
                 >
                   Помощь
                 </button>
-                <button 
+                <button
                   className="error-btn retry-btn"
-                  style={{ 
-                    flex: 1, 
-                    padding: '12px', 
-                    borderRadius: '10px', 
-                    border: 'none', 
-                    background: '#3390ec', 
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#3390ec',
                     color: 'white',
                     fontSize: '14px',
                     cursor: 'pointer'
