@@ -89,7 +89,7 @@ async def validate(validate_req: ValidateRequest, request: Request):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        cursor.execute("SELECT is_banned, balance, bonus_balance, ip_addresses, user_agents FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT is_banned, balance, bonus_balance FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
         
         if result:
@@ -97,11 +97,44 @@ async def validate(validate_req: ValidateRequest, request: Request):
             balance = result[1] if result[1] is not None else 0
             bonus_balance = result[2] if result[2] is not None else 0
             
-            # Обновляем списки IP и User-Agent
-            ip_list = json.loads(result[3]) if result[3] else []
-            ua_list = json.loads(result[4]) if result[4] else []
+            # Обновляем username, avatar_url в основной БД
+            cursor.execute(
+                "UPDATE users SET username = ?, avatar_url = ? WHERE id = ?",
+                (username, photo_url, user_id)
+            )
+            conn.commit()
+        else:
+            # Новый пользователь в основной БД
+            cursor.execute(
+                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned, balance, bonus_balance) VALUES (?, ?, ?, ?, 0, 0, 0)",
+                (user_id, username, photo_url, datetime.now().isoformat())
+            )
+            conn.commit()
+            is_banned = False
+            balance = 0
+            bonus_balance = 0
+        
+        conn.close()
+
+        # --- ОБНОВЛЕНИЕ SUPPORT DB (IP и User-Agent) ---
+        try:
+            from app.database.support_db import get_support_db_connection
             
-            # Перемещаем в начало (удаляем если есть, добавляем первым), ограничиваем до 5
+            s_conn = get_support_db_connection()
+            s_cursor = s_conn.cursor()
+            
+            # Получаем текущие данные из support.db
+            s_cursor.execute("SELECT ip_addresses, user_agents FROM users WHERE id = ?", (user_id,))
+            s_result = s_cursor.fetchone()
+            
+            ip_list = []
+            ua_list = []
+            
+            if s_result:
+                ip_list = json.loads(s_result[0]) if s_result[0] else []
+                ua_list = json.loads(s_result[1]) if s_result[1] else []
+            
+            # Обновляем списки (LRU: удаляем если есть, вставляем в начало, обрезаем до 5)
             if client_ip in ip_list:
                 ip_list.remove(client_ip)
             ip_list.insert(0, client_ip)
@@ -112,27 +145,24 @@ async def validate(validate_req: ValidateRequest, request: Request):
             ua_list.insert(0, user_agent)
             ua_list = ua_list[:5]
             
-            # Обновляем username, avatar_url, IP и User-Agent при каждом логине
-            cursor.execute(
-                "UPDATE users SET username = ?, avatar_url = ?, ip_addresses = ?, user_agents = ? WHERE id = ?",
-                (username, photo_url, json.dumps(ip_list), json.dumps(ua_list), user_id)
-            )
-            conn.commit()
-        else:
-            # Новый пользователь
-            ip_list = [client_ip]
-            ua_list = [user_agent]
+            # Upsert в support.db
+            if s_result:
+                s_cursor.execute(
+                    "UPDATE users SET username = ?, ip_addresses = ?, user_agents = ? WHERE id = ?",
+                    (username, json.dumps(ip_list), json.dumps(ua_list), user_id)
+                )
+            else:
+                s_cursor.execute(
+                    "INSERT INTO users (id, username, ip_addresses, user_agents, support_banned) VALUES (?, ?, ?, ?, 0)",
+                    (user_id, username, json.dumps(ip_list), json.dumps(ua_list))
+                )
+                
+            s_conn.commit()
+            s_conn.close()
             
-            cursor.execute(
-                "INSERT INTO users (id, username, avatar_url, creation_date, is_banned, balance, bonus_balance, ip_addresses, user_agents) VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)",
-                (user_id, username, photo_url, datetime.now().isoformat(), json.dumps(ip_list), json.dumps(ua_list))
-            )
-            conn.commit()
-            is_banned = False
-            balance = 0
-            bonus_balance = 0
-        
-        conn.close()
+        except Exception as e:
+            print(f"[AUTH] ❌ Error updating support DB: {e}")
+            await send_error_log(e, "auth.py: update support_db info")
         
         return {
             "valid": True, 

@@ -249,14 +249,14 @@ async def parse_gifts(send_log=True):
                             slug = ?, title = ?, model_name = ?, model_path = ?,
                             symbol_name = ?, backdrop_name = ?,
                             center_color = ?, edge_color = ?, pattern_color = ?, text_color = ?,
-                            available_amount = ?, total_amount = ?,
+                            available_amount = ?, total_amount = ?, transfer_price = ?,
                             rarity_model = ?, rarity_symbol = ?, rarity_backdrop = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE gift_id = ?
                     """, (
                         slug, title, model_name, model_path, symbol_name, backdrop_name,
                         center_color, edge_color, pattern_color, text_color,
-                        available_amount, total_amount,
+                        available_amount, total_amount, transfer_price,
                         rarity_model, rarity_symbol, rarity_backdrop,
                         gift_id
                     ))
@@ -266,13 +266,13 @@ async def parse_gifts(send_log=True):
                         INSERT INTO shop_gifts 
                         (gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
                          center_color, edge_color, pattern_color, text_color,
-                         available_amount, total_amount, price,
+                         available_amount, total_amount, price, transfer_price,
                          rarity_model, rarity_symbol, rarity_backdrop, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """, (
                         gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
                         center_color, edge_color, pattern_color, text_color,
-                        available_amount, total_amount,
+                        available_amount, total_amount, transfer_price,
                         rarity_model, rarity_symbol, rarity_backdrop
                     ))
         except (AttributeError, ConnectionError) as e:

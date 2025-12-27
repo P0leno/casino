@@ -122,35 +122,6 @@ def init_db():
         """)
         print("✅ Таблица antifraud_alerts создана/проверена")
         
-        # Создание таблицы настроек бота поддержки
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS support_settings (
-                key TEXT PRIMARY KEY,
-                value TEXT,
-                updated_at TEXT
-            )
-        """)
-        
-        # Инициализация надбавки очереди
-        cursor.execute("SELECT value FROM support_settings WHERE key = 'queue_offset'")
-        if not cursor.fetchone():
-            import random
-            offset = random.randint(10, 20)
-            cursor.execute(
-                "INSERT INTO support_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
-                ('queue_offset', str(offset))
-            )
-            print(f"✅ Инициализирована надбавка очереди: {offset}")
-        
-        # Миграция: добавление isPriority в support_dialogs
-        cursor.execute("PRAGMA table_info(support_dialogs)")
-        dialogs_columns = [col[1] for col in cursor.fetchall()]
-        
-        if 'isPriority' not in dialogs_columns:
-            print("⚙️  Миграция: добавление поля isPriority в support_dialogs...")
-            cursor.execute("ALTER TABLE support_dialogs ADD COLUMN isPriority INTEGER DEFAULT 0")
-            conn.commit()
-            print("✅ Миграция завершена: isPriority добавлен")
     except Exception as e:
         print(f"⚠️  Ошибка миграции: {e}")
     cursor.execute("""
@@ -261,7 +232,9 @@ def init_db():
             type TEXT NOT NULL,
             award INTEGER NOT NULL,
             currency TEXT NOT NULL,
-            custom_invite TEXT
+            custom_invite TEXT,
+            execution_limit INTEGER,
+            completions_count INTEGER DEFAULT 0
         )
     """)
     
@@ -394,6 +367,7 @@ def init_db():
             total_amount INTEGER DEFAULT 0,
             price INTEGER DEFAULT 0,
             ton_price REAL DEFAULT NULL,
+            transfer_price INTEGER DEFAULT 25,
             rarity_model INTEGER DEFAULT NULL,
             rarity_symbol INTEGER DEFAULT NULL,
             rarity_backdrop INTEGER DEFAULT NULL,

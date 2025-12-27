@@ -1,4 +1,3 @@
-
 import json
 from app.utils.database import get_db_connection
 from app.utils.shop_cache import invalidate_shop_cache

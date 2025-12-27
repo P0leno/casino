@@ -57,16 +57,19 @@ async def send_antifraud_alert(alert_type: str, users: list, ip: str):
 
 def get_users_by_ip() -> dict:
     """Получает словарь IP -> список пользователей"""
-    conn = get_db_connection()
+    # Получаем пользователей с IP из support.db
+    from app.database.support_db import get_support_db_connection
+    conn = get_support_db_connection()
     cursor = conn.cursor()
     
+    # 1. Поиск по IP (исключая пустые)
     cursor.execute("SELECT id, username, ip_addresses FROM users WHERE ip_addresses IS NOT NULL AND ip_addresses != '[]'")
-    rows = cursor.fetchall()
+    users = cursor.fetchall()
     conn.close()
     
     ip_users = {}  # ip -> [user_ids]
     
-    for user_id, username, ip_json in rows:
+    for user_id, username, ip_json in users:
         try:
             ip_list = json.loads(ip_json) if ip_json else []
             for ip in ip_list:
@@ -205,36 +208,36 @@ async def check_duplicate_ips():
             
     print("[ANTIFRAUD] Проверка завершена")
 
-
 async def check_promo_fraud(activator_id: int, activator_ip: str, promo_owner_id: int):
     """
     Проверяет мошенничество с промокодами.
     Вызывается при активации промокода.
-    
-    Банит если:
-    - Активатор и владелец промокода с одного IP
-    - Или два активатора с одного IP активировали один промокод
     """
+    # Получаем username владельца и активатора из основной БД
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute("SELECT username FROM users WHERE id = ?", (promo_owner_id,))
+    res_owner = cursor.fetchone()
+    owner_username = res_owner[0] if res_owner else None
     
-    # Получаем IP владельца промокода
-    cursor.execute("SELECT ip_addresses, username FROM users WHERE id = ?", (promo_owner_id,))
-    owner_result = cursor.fetchone()
-    
-    if not owner_result:
-        conn.close()
-        return False
-    
-    owner_ips_json, owner_username = owner_result
-    owner_ips = json.loads(owner_ips_json) if owner_ips_json else []
-    
-    # Получаем данные активатора
     cursor.execute("SELECT username FROM users WHERE id = ?", (activator_id,))
-    activator_result = cursor.fetchone()
-    activator_username = activator_result[0] if activator_result else None
-    
+    res_activator = cursor.fetchone()
+    activator_username = res_activator[0] if res_activator else None
     conn.close()
+    
+    if not owner_username:
+        return False
+
+    # Получаем IP из support.db
+    from app.database.support_db import get_support_db_connection
+    s_conn = get_support_db_connection()
+    s_cursor = s_conn.cursor()
+    s_cursor.execute("SELECT ip_addresses FROM users WHERE id = ?", (promo_owner_id,))
+    owner_result = s_cursor.fetchone()
+    s_conn.close()
+    
+    owner_ips_json = owner_result[0] if owner_result else None
+    owner_ips = json.loads(owner_ips_json) if owner_ips_json else []
     
     # Проверяем совпадение IP
     if activator_ip in owner_ips:
@@ -252,7 +255,7 @@ async def check_promo_fraud(activator_id: int, activator_ip: str, promo_owner_id
         
         return True  # Мошенничество обнаружено
     
-    return False  # Все ок
+    return False
 
 
 async def check_same_ip_promo_activation(activator_id: int, activator_ip: str, promo_id: int):
@@ -262,14 +265,14 @@ async def check_same_ip_promo_activation(activator_id: int, activator_ip: str, p
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Получаем всех, кто активировал этот промокод
+    # Получаем всех, кто активировал этот промокод (ID и username)
     cursor.execute("""
-        SELECT u.id, u.username, u.ip_addresses 
+        SELECT u.id, u.username
         FROM users u 
         WHERE u.activated_promocodes LIKE ?
     """, (f'%{promo_id}%',))
     
-    activators = cursor.fetchall()
+    activators_data = cursor.fetchall()
     
     # Получаем username активатора
     cursor.execute("SELECT username FROM users WHERE id = ?", (activator_id,))
@@ -278,10 +281,23 @@ async def check_same_ip_promo_activation(activator_id: int, activator_ip: str, p
     
     conn.close()
     
-    for other_id, other_username, other_ips_json in activators:
+    if not activators_data:
+        return False
+        
+    # Получаем IPs из support.db для этих юзеров
+    from app.database.support_db import get_support_db_connection
+    s_conn = get_support_db_connection()
+    s_cursor = s_conn.cursor()
+    
+    found_fraud = False
+    
+    for other_id, other_username in activators_data:
         if other_id == activator_id:
             continue
         
+        s_cursor.execute("SELECT ip_addresses FROM users WHERE id = ?", (other_id,))
+        s_result = s_cursor.fetchone()
+        other_ips_json = s_result[0] if s_result else None
         other_ips = json.loads(other_ips_json) if other_ips_json else []
         
         if activator_ip in other_ips:
@@ -297,9 +313,11 @@ async def check_same_ip_promo_activation(activator_id: int, activator_ip: str, p
             # Отправляем алерт
             await send_antifraud_alert("ban", users, activator_ip)
             
-            return True
-    
-    return False
+            found_fraud = True
+            break
+            
+    s_conn.close()
+    return found_fraud
 
 
 async def antifraud_task():

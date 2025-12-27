@@ -62,6 +62,7 @@ function Profile() {
   const [taskType, setTaskType] = useState('subscribe')
   const [taskAward, setTaskAward] = useState('')
   const [taskCurrency, setTaskCurrency] = useState('paws')
+  const [taskLimit, setTaskLimit] = useState('') // New limitation state
   const [botPermissionStatus, setBotPermissionStatus] = useState('')
   const [checkingPermissions, setCheckingPermissions] = useState(false)
   const [tasksLoading, setTasksLoading] = useState(false)
@@ -506,24 +507,21 @@ function Profile() {
           type: taskType,
           award: parseInt(taskAward),
           currency: taskCurrency,
-          customInvite: useCustomInvite ? customInviteLink : null
+          customInvite: useCustomInvite ? customInviteLink : null,
+          limit: taskLimit ? parseInt(taskLimit) : null
         })
       })
 
       const data = await response.json()
       if (data.success) {
-        alert('Задание создано!')
+        tg.showAlert('Задание успешно создано!')
         setShowAddTaskForm(false)
         setTaskTarget('')
-        setTaskType('subscribe')
         setTaskAward('')
-        setTaskCurrency('paws')
-        setBotPermissionStatus('')
-        setUseCustomInvite(false)
-        setCustomInviteLink('')
+        setTaskLimit('')
         loadTasks()
       } else {
-        alert(data.message || 'Ошибка создания задания')
+        tg.showAlert(data.message || 'Ошибка создания задания')
       }
     } catch (error) {
       console.error('Error creating task:', error)
@@ -1431,6 +1429,11 @@ function Profile() {
                             </button>
                           </div>
                           <div className="task-item-target">{task.target}</div>
+                          {task.execution_limit && (
+                            <div className="task-item-limit" style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>
+                              Лимит: {task.completions_count || 0} / {task.execution_limit}
+                            </div>
+                          )}
                           <div className="task-item-reward">
                             Награда: {task.award} {task.currency === 'paws' ? (
                               <>
@@ -1517,6 +1520,19 @@ function Profile() {
                     </select>
                   </div>
 
+                  <div className="admin-input-group">
+                    <label className="admin-label">Лимит выполнений (необязательно)</label>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      placeholder="Без лимита"
+                      value={taskLimit}
+                      onChange={(e) => setTaskLimit(e.target.value)}
+                      disabled={actionLoading}
+                      min="1"
+                    />
+                  </div>
+
                   {taskType === 'private_channel' && (
                     <>
                       <div className="admin-input-group">
@@ -1559,6 +1575,7 @@ function Profile() {
                         setBotPermissionStatus('')
                         setUseCustomInvite(false)
                         setCustomInviteLink('')
+                        setTaskLimit('')
                       }}
                       disabled={actionLoading}
                     >

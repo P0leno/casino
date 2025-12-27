@@ -35,20 +35,33 @@ def calculate_stars_from_usdt(usdt_amount: float) -> int:
     return stars_with_bonus
 
 async def notify_user(user_id: int, stars_amount: int, usdt_amount: float):
-    """Отправить уведомление пользователю о пополнении"""
+    """Отправить уведомление пользователю о пополнении с картинкой"""
     try:
-        message = (
+        caption = (
             f"✅ <b>Обнаружено пополнение</b>\n\n"
             f"<b>{stars_amount} × ⭐</b>\n\n"
             f"Получено: {usdt_amount} USDT"
         )
         
-        await bot.send_message(
-            user_id,
-            message,
-            parse_mode=ParseMode.HTML
-        )
-        print(f"✅ Notification sent to user {user_id}")
+        # Пробуем отправить с картинкой через copy_message из канала
+        try:
+            await bot.copy_message(
+                chat_id=user_id,
+                from_chat_id="@sleserres",
+                message_id=4,
+                caption=caption,
+                parse_mode=ParseMode.HTML
+            )
+            print(f"✅ Notification with image sent to user {user_id}")
+        except Exception as img_e:
+            # Fallback на обычное сообщение если не удалось скопировать
+            print(f"⚠️ Failed to copy image: {img_e}, sending text only")
+            await bot.send_message(
+                user_id,
+                caption,
+                parse_mode=ParseMode.HTML
+            )
+            print(f"✅ Text notification sent to user {user_id}")
     except Exception as e:
         print(f"Error sending notification to user {user_id}: {e}")
 

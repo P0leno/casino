@@ -24,6 +24,7 @@ class CreateTaskRequest(BaseModel):
     award: int
     currency: str
     customInvite: Optional[str] = None
+    limit: Optional[int] = None  # Лимит выполнений
 
 class DeleteTaskRequest(BaseModel):
     initData: str
@@ -298,14 +299,14 @@ async def create_task(request: CreateTaskRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO tasks (target, type, award, currency, custom_invite) VALUES (?, ?, ?, ?, ?)",
-            (request.target, request.type, request.award, request.currency, request.customInvite)
+            "INSERT INTO tasks (target, type, award, currency, custom_invite, execution_limit) VALUES (?, ?, ?, ?, ?, ?)",
+            (request.target, request.type, request.award, request.currency, request.customInvite, request.limit)
         )
         conn.commit()
         task_id = cursor.lastrowid
         conn.close()
         
-        print(f"✅ Задание создано: ID={task_id}, type={request.type}, target={request.target}")
+        print(f"✅ Задание создано: ID={task_id}, type={request.type}, target={request.target}, limit={request.limit}")
         return {"success": True, "message": "Task created", "taskId": task_id}
     except Exception as e:
         print(f"❌ Error creating task: {e}")
@@ -395,15 +396,22 @@ async def complete_task(request: CompleteTaskRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Получить задание
-        cursor.execute("SELECT target, type, award, currency FROM tasks WHERE id = ?", (request.taskId,))
+        # Получить задание с лимитами
+        cursor.execute("SELECT target, type, award, currency, execution_limit, completions_count FROM tasks WHERE id = ?", (request.taskId,))
         task = cursor.fetchone()
         
         if not task:
             conn.close()
             return {"success": False, "message": "Task not found"}
         
-        target, task_type, award, currency = task
+        target, task_type, award, currency, limit, count = task
+
+        # Проверяем лимит (для надежности)
+        if limit is not None and count >= limit:
+            cursor.execute("DELETE FROM tasks WHERE id = ?", (request.taskId,))
+            conn.commit()
+            conn.close()
+            return {"success": False, "message": "Task limit reached"}
         
         # Проверяем есть ли пользователь в БД, если нет - создаем
         cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
@@ -432,25 +440,15 @@ async def complete_task(request: CompleteTaskRequest):
         
         completed_tasks = user.get('completed_tasks', [])
         
-        print(f"[TASKS] User {user_id} trying to complete task {request.taskId} (type: {type(request.taskId).__name__})")
-        print(f"[TASKS] User from Redis: balance={user.get('balance')}, bonus_balance={user.get('bonus_balance')}")
-        print(f"[TASKS] Completed tasks from Redis: {completed_tasks}")
-        print(f"[TASKS] Completed tasks types: {[type(t).__name__ for t in completed_tasks]}")
-        print(f"[TASKS] Check: {request.taskId} in {completed_tasks} = {request.taskId in completed_tasks}")
+        print(f"[TASKS] User {user_id} trying to complete task {request.taskId}")
         
         # Дополнительная проверка: сверяем с БД
         cursor.execute("SELECT completed_tasks FROM users WHERE id = ?", (user_id,))
         db_row = cursor.fetchone()
         if db_row:
             db_completed = json.loads(db_row[0] or "[]")
-            print(f"[TASKS] 🔍 DB verification: completed_tasks = {db_completed}")
             if db_completed != completed_tasks:
-                print(f"[TASKS] ⚠️ WARNING: Redis and DB are out of sync!")
-                print(f"[TASKS] ⚠️ Redis: {completed_tasks}")
-                print(f"[TASKS] ⚠️ DB: {db_completed}")
-                # Используем данные из БД как источник истины
                 completed_tasks = db_completed
-                print(f"[TASKS] ✅ Using DB data as source of truth")
         
         if request.taskId in completed_tasks:
             conn.close()
@@ -463,18 +461,13 @@ async def complete_task(request: CompleteTaskRequest):
             is_subscribed = await check_user_subscription(user_id, target)
             if not is_subscribed:
                 conn.close()
-                # Не выводим ошибку, просто возвращаем false без сообщения
                 return {"success": False}
-        
-        # Для open_url не требуется проверка, сразу выдаем награду
         
         # Получаем текущий баланс из БД
         cursor.execute("SELECT balance, bonus_balance FROM users WHERE id = ?", (user_id,))
         balance_row = cursor.fetchone()
         current_balance = balance_row[0] if balance_row else 0
         current_bonus = balance_row[1] if balance_row else 0
-        
-        conn.close()
         
         # Отметить задание как выполненное (как int!)
         completed_tasks.append(int(request.taskId))
@@ -483,8 +476,7 @@ async def complete_task(request: CompleteTaskRequest):
         new_balance = current_balance + (award if currency == "star" else 0)
         new_bonus = current_bonus + (award if currency == "paws" else 0)
         
-        # Обновляем через RedisUser (автоматически синхронизирует БД и Redis)
-        print(f"[TASKS] Updating user {user_id}: completed_tasks={completed_tasks}, balance={new_balance}, bonus_balance={new_bonus}")
+        # Обновляем инфу о пользователе
         success = RedisUser.update(
             user_id,
             completed_tasks=completed_tasks,
@@ -493,18 +485,31 @@ async def complete_task(request: CompleteTaskRequest):
         )
         
         if not success:
-            print(f"[TASKS] ❌ Failed to update user {user_id} in DB!")
-            return {"success": False, "message": "Failed to update user - user not found in database"}
+            conn.close()
+            return {"success": False, "message": "Failed to update user"}
         
-        # Явно инвалидируем кэш для гарантии синхронизации
         RedisUser.invalidate(user_id)
         
-        print(f"[TASKS] ✅ Task {request.taskId} completed by user {user_id}, new completed_tasks: {completed_tasks}")
+        # ---- ОБНОВЛЕНИЕ СЧЕТЧИКА ВЫПОЛНЕНИЙ И УДАЛЕНИЕ ЗАДАНИЯ ----
+        new_count = count + 1
+        cursor.execute("UPDATE tasks SET completions_count = ? WHERE id = ?", (new_count, request.taskId))
         
-        # Проверяем что данные действительно обновились в Redis
-        user_check = RedisUser.get(user_id)
-        if user_check:
-            print(f"[TASKS] 🔍 Verification: Redis completed_tasks = {user_check.get('completed_tasks', [])}")
+        print(f"[TASKS] ✅ Task {request.taskId} count updated: {new_count}/{limit if limit else 'inf'}")
+
+        if limit is not None and new_count >= limit:
+            cursor.execute("DELETE FROM tasks WHERE id = ?", (request.taskId,))
+            print(f"🗑️ Задание {request.taskId} удалено (лимит {limit} достигнут)")
+            
+            # Логируем в админский канал
+            try:
+                from app.log_bot import send_message_to_logs
+                task_info = f"🎯 Цель: {target}\n💰 Награда: {award} {currency}\n📊 Лимит: {limit}"
+                await send_message_to_logs(f"✅ <b>Задание завершено и удалено!</b>\n\n{task_info}")
+            except:
+                pass
+
+        conn.commit()
+        conn.close()
         
         # Получаем обновленный баланс
         user_balance = get_user_balance(user_id)

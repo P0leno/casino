@@ -237,104 +237,100 @@ async def check_new_gifts():
     print("=" * 80)
     
     connector = aiohttp.TCPConnector(ssl=False)
-    session = aiohttp.ClientSession(connector=connector)
-    
-    try:
-        # Получаем список подарков из API
-        print("📡 Запрос списка подарков из API...")
-        api_gifts = await fetch_json(session, f"{BASE_API}/gifts")
-        
-        if not api_gifts:
-            print("⚠️  Не удалось получить список подарков из API")
-            return
-        
-        print(f"✅ Получено подарков из API: {len(api_gifts)}")
-        
-        # Получаем подарки из БД
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT gift_name, models FROM gift_models")
-        db_gifts = {row[0]: json.loads(row[1]) for row in cursor.fetchall()}
-        
-        print(f"📊 Подарков в БД: {len(db_gifts)}")
-        
-        # Находим новые подарки
-        new_gifts = set(api_gifts) - set(db_gifts.keys())
-        
-        if not new_gifts:
-            print("✅ Новых подарков не найдено")
+    async with aiohttp.ClientSession(connector=connector) as session:
+        try:
+            # Получаем список подарков из API
+            print("📡 Запрос списка подарков из API...")
+            api_gifts = await fetch_json(session, f"{BASE_API}/gifts")
+            
+            if not api_gifts:
+                print("⚠️  Не удалось получить список подарков из API")
+                return
+            
+            print(f"✅ Получено подарков из API: {len(api_gifts)}")
+            
+            # Получаем подарки из БД
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT gift_name, models FROM gift_models")
+            db_gifts = {row[0]: json.loads(row[1]) for row in cursor.fetchall()}
+            
+            print(f"📊 Подарков в БД: {len(db_gifts)}")
+            
+            # Находим новые подарки
+            new_gifts = set(api_gifts) - set(db_gifts.keys())
+            
+            if not new_gifts:
+                print("✅ Новых подарков не найдено")
+                conn.close()
+                return
+            
+            print(f"🆕 Найдено новых подарков: {len(new_gifts)}")
+            
+            # Обрабатываем каждый новый подарок
+            for gift_name in new_gifts:
+                print(f"\n→ Обрабатываю новый подарок: {gift_name}")
+                
+                # Получаем модели для подарка
+                models_data = await fetch_json(session, f"{BASE_API}/models/{gift_name}?sorted")
+                
+                if not models_data:
+                    print(f"  ⚠️  Модели не найдены для {gift_name}")
+                    continue
+                
+                model_names = [m["name"] for m in models_data]
+                print(f"  📦 Моделей найдено: {len(model_names)}")
+                
+                # Сохраняем в БД
+                cursor.execute(
+                    "INSERT OR REPLACE INTO gift_models (gift_name, models, last_check, folder_exists) VALUES (?, ?, CURRENT_TIMESTAMP, 0)",
+                    (gift_name, json.dumps(model_names))
+                )
+                conn.commit()
+                
+                # Формируем сообщение для логов
+                message = f"🆕 <b>В API появился новый подарок</b>\n\n"
+                message += f"<b>Название:</b> {gift_name}\n"
+                message += f"<b>Моделей:</b> {len(model_names)}\n\n"
+                
+                # Добавляем список моделей
+                max_models_in_message = 20
+                models_list = model_names[:max_models_in_message]
+                
+                message += "<blockquote>"
+                for model in models_list:
+                    message += f"• {model}\n"
+                
+                if len(model_names) > max_models_in_message:
+                    message += f"\n<i>и еще {len(model_names) - max_models_in_message}</i>"
+                message += "</blockquote>\n\n"
+                message += "Хотите обновить папку с моделями?"
+                
+                # Создаём кнопки
+                from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text="✅ Принять", callback_data=f"download_models:{gift_name}"),
+                        InlineKeyboardButton(text="❌ Отклонить", callback_data=f"decline_models:{gift_name}")
+                    ]
+                ])
+                
+                await send_log_to_channel(message, reply_markup=keyboard)
+                print(f"  📨 Отправлено уведомление в логи")
+            
             conn.close()
-            return
-        
-        print(f"🆕 Найдено новых подарков: {len(new_gifts)}")
-        
-        # Обрабатываем каждый новый подарок
-        for gift_name in new_gifts:
-            print(f"\n→ Обрабатываю новый подарок: {gift_name}")
-            
-            # Получаем модели для подарка
-            models_data = await fetch_json(session, f"{BASE_API}/models/{gift_name}?sorted")
-            
-            if not models_data:
-                print(f"  ⚠️  Модели не найдены для {gift_name}")
-                continue
-            
-            model_names = [m["name"] for m in models_data]
-            print(f"  📦 Моделей найдено: {len(model_names)}")
-            
-            # Сохраняем в БД
-            cursor.execute(
-                "INSERT OR REPLACE INTO gift_models (gift_name, models, last_check, folder_exists) VALUES (?, ?, CURRENT_TIMESTAMP, 0)",
-                (gift_name, json.dumps(model_names))
-            )
-            conn.commit()
-            
-            # Формируем сообщение для логов
-            message = f"🆕 <b>В API появился новый подарок</b>\n\n"
-            message += f"<b>Название:</b> {gift_name}\n"
-            message += f"<b>Моделей:</b> {len(model_names)}\n\n"
-            
-            # Добавляем список моделей
-            max_models_in_message = 20
-            models_list = model_names[:max_models_in_message]
-            
-            message += "<blockquote>"
-            for model in models_list:
-                message += f"• {model}\n"
-            
-            if len(model_names) > max_models_in_message:
-                message += f"\n<i>и еще {len(model_names) - max_models_in_message}</i>"
-            message += "</blockquote>\n\n"
-            message += "Хотите обновить папку с моделями?"
-            
-            # Создаём кнопки
-            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="✅ Принять", callback_data=f"download_models:{gift_name}"),
-                    InlineKeyboardButton(text="❌ Отклонить", callback_data=f"decline_models:{gift_name}")
-                ]
-            ])
-            
-            await send_log_to_channel(message, reply_markup=keyboard)
-            print(f"  📨 Отправлено уведомление в логи")
-        
-        conn.close()
-        print("\n" + "=" * 80)
-        print("✅ Проверка завершена")
-        print("=" * 80)
-    finally:
-        await session.close()
-        await connector.close()
+            print("\n" + "=" * 80)
+            print("✅ Проверка завершена")
+            print("=" * 80)
+        finally:
+            pass  # Session closed automatically by async with
 
 async def download_gift_models(gift_name, message_to_edit=None):
     """Скачивает модели для подарка с прогрессом"""
     print(f"📥 Начинаю загрузку моделей для {gift_name}...")
     
     connector = aiohttp.TCPConnector(ssl=False)
-    session = aiohttp.ClientSession(connector=connector)
-    
-    try:
+    async with aiohttp.ClientSession(connector=connector) as session:
         # Получаем список моделей
         models_data = await fetch_json(session, f"{BASE_API}/models/{gift_name}?sorted")
         
@@ -398,9 +394,6 @@ async def download_gift_models(gift_name, message_to_edit=None):
         await update_models_list_json()
         
         return failed_count == 0
-    finally:
-        await session.close()
-        await connector.close()
 
 async def verify_gift_folders():
     """Проверяет целостность папок с моделями"""

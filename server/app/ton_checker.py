@@ -112,20 +112,33 @@ async def get_transactions(address: str, limit: int = 10):
         return []
 
 async def notify_user(user_id: int, stars_amount: int, ton_amount: float):
-    """Отправить уведомление пользователю о пополнении"""
+    """Отправить уведомление пользователю о пополнении с картинкой"""
     try:
-        message = (
+        caption = (
             f"✅ <b>Обнаружено пополнение</b>\n\n"
             f"<b>{stars_amount} × ⭐</b>\n\n"
             f"Получено: {ton_amount} TON"
         )
         
-        await bot.send_message(
-            user_id,
-            message,
-            parse_mode=ParseMode.HTML
-        )
-        print(f"✅ Notification sent to user {user_id}")
+        # Пробуем отправить с картинкой через copy_message из канала
+        try:
+            await bot.copy_message(
+                chat_id=user_id,
+                from_chat_id="@sleserres",
+                message_id=4,
+                caption=caption,
+                parse_mode=ParseMode.HTML
+            )
+            print(f"✅ Notification with image sent to user {user_id}")
+        except Exception as img_e:
+            # Fallback на обычное сообщение если не удалось скопировать
+            print(f"⚠️ Failed to copy image: {img_e}, sending text only")
+            await bot.send_message(
+                user_id,
+                caption,
+                parse_mode=ParseMode.HTML
+            )
+            print(f"✅ Text notification sent to user {user_id}")
     except Exception as e:
         print(f"Error sending notification to user {user_id}: {e}")
         await send_error_log(e, f"ton_checker.py: notify_user {user_id}")

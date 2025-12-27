@@ -13,6 +13,7 @@ SUPPORT_GROUP_ID = int(os.getenv("SUPPORT_GROUP_ID", "0")) if os.getenv("SUPPORT
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 ADMIN_IDS = [int(id.strip()) for id in os.getenv("ADMIN_IDS", "").split(",") if id.strip()]
 DB_PATH = "users.db"
+SUPPORT_DB_PATH = "support.db"
 
 # Pyrogram credentials для парсинга подарков
 API_ID = os.getenv("API_ID")
