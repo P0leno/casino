@@ -10,7 +10,7 @@ DB_PATH = os.getenv("DB_PATH", "./users.db")
 # Глобальные настройки для SQLite
 SQLITE_TIMEOUT = 60  # 60 секунд ожидания при блокировке
 SQLITE_PRAGMAS = [
-    "PRAGMA journal_mode=WAL",           # Write-Ahead Logging для параллельного доступа
+    "PRAGMA journal_mode=WALИ  hn ",           # Write-Ahead Logging для параллельного доступа
     "PRAGMA synchronous=NORMAL",          # Баланс между скоростью и надёжностью
     "PRAGMA cache_size=-64000",           # 64MB кэш
     "PRAGMA temp_store=MEMORY",           # Временные таблицы в памяти

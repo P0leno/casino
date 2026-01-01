@@ -75,7 +75,7 @@
 }
 
 .gift-card-inventory:hover {
-  transform: translateY(-2px);
+  /* transform removed */
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -109,7 +109,7 @@
 }
 
 .gift-card-inventory-regular:hover {
-  transform: translateY(-2px);
+  /* transform removed */
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 

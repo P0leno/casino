@@ -80,9 +80,9 @@ async def create_invoice(invoice_request: CreateInvoiceRequest, request: Request
             currency_type="crypto",
             asset="USDT",
             description=f"Пополнение баланса (+5% бонус)",
-            hidden_message=f"✅ Вы получили {stars_amount} ⭐",
+            hidden_message=f"✅ Зачисление произойдет в течении 30 секунд",
             payload=str(user_id),
-            expires_in=1800  # 30 минут
+            expires_in=1800
         )
         
         # Сохраняем в БД

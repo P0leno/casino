@@ -33,12 +33,15 @@ class ManualWithdrawRequest(BaseModel):
     initData: str
     slug: str
     giftTitle: str
+    error: str | None = None
 
 class ManualWithdrawNFTRequest(BaseModel):
     initData: str
     slug: str
+    slug: str
     giftTitle: str
-    messageId: int
+    messageId: int | None = None
+    error: str | None = None
 
 def sanitize_error(error: Exception) -> str:
     """
@@ -524,22 +527,29 @@ async def manual_withdraw(request: ManualWithdrawRequest):
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
         import os
         
-        LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))
+        LOG_BOT_TOKEN = os.getenv("LOG_BOT_TOKEN")
+        LOGS_ID = int(os.getenv("LOGS_ID", "0"))
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Выполнен", callback_data=f"manual_done_{user_id}_{request.slug}")]
         ])
+        # Отправляем уведомление в лог канал
+        bot = Bot(token=LOG_BOT_TOKEN)
         
-        await log_bot.send_message(
-            LOG_CHANNEL_ID,
-            f"📦 <b>Ручной вывод подарка</b>\n\n"
-            f"🎁 Подарок: <code>{request.giftTitle}</code>\n"
-            f"📝 Slug: <code>{request.slug}</code>\n"
-            f"👤 Пользователь: @{username}\n"
-            f"🆔 ID: <code>{user_id}</code>",
+        error_text = f"\n⚠️ <b>Ошибка при попытке:</b> {request.error}" if request.error else ""
+        
+        await bot.send_message(
+            chat_id=LOGS_ID,
+            text=(
+                f"📝 <b>Запрос на ручной вывод (Regular)</b>\n"
+                f"👤 Пользователь: {first_name} (@{username}, ID: {user_id})\n"
+                f"🎁 Подарок: {request.giftTitle} ({request.slug})\n"
+                f"ℹ️ Статус: Заявка принята{error_text}"
+            ),
             parse_mode="HTML",
             reply_markup=keyboard
         )
+        await bot.session.close()
         
         print(f"✅ Manual withdraw request: {request.giftTitle} for @{username} ({user_id})")
         

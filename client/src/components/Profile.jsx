@@ -4,6 +4,7 @@ import LottieAnimation from './LottieAnimation'
 import Settings from './Settings'
 import GiftDetailsModal from './GiftDetailsModal'
 import PromoCodeModal from './PromoCodeModal'
+import ActionStatusModal from './ActionStatusModal'
 import starStaticIcon from '../assets/star_static.svg'
 import giftIcon from '../assets/gift.svg'
 import supIcon from '../assets/sup.svg'
@@ -76,6 +77,8 @@ function Profile() {
   const observerRef = useRef(null)
   const [activeProfileTab, setActiveProfileTab] = useState('inventory')
   const [showPromoCodeModal, setShowPromoCodeModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorData, setErrorData] = useState(null)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -100,39 +103,7 @@ function Profile() {
 
 
 
-  useEffect(() => {
-    // Intersection Observer для оптимизации Lottie анимаций
-    if (!gridRef.current || inventory.length === 0) return
-
-    // Даем небольшую задержку для рендеринга DOM
-    const timeout = setTimeout(() => {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            const lottieElement = entry.target.querySelector('.lottie-container, .lottie-container-regular')
-            if (lottieElement) {
-              if (entry.isIntersecting) {
-                lottieElement.classList.add('visible')
-              } else {
-                lottieElement.classList.remove('visible')
-              }
-            }
-          })
-        },
-        { threshold: 0.1, rootMargin: '50px' }
-      )
-
-      const cards = gridRef.current.querySelectorAll('.gift-card-inventory, .gift-card-inventory-regular')
-      cards.forEach((card) => observerRef.current.observe(card))
-    }, 100)
-
-    return () => {
-      clearTimeout(timeout)
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-    }
-  }, [inventory])
+  // IntersectionObserver removed - no longer needed for static images
 
   const getAvatarUrl = () => {
     if (user?.photo_url) {
@@ -618,34 +589,143 @@ function Profile() {
       const response = await fetch(`${apiUrl}/api/withdraw-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, giftName: gift.slug, index: 0 })
+        body: JSON.stringify({ initData, name: gift.slug, index: 0 })
       })
 
       const data = await response.json()
 
       if (data.success) {
-        if (tg?.showAlert) {
-          tg.showAlert('✅ Подарок успешно отправлен!')
-        } else {
-          alert('✅ Подарок успешно отправлен!')
-        }
+        if (tg?.showAlert) tg.showAlert('✅ Подарок успешно отправлен!')
+        else alert('✅ Подарок успешно отправлен!')
+
         loadInventory()
         setShowGiftDetails(false)
       } else {
-        const errorMsg = data.message || 'Не удалось отправить подарок'
-        if (tg?.showAlert) {
-          tg.showAlert(errorMsg)
-        } else {
-          alert(errorMsg)
-        }
+        setErrorData({
+          gift: gift,
+          error: data.error || data.message || 'Ошибка вывода',
+          type: 'regular'
+        })
+        setShowErrorModal(true)
       }
     } catch (error) {
       console.error('Withdraw error:', error)
-      if (tg?.showAlert) {
-        tg.showAlert('Ошибка соединения с сервером')
+      setErrorData({
+        gift: gift,
+        error: 'Ошибка соединения с сервером',
+        type: 'regular'
+      })
+      setShowErrorModal(true)
+    }
+  }
+
+  const handleWithdrawNFT = async (gift) => {
+    const tg = window.Telegram?.WebApp
+    const initData = tg?.initData
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+    const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
+    const confirmed = tg?.showConfirm
+      ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
+      : window.confirm(confirmMessage)
+
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`${apiUrl}/api/withdraw-nft-gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData,
+          slug: gift.slug,
+          messageId: gift.message_id
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        if (tg?.showAlert) tg.showAlert('✅ Подарок успешно отправлен!')
+        else alert('✅ Подарок успешно отправлен!')
+
+        loadInventory()
+        setShowGiftDetails(false)
       } else {
-        alert('Ошибка соединения с сервером')
+        setErrorData({
+          gift: gift,
+          error: data.error || data.message || 'Ошибка вывода NFT',
+          type: 'nft'
+        })
+        setShowErrorModal(true)
       }
+    } catch (error) {
+      setErrorData({
+        gift: gift,
+        error: 'Ошибка соединения с сервером',
+        type: 'nft'
+      })
+      setShowErrorModal(true)
+    }
+  }
+
+  /* New logic for Retry */
+  const handleRetry = () => {
+    setShowErrorModal(false)
+    if (errorData?.type === 'regular') handleWithdrawRegular(errorData.gift)
+    else if (errorData?.type === 'nft') handleWithdrawNFT(errorData.gift)
+  }
+
+  const handleManualAdminWithdraw = async () => {
+    const tg = window.Telegram?.WebApp
+    const initData = tg?.initData
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+    if (!errorData || !errorData.gift) return
+
+    try {
+      const isNFT = errorData.type === 'nft'
+      const endpoint = isNFT
+        ? `${apiUrl}/api/inventory/manual-withdraw-nft`
+        : `${apiUrl}/api/inventory/manual-withdraw`
+
+      const body = isNFT
+        ? {
+          initData,
+          slug: errorData.gift.slug,
+          giftTitle: errorData.gift.title,
+          messageId: errorData.gift.message_id,
+          error: errorData.error
+        }
+        : {
+          initData,
+          slug: errorData.gift.slug,
+          giftTitle: errorData.gift.title,
+          error: errorData.error
+        }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+
+      const data = await response.json()
+
+      setShowErrorModal(false)
+
+      if (data.success) {
+        if (tg?.showAlert) tg.showAlert('✅ Заявка отправлена администрации!')
+        else alert('✅ Заявка отправлена администрации!')
+        loadInventory()
+        setShowGiftDetails(false)
+      } else {
+        if (tg?.showAlert) tg.showAlert(data.message || 'Ошибка отправки заявки')
+        else alert(data.message || 'Ошибка отправки заявки')
+      }
+    } catch (error) {
+      console.error('Manual withdraw error:', error)
+      const tg = window.Telegram?.WebApp
+      if (tg?.showAlert) tg.showAlert('Ошибка соединения с сервером')
     }
   }
 
@@ -870,19 +950,36 @@ function Profile() {
                     }}
                     onClick={() => handleViewGift(gift)}
                   >
-                    {gift.model_path && (
-                      <div className={isRegular ? "lottie-container-regular" : "lottie-container"}>
-                        <LottieAnimation
-                          animationData={gift.model_path}
-                          width={isRegular ? 80 : 100}
-                          height={isRegular ? 80 : 100}
-                          loop={true}
-                          autoplay={true}
-                        />
-                      </div>
-                    )}
+                    {/* Static images only - NO Lottie */}
+                    <div className="gift-image-wrapper" style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: isRegular ? 'relative' : 'absolute',
+                      top: 0,
+                      left: 0,
+                      zIndex: 0
+                    }}>
+                      <img
+                        src={isRegular
+                          ? `https://shelloch.xyz/gifts/${gift.slug}.png`
+                          : `https://nft.fragment.com/gift/${gift.slug || gift.name}.large.jpg`
+                        }
+                        alt={gift.title || gift.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: isRegular ? 'contain' : 'cover',
+                          borderRadius: isRegular ? 0 : '20px'
+                        }}
+                        loading="lazy"
+                      />
+                    </div>
+
                     {isNFT && !isRegular && (
-                      <div className="nft-badge">
+                      <div className="nft-badge" style={{ position: 'relative', zIndex: 1 }}>
                         <span className="nft-id">#{gift.collectible_id}</span>
                       </div>
                     )}
@@ -1651,10 +1748,25 @@ function Profile() {
             setSelectedGift(null)
           }}
           onSell={selectedGift.is_regular_gift ? handleSellRegular : handleSellNFT}
-          onWithdraw={handleWithdrawRegular}
+          onWithdraw={selectedGift.is_regular_gift ? handleWithdrawRegular : handleWithdrawNFT}
           isInventory={true}
         />
       )}
+
+      {/* Action Status Modal for Errors */}
+      <ActionStatusModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Ошибка отправки"
+        message={errorData?.error || 'Произошла ошибка'}
+        actionButtonText="Повторить"
+        onAction={handleRetry}
+        secondaryButtonText="Вывод администрацией"
+        onSecondaryAction={handleManualAdminWithdraw}
+        helpText="Убедитесь что вы написали боту"
+        helpLink="https://t.me/shellrelayer"
+        isError={true}
+      />
 
       {/* Модальное окно промокода */}
       <PromoCodeModal

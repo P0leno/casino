@@ -12,6 +12,11 @@ const Settings = () => {
     loadSettings();
   }, []);
 
+  const [isAutoWithdrawExpanded, setIsAutoWithdrawExpanded] = useState(false);
+
+  // Helper for mixed boolean types (1/0 vs true/false)
+  const isTrue = (val) => val === '1' || val === 'true';
+
   const loadSettings = async () => {
     try {
       const tg = window.Telegram.WebApp;
@@ -37,7 +42,7 @@ const Settings = () => {
 
       const text = await response.text();
       console.log('Response text:', text);
-      
+
       let data;
       try {
         data = JSON.parse(text);
@@ -45,7 +50,7 @@ const Settings = () => {
         console.error('JSON parse error:', e, 'Text:', text);
         throw new Error('Сервер вернул некорректный ответ');
       }
-      
+
       if (data.valid && data.settings) {
         setSettings(data.settings);
         // Получаем статус тех работ из настроек
@@ -68,20 +73,20 @@ const Settings = () => {
 
   const toggleMaintenance = async () => {
     if (saving) return;
-    
+
     setSaving(true);
-    
+
     try {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
-      
+
       // Используем update-setting вместо toggle-maintenance
       const newValue = maintenanceMode ? '0' : '1';
-      
+
       const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initData,
           key: 'maintenance_mode',
           value: newValue
@@ -89,11 +94,11 @@ const Settings = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         const newMode = newValue === '1';
         setMaintenanceMode(newMode);
-        
+
         // Обновляем локальное состояние settings
         setSettings(prev => ({
           ...prev,
@@ -102,9 +107,9 @@ const Settings = () => {
             value: newValue
           }
         }));
-        
+
         tg.HapticFeedback.notificationOccurred('success');
-        
+
         const status = newMode ? 'включен' : 'выключен';
         tg.showAlert?.(`Режим технических работ ${status}`);
       } else {
@@ -122,21 +127,21 @@ const Settings = () => {
 
   const updateCommission = async (newValue) => {
     if (saving) return;
-    
+
     // Валидация
     const numValue = parseFloat(newValue);
     if (isNaN(numValue) || numValue < 0 || numValue > 100) return;
-    
+
     setSaving(true);
-    
+
     try {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
-      
+
       const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initData,
           key: 'shop_commission',
           value: String(numValue)
@@ -144,7 +149,7 @@ const Settings = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         // Обновляем локальное состояние
         setSettings(prev => ({
@@ -154,7 +159,7 @@ const Settings = () => {
             value: String(numValue)
           }
         }));
-        
+
         // Уведомление об успешном пересчете
         tg.showAlert?.(`Наценка изменена на ${numValue}%. Цены пересчитываются...`);
       } else {
@@ -170,21 +175,21 @@ const Settings = () => {
 
   const updateSellCommission = async (newValue) => {
     if (saving) return;
-    
+
     // Валидация
     const numValue = parseFloat(newValue);
     if (isNaN(numValue) || numValue < 0 || numValue > 100) return;
-    
+
     setSaving(true);
-    
+
     try {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
-      
+
       const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initData,
           key: 'sell_commission',
           value: String(numValue)
@@ -192,7 +197,7 @@ const Settings = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         // Обновляем локальное состояние
         setSettings(prev => ({
@@ -202,7 +207,7 @@ const Settings = () => {
             value: String(numValue)
           }
         }));
-        
+
         tg.showAlert?.(`Комиссия на продажу изменена на ${numValue}%`);
       } else {
         tg.showAlert?.(data.error || 'Ошибка сохранения');
@@ -217,21 +222,21 @@ const Settings = () => {
 
   const updateCustomPromoRefs = async (newValue) => {
     if (saving) return;
-    
+
     // Валидация - только целые числа
     const numValue = parseInt(newValue);
     if (isNaN(numValue) || numValue < 1 || numValue > 1000) return;
-    
+
     setSaving(true);
-    
+
     try {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
-      
+
       const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initData,
           key: 'custom_promo_refs_required',
           value: String(numValue)
@@ -239,7 +244,7 @@ const Settings = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         // Обновляем локальное состояние
         setSettings(prev => ({
@@ -249,7 +254,7 @@ const Settings = () => {
             value: String(numValue)
           }
         }));
-        
+
         tg.showAlert?.(`Требование изменено на ${numValue} рефералов`);
       } else {
         tg.showAlert?.(data.error || 'Ошибка сохранения');
@@ -264,18 +269,18 @@ const Settings = () => {
 
   const toggleSetting = async (key, currentValue) => {
     setSaving(true);
-    
+
     try {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
-      
+
       // Переключаем значение
       const newValue = currentValue === 'true' ? 'false' : 'true';
-      
+
       const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initData,
           key,
           value: newValue
@@ -283,7 +288,7 @@ const Settings = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Обновляем локальное состояние
         setSettings(prev => ({
@@ -293,7 +298,7 @@ const Settings = () => {
             value: newValue
           }
         }));
-        
+
         tg.HapticFeedback.notificationOccurred('success');
       } else {
         tg.showAlert(data.message || 'Ошибка обновления настройки');
@@ -310,19 +315,19 @@ const Settings = () => {
 
   const handleRestart = async () => {
     const tg = window.Telegram.WebApp;
-    
+
     // Подтверждение
-    const confirmed = await new Promise(resolve => 
+    const confirmed = await new Promise(resolve =>
       tg.showConfirm('Перезапустить сервер? Текущий раунд краша завершится, затем сервер перезагрузится с новым кодом.', resolve)
     );
-    
+
     if (!confirmed) return;
-    
+
     setRestarting(true);
-    
+
     try {
       const initData = tg.initData;
-      
+
       const response = await fetch('https://api.shelloch.xyz/api/restart-server', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -330,7 +335,7 @@ const Settings = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         tg.showAlert('Рестарт запущен! Сервер перезагрузится через ~30-60 сек');
         tg.HapticFeedback.notificationOccurred('success');
@@ -363,10 +368,10 @@ const Settings = () => {
       <div className="settings-header">
         <h2>⚙️ Настройки</h2>
         <p className="settings-subtitle">Управление системными параметрами</p>
-        
+
         {/* Кнопка рестарта */}
-        <button 
-          className="restart-server-button" 
+        <button
+          className="restart-server-button"
           onClick={handleRestart}
           disabled={restarting || saving}
         >
@@ -383,8 +388,8 @@ const Settings = () => {
             <div className="setting-details">
               <div className="setting-name">Технические работы</div>
               <div className="setting-status">
-                {maintenanceMode ? 
-                  <span className="status-enabled">✓ Включен</span> : 
+                {maintenanceMode ?
+                  <span className="status-enabled">✓ Включен</span> :
                   <span className="status-disabled">✗ Выключен</span>
                 }
               </div>
@@ -401,7 +406,105 @@ const Settings = () => {
           </label>
         </div>
 
-        {/* Пополнение звездами */}
+        {/* Авто-выдача (Auto-Withdraw) */}
+        <div className={`setting-item auto-withdraw-card ${isAutoWithdrawExpanded ? 'expanded' : ''}`}>
+          <div
+            className="setting-header-click-area"
+            onClick={(e) => {
+              // Prevent collapse when clicking the switch
+              if (e.target.closest('.toggle-switch')) return;
+              setIsAutoWithdrawExpanded(!isAutoWithdrawExpanded);
+            }}
+          >
+            <div className="setting-info">
+              <div className="setting-icon">💸</div>
+              <div className="setting-details">
+                <div className="setting-name">Авто-выдача</div>
+                <div className="setting-status">
+                  {(isTrue(settings.withdraw_regular_enabled?.value) && isTrue(settings.withdraw_nft_enabled?.value)) ?
+                    <span className="status-enabled">✓ Включена</span> :
+                    <span className="status-disabled">✗ Выключена</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="setting-controls-right">
+              {/* Global Switch */}
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={isTrue(settings.withdraw_regular_enabled?.value) && isTrue(settings.withdraw_nft_enabled?.value)}
+                  onChange={() => {
+                    const isEnabled = isTrue(settings.withdraw_regular_enabled?.value) && isTrue(settings.withdraw_nft_enabled?.value);
+                    const newValue = isEnabled ? '0' : '1';
+
+                    // Manually call API for both
+                    const tg = window.Telegram.WebApp;
+                    const initData = tg.initData;
+
+                    // Helper to update
+                    const update = async (key, val) => {
+                      await fetch('https://api.shelloch.xyz/api/update-setting', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ initData, key, value: val })
+                      });
+                      setSettings(prev => ({
+                        ...prev,
+                        [key]: { ...prev[key], value: val }
+                      }));
+                    };
+
+                    update('withdraw_regular_enabled', newValue);
+                    update('withdraw_nft_enabled', newValue);
+                  }}
+                  disabled={saving}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+
+              {/* Chevron */}
+              <div className={`setting-chevron ${isAutoWithdrawExpanded ? 'rotated' : ''}`}>
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* Expanded Content */}
+          {isAutoWithdrawExpanded && (
+            <div className="setting-sub-items">
+              {/* Regular */}
+              <div className="setting-sub-item">
+                <span>Обычные подарки</span>
+                <label className="toggle-switch small">
+                  <input
+                    type="checkbox"
+                    checked={isTrue(settings.withdraw_regular_enabled?.value)}
+                    onChange={() => toggleSetting('withdraw_regular_enabled', isTrue(settings.withdraw_regular_enabled?.value) ? 'true' : 'false')}
+                    disabled={saving}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+
+              {/* NFT */}
+              <div className="setting-sub-item">
+                <span>NFT Подарки</span>
+                <label className="toggle-switch small">
+                  <input
+                    type="checkbox"
+                    checked={isTrue(settings.withdraw_nft_enabled?.value)}
+                    onChange={() => toggleSetting('withdraw_nft_enabled', isTrue(settings.withdraw_nft_enabled?.value) ? 'true' : 'false')}
+                    disabled={saving}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+
         {settings.stars_topup_enabled && (
           <div className="setting-item">
             <div className="setting-info">
@@ -409,8 +512,8 @@ const Settings = () => {
               <div className="setting-details">
                 <div className="setting-name">{settings.stars_topup_enabled.description}</div>
                 <div className="setting-status">
-                  {settings.stars_topup_enabled.value === 'true' ? 
-                    <span className="status-enabled">✓ Включено</span> : 
+                  {settings.stars_topup_enabled.value === 'true' ?
+                    <span className="status-enabled">✓ Включено</span> :
                     <span className="status-disabled">✗ Выключено</span>
                   }
                 </div>
@@ -436,10 +539,10 @@ const Settings = () => {
               <div className="setting-details">
                 <div className="setting-name">{settings.shop_commission.description}</div>
                 <div className="setting-value-display">
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="100" 
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
                     step="1"
                     value={settings.shop_commission.value}
                     onChange={(e) => updateCommission(e.target.value)}
@@ -461,10 +564,10 @@ const Settings = () => {
               <div className="setting-details">
                 <div className="setting-name">{settings.sell_commission.description}</div>
                 <div className="setting-value-display">
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="100" 
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
                     step="1"
                     value={settings.sell_commission.value}
                     onChange={(e) => updateSellCommission(e.target.value)}
@@ -486,10 +589,10 @@ const Settings = () => {
               <div className="setting-details">
                 <div className="setting-name">{settings.custom_promo_refs_required.description}</div>
                 <div className="setting-value-display">
-                  <input 
-                    type="number" 
-                    min="1" 
-                    max="1000" 
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
                     step="1"
                     value={settings.custom_promo_refs_required.value}
                     onChange={(e) => updateCustomPromoRefs(e.target.value)}

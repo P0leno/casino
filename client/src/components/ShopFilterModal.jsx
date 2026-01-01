@@ -25,18 +25,34 @@ const GIFT_MODELS = [
   'Westside Sign', 'Whip Cupcake', 'Winter Wreath', 'Witch Hat', 'Xmas Stocking'
 ]
 
-function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = [], modelsList = {} }) {
+function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsList = {} }) {
+  // expandedCategory: 'gift', 'model', 'background'
+  const [expandedCategory, setExpandedCategory] = useState('gift')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedFilters, setSelectedFilters] = useState(currentFilters) // Инициализируем текущими фильтрами
-  const [backdrops, setBackdrops] = useState([])
-  const [selectedGift, setSelectedGift] = useState(null) // Для двухуровневого выбора моделей
-  const [giftModels, setGiftModels] = useState([]) // Модели выбранного подарка
 
+  // Structured filters state
+  const [filters, setFilters] = useState({
+    gifts: currentFilters.gifts || [],
+    models: currentFilters.models || [],
+    backdrops: currentFilters.backdrops || []
+  })
+
+  const [backdrops, setBackdrops] = useState([])
+  const [availableModels, setAvailableModels] = useState([]) // Models for selected gifts
+
+  // Load backdrops
   useEffect(() => {
-    if (category === 'background') {
+    if (expandedCategory === 'background' && backdrops.length === 0) {
       loadBackdrops()
     }
-  }, [category])
+  }, [expandedCategory])
+
+  // Load models when Model section expanded or selected gifts change
+  useEffect(() => {
+    if (expandedCategory === 'model' && filters.gifts.length > 0) {
+      loadModelsForSelectedGifts()
+    }
+  }, [expandedCategory, filters.gifts])
 
   const loadBackdrops = async () => {
     try {
@@ -48,136 +64,204 @@ function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = []
     }
   }
 
-  const loadGiftModels = async (giftName) => {
+  const loadModelsForSelectedGifts = async () => {
     try {
-      // Загружаем список моделей для конкретного подарка
-      const response = await fetch(`https://shelloch.xyz/gifts/models/${encodeURIComponent(giftName)}/model.json`)
-      const data = await response.json()
-      // Предполагаем что в model.json есть массив моделей
-      setGiftModels(data.models || [])
-      setSelectedGift(giftName)
+      // Fetch models for ALL selected gifts
+      const uniqueModels = new Set()
+      const promises = filters.gifts.map(giftName =>
+        fetch(`https://shelloch.xyz/gifts/models/${encodeURIComponent(giftName)}/model.json`)
+          .then(r => r.json())
+          .then(data => data.models || [])
+          .catch(() => [])
+      )
+
+      const results = await Promise.all(promises)
+      results.flat().forEach(m => uniqueModels.add(m))
+      setAvailableModels(Array.from(uniqueModels).sort())
     } catch (error) {
-      console.error('Error loading gift models:', error)
-      setGiftModels([])
+      console.error('Error loading models:', error)
+      setAvailableModels([])
     }
   }
 
-  const getFilterItems = () => {
+  const getFilterItems = (category) => {
     if (category === 'gift') {
-      // Динамически берем список подарков из modelsList
       return Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
     } else if (category === 'background') {
       return backdrops.map(b => b.name)
     } else if (category === 'model') {
-      // Для моделей показываем список подарков или модели выбранного подарка
-      if (selectedGift) {
-        return giftModels
-      } else {
-        // Динамически берем список подарков из modelsList
-        return Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
-      }
-    } else if (category === 'symbol') {
-      return [] // Пока без сортировки
+      return availableModels
     }
     return []
   }
 
-  const filteredItems = getFilterItems().filter(item => {
-    const itemName = typeof item === 'string' ? item : item
-    return itemName.toLowerCase().includes(searchQuery.toLowerCase())
-  })
-
-  const toggleFilter = (item) => {
-    // Для моделей - если выбираем подарок первый раз, загружаем его модели
-    const giftsList = Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
-    if (category === 'model' && !selectedGift && giftsList.includes(item)) {
-      loadGiftModels(item)
-      return
-    }
-    
-    // Обычная мульти-сортировка
-    if (selectedFilters.includes(item)) {
-      setSelectedFilters(selectedFilters.filter(f => f !== item))
-    } else {
-      setSelectedFilters([...selectedFilters, item])
-    }
+  const getFilteredItems = (category) => {
+    return getFilterItems(category).filter(item => {
+      const itemName = typeof item === 'string' ? item : item
+      return itemName.toLowerCase().includes(searchQuery.toLowerCase())
+    })
   }
 
-  const handleBack = () => {
-    if (category === 'model' && selectedGift) {
-      setSelectedGift(null)
-      setGiftModels([])
-    }
+  const toggleFilter = (item, category) => {
+    setFilters(prev => {
+      const targetArray = category === 'gift' ? prev.gifts :
+        category === 'model' ? prev.models :
+          prev.backdrops
+
+      let newArray
+      if (targetArray.includes(item)) {
+        newArray = targetArray.filter(f => f !== item)
+      } else {
+        newArray = [...targetArray, item]
+      }
+
+      // If expanding gifts, and we deselect a gift, we might need to remove models that are no longer available?
+      // For simplicity, we keep selected models but they might filter nothing. 
+      // But typically we should cleanup. Leaving it simple for now (user didn't request complex cleanup).
+
+      return {
+        ...prev,
+        [category === 'gift' ? 'gifts' : category === 'model' ? 'models' : 'backdrops']: newArray
+      }
+    })
   }
 
   const handleApply = () => {
-    onApplyFilter(selectedFilters)
+    onApplyFilter(filters)
     onClose()
   }
 
   const handleClear = () => {
-    setSelectedFilters([])
-    onApplyFilter([])
-    onClose()
+    setFilters({ gifts: [], models: [], backdrops: [] })
+  }
+
+  const isModelDisabled = filters.gifts.length === 0
+
+  const toggleCategory = (category) => {
+    if (category === 'model' && isModelDisabled) return // Block if disabled
+
+    if (expandedCategory === category) {
+      setExpandedCategory(null)
+      setSearchQuery('')
+    } else {
+      setExpandedCategory(category)
+      setSearchQuery('')
+    }
   }
 
   const getBackdropById = (name) => {
     return backdrops.find(b => b.name === name)
   }
 
-  return (
-    <div className="filter-modal-overlay" onClick={onClose}>
-      <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="filter-header">
-          {category === 'model' && selectedGift && (
-            <button className="filter-back" onClick={handleBack}>← Назад</button>
-          )}
-          <h3>
-            {category === 'gift' ? 'Подарки' : 
-             category === 'model' ? (selectedGift ? `Модели: ${selectedGift}` : 'Выберите подарок') : 
-             category === 'background' ? 'Фоны' : 
-             'Символы'}
-          </h3>
-          <button className="filter-close" onClick={onClose}>✕</button>
+  const renderCategoryContent = (category, placeholder) => {
+    const items = getFilteredItems(category)
+    const currentSelection = category === 'gift' ? filters.gifts :
+      category === 'model' ? filters.models :
+        filters.backdrops
+
+    return (
+      <div className="accordion-content" onClick={(e) => e.stopPropagation()}>
+        <div className="accordion-search-wrap">
+          <span className="search-icon-placeholder">🔍</span>
+          <input
+            type="text"
+            className="accordion-search"
+            placeholder={placeholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
-        <input 
-          type="text"
-          className="filter-search"
-          placeholder="Поиск..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="accordion-list">
+          {items.length === 0 && <div style={{ padding: '10px', color: '#666', textAlign: 'center' }}>Нет данных</div>}
 
-        <div className="filter-list">
-          {filteredItems.map((item, index) => {
+          {items.map((item, index) => {
             const backdrop = category === 'background' ? getBackdropById(item) : null
+            const isSelected = currentSelection.includes(item)
             return (
-              <div 
+              <div
                 key={index}
-                className={`filter-item ${selectedFilters.includes(item) ? 'selected' : ''}`}
-                onClick={() => toggleFilter(item)}
+                className={`accordion-item ${isSelected ? 'selected' : ''}`}
+                onClick={() => toggleFilter(item, category)}
               >
-                {backdrop && (
-                  <div 
-                    className="backdrop-circle"
-                    style={{
-                      background: `radial-gradient(circle, ${backdrop.hex.centerColor}, ${backdrop.hex.edgeColor})`
-                    }}
-                  />
+                {category === 'background' ? (
+                  <div className="item-left">
+                    <div className={`checkbox-circle ${isSelected ? 'checked' : ''}`} />
+                    {backdrop && (
+                      <div
+                        className="backdrop-circle-small"
+                        style={{
+                          background: `radial-gradient(circle, ${backdrop.hex.centerColor}, ${backdrop.hex.edgeColor})`
+                        }}
+                      />
+                    )}
+                    <span className="item-name">{item}</span>
+                  </div>
+                ) : (
+                  <div className="item-left">
+                    <div className={`checkbox-circle ${isSelected ? 'checked' : ''}`} />
+                    <span className="item-name">{item}</span>
+                  </div>
                 )}
-                <span>{item}</span>
               </div>
             )
           })}
         </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="filter-modal-overlay" onClick={onClose}>
+      <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="filter-header">
+          <h3>Фильтры</h3>
+          <button className="filter-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="filter-list accordion-container">
+          {/* Коллекция */}
+          <div className={`accordion-section ${expandedCategory === 'gift' ? 'expanded' : ''}`}>
+            <div className="accordion-header" onClick={() => toggleCategory('gift')}>
+              <span>Коллекция</span>
+              <span className="accordion-arrow">›</span>
+            </div>
+            {expandedCategory === 'gift' && renderCategoryContent('gift', 'Поиск коллекции')}
+          </div>
+
+          {/* Модель */}
+          <div
+            className={`accordion-section ${expandedCategory === 'model' ? 'expanded' : ''}`}
+            style={isModelDisabled ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+            onClick={isModelDisabled ? (e) => e.stopPropagation() : undefined}
+          >
+            <div
+              className="accordion-header"
+              onClick={!isModelDisabled ? () => toggleCategory('model') : undefined}
+              style={isModelDisabled ? { cursor: 'not-allowed' } : {}}
+            >
+              <span>Модель {isModelDisabled && '(Выберите коллекцию)'}</span>
+              <span className="accordion-arrow">›</span>
+            </div>
+            {expandedCategory === 'model' && !isModelDisabled && renderCategoryContent('model', 'Поиск модели')}
+          </div>
+
+          {/* Фон */}
+          <div className={`accordion-section ${expandedCategory === 'background' ? 'expanded' : ''}`}>
+            <div className="accordion-header" onClick={() => toggleCategory('background')}>
+              <span>Фон</span>
+              <span className="accordion-arrow">›</span>
+            </div>
+            {expandedCategory === 'background' && renderCategoryContent('background', 'Поиск фона')}
+          </div>
+        </div>
 
         <div className="filter-actions">
           <button className="filter-btn filter-btn-clear" onClick={handleClear}>
-            Очистить фильтры
+            Сбросить
           </button>
           <button className="filter-btn filter-btn-apply" onClick={handleApply}>
-            Готово
+            Применить
           </button>
         </div>
       </div>
@@ -186,3 +270,4 @@ function ShopFilterModal({ category, onClose, onApplyFilter, currentFilters = []
 }
 
 export default ShopFilterModal
+

@@ -18,124 +18,174 @@
   margin: 0 0 20px 0;
 }
 
-/* Категории - горизонтальная прокрутка */
-.shop-categories {
+/* Панель управления (Фильтр, Сортировка) */
+.shop-controls {
   display: flex;
   gap: 8px;
+  margin-top: 24px;
   margin-bottom: 24px;
   padding: 0 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
+  position: relative;
+  /* Для выпадающего списка */
+  z-index: 10;
 }
 
-.shop-categories::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
-}
-
-.category-btn {
-  padding: 10px 24px;
-  border-radius: 20px;
-  border: 1px solid rgba(15, 188, 224, 0.2);
-  background: transparent;
-  backdrop-filter: blur(1.25rem);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 15px;
-  font-weight: 500;
+.shop-control-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: .375rem;
+  background: #ffffff14;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 1.25rem;
+  padding: .5rem 1rem;
+  color: #fff;
+  transition: background .2s ease, border-color .2s ease;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
+  min-width: 0;
+  font-size: 14px;
+  flex: 1;
+  /* Растягиваем кнопки */
 }
 
-.category-btn.active {
-  background: #1C404A;
-  border-color: #0FBCE0;
-  color: #0FBCE0;
-  box-shadow: 0 4px 12px rgba(15, 188, 224, 0.2);
+.shop-control-btn:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Убираем hover эффекты */
-.category-btn:active {
-  transform: scale(0.98);
+/* Иконки внутри кнопок */
+.control-icon {
+  font-size: 16px;
 }
+
+
 
 /* Сетка товаров */
 .shop-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding: 0 10px;
 }
 
 .shop-item-card {
+  position: relative;
   background: transparent;
+  /* Будет задан инлайн через radial-gradient */
   backdrop-filter: blur(1.25rem);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 10px;
+  -webkit-backdrop-filter: blur(1.25rem);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Из примера */
+  border-radius: 2rem;
+  /* Из примера .GeR6E */
+  padding: 0.55rem;
+  /* Из примера */
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: transform 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 1px 1px 0.5px rgba(255, 255, 255, 0.15);
+  gap: 0.5rem;
+  overflow: hidden;
   cursor: pointer;
+  transition: transform 1.2s cubic-bezier(.19, 1, .22, 1), border-color .2s ease, box-shadow .2s ease;
+  isolation: isolate;
+  user-select: none;
+  contain: content;
+  transform: translateZ(0);
+}
+
+.shop-item-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset .5px .5px .25px #ffffff26, inset -.25px -.25px .25px .25px #ffffff1a;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* Убираем hover эффект */
 .shop-item-card:active {
-  transform: scale(0.98);
+  /* transform removed */
+}
+
+/* Стили для кнопки цены (из примера ._18Bed) */
+.shop-item-price {
+  --button-bg: linear-gradient(135deg, rgba(38, 171, 255, 0.85) 0%, rgba(0, 157, 255, 0.85) 50%, rgba(0, 144, 234, 0.85) 100%);
+  --button-text: rgba(255, 255, 255, 0.9);
+  --button-pressed: linear-gradient(135deg, rgba(12, 139, 217, 0.85) 0%, rgba(0, 133, 216, 0.85) 50%, rgba(0, 129, 209, 0.85) 100%);
+  --highlight-color: rgba(255, 255, 255, 0.4);
+  --shadow-color: rgba(0, 0, 0, 0.15);
+  --border-color: rgba(255, 255, 255, 0.15);
+  --backdrop-blur: none;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .5rem 1rem;
+  border: none;
+  border-radius: 2rem;
+  background: var(--button-bg);
+  color: var(--button-text);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  box-shadow: none;
+  text-shadow: none;
+  backdrop-filter: var(--backdrop-blur, none);
+}
+
+.shop-item-price::before,
+.shop-item-price::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.shop-item-price::after {
+  box-shadow: 0 0 0 .25px var(--border-color, rgba(255, 255, 255, .15)), inset .25px .25px .5px 0 var(--highlight-color, rgba(255, 255, 255, .4)), inset -.25px -.25px .5px 0 var(--shadow-color, rgba(0, 0, 0, .15));
+}
+
+.shop-item-price:active {
+  background: var(--button-pressed);
+  /* transform removed */
+}
+
+.shop-item-price:hover {
+  /* transform removed */
 }
 
 .shop-item-image {
   width: 100%;
   aspect-ratio: 1;
-  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
-  border-radius: 12px;
+  border-radius: 2rem;
+  /* Закругление как у плашки */
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
-}
-
-.shop-loading,
-.shop-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 16px;
-}
-
-.shop-item-price {
-  width: 100%;
-  padding: 8px;
-  background: #1C404A;
-  color: #0FBCE0;
-  border: 1px solid rgba(15, 188, 224, 0.3);
-  border-radius: 16px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  /* background удален, так как он теперь на карточке */
 }
 
 .price-star-icon {
   width: 20px;
   height: 20px;
-  /* Фильтр для перекраски черной иконки в #0FBCE0 */
-  filter: brightness(0) saturate(100%) invert(71%) sepia(48%) saturate(1786%) hue-rotate(153deg) brightness(95%) contrast(92%);
+  /* Фильтр для перекраски черной иконки в белый (для синей кнопки) */
+  filter: brightness(0) invert(1);
 }
 
 /* Убираем hover эффект */
 .shop-item-price:active {
-  transform: scale(0.98);
+  /* transform removed */
 }
 
 .back-button {
@@ -161,11 +211,11 @@
   .shop-grid {
     gap: 8px;
   }
-  
+
   .shop-item-card {
     padding: 6px;
   }
-  
+
   .category-btn {
     padding: 8px 18px;
     font-size: 14px;

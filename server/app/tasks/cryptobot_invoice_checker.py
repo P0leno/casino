@@ -89,9 +89,9 @@ async def check_pending_invoices():
                 # Проверяем истек ли срок
                 expires_dt = datetime.fromisoformat(expires_at)
                 if datetime.now() > expires_dt:
-                    print(f"⏰ Invoice {invoice_id} expired")
+                    print(f"⏰ Invoice {invoice_id} expired - deleting from DB")
                     cursor.execute(
-                        "UPDATE cryptobot_invoices SET status = 'expired' WHERE id = ?",
+                        "DELETE FROM cryptobot_invoices WHERE id = ?",
                         (db_id,)
                     )
                     conn.commit()
@@ -140,10 +140,10 @@ async def check_pending_invoices():
                     await notify_user(user_id, stars_to_credit, paid_amount)
                     
                 elif invoice.status in ["expired", "cancelled"]:
-                    print(f"❌ Invoice {invoice_id} status: {invoice.status}")
+                    print(f"❌ Invoice {invoice_id} status: {invoice.status} - deleting from DB")
                     cursor.execute(
-                        "UPDATE cryptobot_invoices SET status = ? WHERE id = ?",
-                        (invoice.status, db_id)
+                        "DELETE FROM cryptobot_invoices WHERE id = ?",
+                        (db_id,)
                     )
                     conn.commit()
                 

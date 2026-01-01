@@ -4,12 +4,28 @@ import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import LottieAnimation from './LottieAnimation'
 import GiftDetailsModal from './GiftDetailsModal'
+import ShopSortModal from './ShopSortModal'
 import ShopFilterModal from './ShopFilterModal'
 import { useBalance } from '../contexts/BalanceContext'
 import starStaticBlackIcon from '../assets/starstatic_black.svg'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
 const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
+
+const hexToRgba = (hex, alpha) => {
+  if (!hex) return `rgba(0, 0, 0, ${alpha})`;
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) {
+    r = parseInt(hex.substring(1, 3), 16);
+    g = parseInt(hex.substring(3, 5), 16);
+    b = parseInt(hex.substring(5, 7), 16);
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 function Shop({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
@@ -19,9 +35,12 @@ function Shop({ onNavigateToTopUp }) {
   const [selectedGift, setSelectedGift] = useState(null)
   const [showGiftDetails, setShowGiftDetails] = useState(false)
   const [showFilterModal, setShowFilterModal] = useState(false)
-  const [appliedFilters, setAppliedFilters] = useState([])
-  const [filterCategory, setFilterCategory] = useState(null) // Категория для которой применены фильтры
-  const [modelsList, setModelsList] = useState({}) // Список всех моделей из models_list.json
+  const [showSortModal, setShowSortModal] = useState(false)
+  const [sortOrder, setSortOrder] = useState('price_asc')
+  const [appliedFilters, setAppliedFilters] = useState({ gifts: [], models: [], backdrops: [] })
+  // const [filterCategory, setFilterCategory] = useState(null) // Removed
+  const [modelsList, setModelsList] = useState({})
+
 
   const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
     window.Telegram?.WebApp?.platform === 'ios'
@@ -81,26 +100,31 @@ function Shop({ onNavigateToTopUp }) {
     }
   }
 
-  // Фильтрация подарков по выбранным фильтрам
-  const getFilteredGifts = () => {
-    if (appliedFilters.length === 0 || !filterCategory) {
-      return gifts
+  // Фильтрация и сортировка подарков
+  const getDisplayedGifts = () => {
+    let result = gifts
+
+    // 1. Фильтрация
+    if (appliedFilters) {
+      if (appliedFilters.gifts && appliedFilters.gifts.length > 0) {
+        result = result.filter(gift => appliedFilters.gifts.includes(gift.title))
+      }
+      if (appliedFilters.models && appliedFilters.models.length > 0) {
+        result = result.filter(gift => appliedFilters.models.includes(gift.model_name))
+      }
+      if (appliedFilters.backdrops && appliedFilters.backdrops.length > 0) {
+        result = result.filter(gift => appliedFilters.backdrops.includes(gift.backdrop_name))
+      }
     }
 
-    // Применяем фильтры в зависимости от категории
-    return gifts.filter(gift => {
-      if (filterCategory === 'gift') {
-        // Фильтруем по названию подарка (title должно быть в списке)
-        return gift.title && appliedFilters.includes(gift.title)
-      } else if (filterCategory === 'model') {
-        // Фильтруем по модели (model_name должно быть в списке)
-        return gift.model_name && appliedFilters.includes(gift.model_name)
-      } else if (filterCategory === 'background') {
-        // Фильтруем по фону (backdrop_name должно быть в списке)
-        return gift.backdrop_name && appliedFilters.includes(gift.backdrop_name)
-      }
-      return true
-    })
+    // 2. Сортировка
+    if (sortOrder === 'price_asc') {
+      result = [...result].sort((a, b) => a.price - b.price)
+    } else if (sortOrder === 'price_desc') {
+      result = [...result].sort((a, b) => b.price - a.price)
+    }
+
+    return result
   }
 
   const handleGiftClick = (gift) => {
@@ -169,56 +193,73 @@ function Shop({ onNavigateToTopUp }) {
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
       <BonusBalanceBar />
       <div className="shop-content">
-        <div style={{ paddingTop: `${contentPadding}px` }}>
-          <h1 className="shop-title">Магазин 🛒</h1>
-        </div>
 
-        {/* Категории */}
-        <div className="shop-categories">
-          {categories.map(category => (
-            <button
-              key={category.id}
-              className={`category-btn ${activeCategory === category.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveCategory(category.id)
-                // Открываем фильтр при нажатии на категорию
-                setShowFilterModal(true)
+
+        {/* Панель управления (Фильтр и Сортировка) */}
+        <div className="shop-controls">
+          <button
+            className="shop-control-btn"
+            onClick={() => setShowFilterModal(true)}
+          >
+            <span className="control-icon">🌪️</span> {/* Placeholder icon */}
+            Фильтр
+          </button>
+          <button
+            className="shop-control-btn"
+            onClick={() => setShowSortModal(true)}
+          >
+            <span className="control-icon">⇅</span> {/* Placeholder icon */}
+            Сортировка
+          </button>
+
+          {showSortModal && (
+            <ShopSortModal
+              currentSort={sortOrder}
+              onClose={() => setShowSortModal(false)}
+              onApplySort={(sort) => {
+                setSortOrder(sort)
+                setShowSortModal(false)
               }}
-            >
-              {category.label}
-            </button>
-          ))}
+            />
+          )}
         </div>
 
         {/* Сетка товаров */}
         <div className="shop-grid">
           {loading ? (
             <div className="shop-loading">Загрузка...</div>
-          ) : getFilteredGifts().length === 0 ? (
+          ) : getDisplayedGifts().length === 0 ? (
             <div className="shop-empty">Подарки не найдены</div>
           ) : (
-            getFilteredGifts().map(gift => (
+            getDisplayedGifts().map(gift => (
               <div
                 key={gift.gift_id}
                 className="shop-item-card"
                 onClick={() => handleGiftClick(gift)}
+                style={{
+                  background: gift.center_color
+                    ? `radial-gradient(100% 80% at 50% 30%, ${hexToRgba(gift.center_color, 0.8)} 0%, ${hexToRgba(gift.center_color, 0.2)} 50%, ${hexToRgba(gift.center_color, 0)} 100%)`
+                    : 'radial-gradient(circle, #363738, #0e0f0f)'
+                }}
               >
-                <div
-                  className="shop-item-image"
-                  style={{
-                    background: gift.center_color && gift.edge_color
-                      ? `linear-gradient(135deg, ${gift.center_color} 0%, ${gift.edge_color} 100%)`
-                      : 'radial-gradient(circle, #363738, #0e0f0f)'
-                  }}
-                >
-                  {gift.model_path && (
-                    <LottieAnimation
-                      animationData={gift.model_path}
-                      width="30%"
-                      height="30%"
-                      loop={true}
-                      autoplay={true}
+                <div className="shop-item-image">
+                  {gift.slug ? (
+                    <img
+                      src={`https://nft.fragment.com/gift/${gift.slug}.large.jpg`}
+                      alt={gift.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      loading="lazy"
                     />
+                  ) : (
+                    gift.model_path && (
+                      <LottieAnimation
+                        animationData={gift.model_path}
+                        width="30%"
+                        height="30%"
+                        loop={true}
+                        autoplay={true}
+                      />
+                    )
                   )}
                 </div>
                 <button className="shop-item-price">
@@ -245,15 +286,15 @@ function Shop({ onNavigateToTopUp }) {
       {showFilterModal && (
         <ShopFilterModal
           category={activeCategory}
-          currentFilters={filterCategory === activeCategory ? appliedFilters : []} // Передаем фильтры только если категория совпадает
-          modelsList={modelsList} // Передаем список моделей
+          currentFilters={appliedFilters}
+          modelsList={modelsList}
           onClose={() => setShowFilterModal(false)}
           onApplyFilter={(filters) => {
             setAppliedFilters(filters)
-            setFilterCategory(activeCategory) // Сохраняем категорию для которой применены фильтры
           }}
         />
       )}
+
     </div>
   )
 }

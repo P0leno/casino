@@ -1,0 +1,226 @@
+/* ActionStatusModal.css */
+/* Uses same styling principles as GiftDetailsModal */
+
+.action-status-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    /* Bottom sheet by default */
+    justify-content: center;
+    opacity: 0;
+    animation: actionStatusFadeIn 0.3s forwards;
+}
+
+.action-status-overlay-closing {
+    animation: actionStatusFadeOut 0.3s forwards;
+}
+
+/* Modal Content - Rounded Bottom Sheet */
+.action-status-content {
+    background: #1c1c1c;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 32px 32px 0 0;
+    padding: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    animation: actionStatusSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    z-index: 10000;
+    box-sizing: border-box;
+    overflow: hidden;
+    height: auto;
+    min-height: 200px;
+}
+
+/* Important overrides to force full width on mobile */
+@media (max-width: 600px) {
+    .action-status-content {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 32px 32px 0 0;
+        margin: 0 !important;
+    }
+}
+
+.action-status-content-closing {
+    animation: actionStatusSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Spotlight Effect at top */
+.action-status-spotlight {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Close Button */
+.action-status-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #2c2c2e;
+    border: none;
+    color: #8e8e93;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.1s;
+}
+
+.action-status-close:active {
+    transform: scale(0.9);
+}
+
+.action-status-body {
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    z-index: 1;
+}
+
+.action-status-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.action-status-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.action-status-message {
+    font-size: 16px;
+    color: #8e8e93;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    max-width: 90%;
+}
+
+
+
+.action-status-buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.action-status-btn {
+    width: 100%;
+    height: 54px;
+    border-radius: 27px;
+    font-size: 17px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.action-status-btn:active {
+    transform: scale(0.98);
+}
+
+.action-status-btn.primary {
+    background: #007aff;
+    color: #fff;
+}
+
+.action-status-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.action-status-help {
+    margin-top: 8px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+
+
+.action-status-help a {
+    color: #007aff;
+    text-decoration: none;
+}
+
+.action-status-help a:hover {
+    text-decoration: underline;
+}
+
+/* Animations */
+@keyframes actionStatusFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes actionStatusFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes actionStatusSlideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes actionStatusSlideDown {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(100%);
+    }
+}

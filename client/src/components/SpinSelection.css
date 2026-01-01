@@ -12,6 +12,7 @@
   width: 100%;
   max-width: 100%;
   border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
 /* Убираем hover эффект */
@@ -44,7 +45,7 @@
     padding-left: 8px;
     padding-right: 8px;
   }
-  
+
   .spin-banner-item {
     margin-bottom: 6px;
   }
