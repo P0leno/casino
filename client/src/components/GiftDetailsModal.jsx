@@ -65,11 +65,15 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
 
         <div className="gift-modal-scroll-content">
           {/* Black background with Lottie animation for ALL gifts */}
-          <div className="gift-modal-image-container" style={{ background: '#000' }}>
+          {/* Black background with Lottie animation for ALL gifts */}
+          <div
+            className={`gift-modal-image-container ${isRegularGift ? 'gift-modal-regular-bg' : ''}`}
+            style={!isRegularGift ? { background: '#000' } : {}}
+          >
             <LottieAnimation
               animationData={getLottieUrl()}
-              width={240}
-              height={240}
+              width={isRegularGift ? 200 : 240}
+              height={isRegularGift ? 200 : 240}
               loop={true}
               autoplay={true}
             />

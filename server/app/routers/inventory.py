@@ -523,23 +523,16 @@ async def manual_withdraw(request: ManualWithdrawRequest):
         RedisUser.invalidate(user_id)
         
         # Отправляем заявку в логи
-        from app.log_bot import log_bot
+        from app.log_bot import send_message_to_logs
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-        import os
-        
-        LOG_BOT_TOKEN = os.getenv("LOG_BOT_TOKEN")
-        LOGS_ID = int(os.getenv("LOGS_ID", "0"))
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Выполнен", callback_data=f"manual_done_{user_id}_{request.slug}")]
         ])
-        # Отправляем уведомление в лог канал
-        bot = Bot(token=LOG_BOT_TOKEN)
         
         error_text = f"\n⚠️ <b>Ошибка при попытке:</b> {request.error}" if request.error else ""
         
-        await bot.send_message(
-            chat_id=LOGS_ID,
+        await send_message_to_logs(
             text=(
                 f"📝 <b>Запрос на ручной вывод (Regular)</b>\n"
                 f"👤 Пользователь: {first_name} (@{username}, ID: {user_id})\n"
@@ -596,45 +589,52 @@ async def manual_withdraw_nft(request: ManualWithdrawNFTRequest):
                 "message": "Установите юзернейм в Telegram и попробуйте снова"
             }
         
-        # Есть username - удаляем NFT из purchased_gifts и отправляем заявку
+        # Есть username - удаляем NFT из инвентаря и отправляем заявку
         conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Проверяем что NFT принадлежит пользователю
-        cursor.execute("""
-            SELECT id FROM purchased_gifts 
-            WHERE user_id = ? AND slug = ? AND message_id = ?
-        """, (user_id, request.slug, request.messageId))
-        
-        result = cursor.fetchone()
-        if not result:
+        try:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Проверяем инвентарь пользователя
+            cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
+            result = cursor.fetchone()
+            
+            if not result:
+                raise HTTPException(status_code=404, detail="Пользователь не найден")
+            
+            inventory_json = result['inventory']
+            inventory_items = json.loads(inventory_json) if inventory_json else []
+            
+            # Проверяем наличие NFT в инвентаре
+            if request.slug not in inventory_items:
+                 raise HTTPException(status_code=404, detail="NFT подарок не найден в инвентаре")
+            
+            # Удаляем 1 экземпляр
+            inventory_items.remove(request.slug)
+            cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory_items), user_id))
+            conn.commit()
+            
+        except HTTPException:
             conn.close()
-            raise HTTPException(status_code=404, detail="NFT подарок не найден")
-        
-        # Удаляем NFT из purchased_gifts
-        cursor.execute("""
-            DELETE FROM purchased_gifts 
-            WHERE user_id = ? AND slug = ? AND message_id = ?
-        """, (user_id, request.slug, request.messageId))
-        
-        conn.commit()
+            raise
+        except Exception as e:
+            conn.close()
+            print(f"Error accessing DB: {e}")
+            raise HTTPException(status_code=500, detail="Database error")
         conn.close()
         
         # Инвалидируем кэш
         RedisUser.invalidate(user_id)
         
         # Отправляем заявку в логи
-        from app.log_bot import log_bot
+        from app.log_bot import send_message_to_logs
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-        
-        LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Выполнен", callback_data=f"manual_nft_done_{user_id}_{request.messageId}")]
         ])
         
-        await log_bot.send_message(
-            LOG_CHANNEL_ID,
+        await send_message_to_logs(
             f"📦 <b>Ручной вывод NFT подарка</b>\n\n"
             f"🎁 Подарок: <code>{request.giftTitle}</code>\n"
             f"📝 Slug: <code>{request.slug}</code>\n"

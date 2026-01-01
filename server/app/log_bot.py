@@ -216,7 +216,10 @@ async def manual_withdraw_done_handler(callback: CallbackQuery):
         await callback.answer("✅ Отмечено как выполненное")
         
         # Удаляем сообщение
-        await callback.message.delete()
+        try:
+            await callback.message.delete()
+        except:
+            pass
         
     except Exception as e:
         print(f"Error in manual_withdraw_done_handler: {e}")
@@ -235,7 +238,10 @@ async def manual_nft_withdraw_done_handler(callback: CallbackQuery):
         await callback.answer("✅ NFT отмечен как выполненный")
         
         # Удаляем сообщение
-        await callback.message.delete()
+        try:
+            await callback.message.delete()
+        except:
+            pass
         
     except Exception as e:
         print(f"Error in manual_nft_withdraw_done_handler: {e}")

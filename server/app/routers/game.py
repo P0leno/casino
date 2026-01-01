@@ -7,11 +7,11 @@ import asyncio
 from datetime import datetime, timedelta
 import random
 from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
-from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
+
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import spin_rate_limiter
 from app.utils.balance import get_user_balance
-from app.utils.redis_models import RedisUser
+from app.utils.redis_models import RedisUser, RedisSettings
 from app.pyrogram_client import get_pyrogram
 from app.utils.gift_sender import send_gift_async
 from app.utils.error_logger import send_error_log
