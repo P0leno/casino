@@ -10,7 +10,7 @@ DB_PATH = os.getenv("DB_PATH", "./users.db")
 # Глобальные настройки для SQLite
 SQLITE_TIMEOUT = 60  # 60 секунд ожидания при блокировке
 SQLITE_PRAGMAS = [
-    "PRAGMA journal_mode=WALИ  hn ",           # Write-Ahead Logging для параллельного доступа
+    "PRAGMA journal_mode=WAL",           # Write-Ahead Logging для параллельного доступа
     "PRAGMA synchronous=NORMAL",          # Баланс между скоростью и надёжностью
     "PRAGMA cache_size=-64000",           # 64MB кэш
     "PRAGMA temp_store=MEMORY",           # Временные таблицы в памяти
@@ -19,6 +19,38 @@ SQLITE_PRAGMAS = [
     "PRAGMA wal_autocheckpoint=1000",     # Checkpoint каждые 1000 страниц
 ]
 
+
+def init_sold_gifts_table(conn):
+    """Создает таблицу sold_gifts если она не существует"""
+    try:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS sold_gifts (
+            slug TEXT PRIMARY KEY,
+            user_id INTEGER,
+            purchased_at TEXT
+        )
+        """)
+    except Exception as e:
+        print(f"[DB] Error creating sold_gifts table: {e}")
+
+def init_payments_table(conn):
+    """Создает таблицу payments для истории операций"""
+    try:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            amount INTEGER,
+            method TEXT,
+            is_promo INTEGER DEFAULT 0,
+            type TEXT, -- 'income' or 'expense'
+            date TEXT
+        )
+        """)
+        # Index on user_id for fast lookup
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id)")
+    except Exception as e:
+        print(f"[DB] Error creating payments table: {e}")
 
 def get_db_connection(timeout: int = SQLITE_TIMEOUT) -> sqlite3.Connection:
     """
@@ -38,6 +70,10 @@ def get_db_connection(timeout: int = SQLITE_TIMEOUT) -> sqlite3.Connection:
             conn.execute(pragma)
         except Exception as e:
             print(f"[DB] Warning: Failed to execute {pragma}: {e}")
+            
+    # HACK: Проверяем наличие таблиц (быстрый фикс для удаленных серверов)
+    init_sold_gifts_table(conn)
+    init_payments_table(conn)
     
     return conn
 

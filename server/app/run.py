@@ -19,6 +19,10 @@ logging.basicConfig(
 logger = logging.getLogger("app.run")
 logger.info("=== RUN.PY LOADED === VERSION: 2024-12-24-v2 ===")
 
+# Apply Runtime Patches
+from app.utils.library_patch import apply_pyrogram_patches
+apply_pyrogram_patches()
+
 
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
@@ -58,10 +62,11 @@ support_bot_task = None
 cryptobot_checker_task = None
 redis_sync_task = None
 restart_monitor_task = None
+gift_ingestion_task = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global bot_task, log_bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, ton_price_task, gift_models_task, support_bot_task, cryptobot_checker_task, redis_sync_task, restart_monitor_task
+    global bot_task, log_bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, ton_price_task, gift_models_task, support_bot_task, cryptobot_checker_task, redis_sync_task, restart_monitor_task, gift_ingestion_task
     
     # Инициализация БД
     init_db()
@@ -81,11 +86,33 @@ async def lifespan(app: FastAPI):
     log_bot_task = asyncio.create_task(start_log_bot())
     print("✅ Запущен бот логов для обработки callback")
     
-    # Запуск Pyrogram клиента
+    # Запуск Pyrogram клиента и регистрация хендлеров
     try:
-        await start_pyrogram()
+        from app.pyrogram_client import start_pyrogram, get_pyrogram
+        started = await start_pyrogram()
+        
+        if started:
+            # Регистрируем хендлеры авто-инджеста
+            from app.utils.gift_ingestion import register_gift_handlers
+            app_client = get_pyrogram()
+            if app_client:
+                register_gift_handlers(app_client)
+                print("✅ Хендлеры Gift Ingestion зарегистрированы")
+                
+                # Запускаем Keep-Alive loop
+                from app.pyrogram_client import keep_alive_loop
+                # Используем глобальную переменную для таска (добавим если нет, но лучше в lifespan scope)
+                asyncio.create_task(keep_alive_loop())
+                print("✅ Pyrogram Keep-Alive loop запущен")
+            else:
+                print("⚠️  Pyrogram клиент не получен после старта")
+        else:
+            print("⚠️  Pyrogram не запущен")
+            
     except Exception as e:
-        print(f"⚠️  Pyrogram не запущен: {e}")
+        print(f"⚠️  Ошибка инициализации Pyrogram: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Запуск фоновой задачи уведомлений о спинах
     notification_task = asyncio.create_task(spin_notification_loop())

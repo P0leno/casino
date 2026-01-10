@@ -236,8 +236,7 @@ async def check_new_gifts():
     print(f"🔍 ПРОВЕРКА НОВЫХ ПОДАРКОВ - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
     
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(connector=connector) as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
         try:
             # Получаем список подарков из API
             print("📡 Запрос списка подарков из API...")
@@ -329,8 +328,7 @@ async def download_gift_models(gift_name, message_to_edit=None):
     """Скачивает модели для подарка с прогрессом"""
     print(f"📥 Начинаю загрузку моделей для {gift_name}...")
     
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(connector=connector) as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
         # Получаем список моделей
         models_data = await fetch_json(session, f"{BASE_API}/models/{gift_name}?sorted")
         

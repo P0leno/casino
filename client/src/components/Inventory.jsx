@@ -8,6 +8,7 @@ import { useBalance } from '../contexts/BalanceContext'
 import GiftDetailsModal from './GiftDetailsModal'
 import starStaticIcon from '../assets/star_static.svg'
 import ActionStatusModal from './ActionStatusModal'
+import PaymentModal from './PaymentModal'
 
 function Inventory({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
@@ -19,6 +20,10 @@ function Inventory({ onNavigateToTopUp }) {
   // State for ActionStatusModal (Error handling)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorData, setErrorData] = useState(null)
+
+  // State for PaymentModal
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentData, setPaymentData] = useState(null)
 
   const gridRef = useRef(null)
 
@@ -139,7 +144,7 @@ function Inventory({ onNavigateToTopUp }) {
     if (!confirmed) return
 
     try {
-      const response = await fetch(`${apiUrl} /api/withdraw - nft - gift`, {
+      const response = await fetch(`${apiUrl}/api/withdraw-nft-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,6 +155,7 @@ function Inventory({ onNavigateToTopUp }) {
       })
 
       const data = await response.json()
+      console.log('NFT Withdraw Response:', data)
 
       if (data.success) {
         if (tg?.showAlert) tg.showAlert('✅ Подарок успешно отправлен!')
@@ -157,19 +163,40 @@ function Inventory({ onNavigateToTopUp }) {
 
         loadInventory()
         setShowGiftDetails(false)
+      } else if (
+        data.requires_payment === true ||
+        data.requires_payment === 'true' ||
+        data.requires_payment ||
+        (data.message && typeof data.message === 'string' && data.message.includes("Required fee:"))
+      ) {
+        // Show Payment Modal
+        setPaymentData({
+          ...data.payment_data,
+          originalGift: gift // Save gift object to retry withdrawal
+        })
+        setShowPaymentModal(true)
+        setShowGiftDetails(false) // Close details modal
       } else {
+        // Show styled error modal
+        const lottieUrl = `https://nft.fragment.com/gift/${gift.slug}.lottie.json`
+
         setErrorData({
           gift: gift,
-          error: data.error || data.message || 'Ошибка вывода NFT',
-          type: 'nft'
+          error: data.error || data.message || 'Ошибка вывода',
+          type: 'nft',
+          lottieSrc: lottieUrl
         })
         setShowErrorModal(true)
       }
     } catch (error) {
+      console.error('Withdraw error:', error)
+      const lottieUrl = `https://nft.fragment.com/gift/${gift.slug}.lottie.json`
+
       setErrorData({
         gift: gift,
         error: 'Ошибка соединения с сервером',
-        type: 'nft'
+        type: 'nft',
+        lottieSrc: lottieUrl
       })
       setShowErrorModal(true)
     }
@@ -242,6 +269,16 @@ function Inventory({ onNavigateToTopUp }) {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+    // Confirmation
+    const price = gift.sell_price || '?'
+    const confirmMessage = `Вы уверены, что хотите продать ${gift.title} за ${price} ⭐?`
+    const confirmed = tg?.showConfirm
+      ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
+      : window.confirm(confirmMessage)
+
+    if (!confirmed) return
+
     try {
       const response = await fetch(`${apiUrl} /api/sell - gift`, {
         method: 'POST',
@@ -250,11 +287,14 @@ function Inventory({ onNavigateToTopUp }) {
       })
       const data = await response.json()
       if (data.success) {
-        const msg = `Продано! + ${data.price} ⭐ к балансу`
         if (tg?.showAlert) tg.showAlert(msg)
         else alert(msg)
         loadInventory()
-        updateBalance(data) // Update context balance!
+        // FIX: Map newBalance/newBonusBalance to balance/bonusBalance for context
+        updateBalance({
+          balance: data.newBalance,
+          bonusBalance: data.newBonusBalance
+        })
         setShowGiftDetails(false)
       } else {
         const msg = data.message || 'Ошибка продажи'
@@ -280,7 +320,7 @@ function Inventory({ onNavigateToTopUp }) {
     if (!confirmed) return
 
     try {
-      const response = await fetch(`${apiUrl} /api/inventory / sell - nft`, {
+      const response = await fetch(`${apiUrl}/api/inventory/sell-nft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData, slug: gift.slug })
@@ -292,7 +332,11 @@ function Inventory({ onNavigateToTopUp }) {
         if (tg?.showAlert) tg.showAlert('NFT успешно продан!')
         else alert('NFT успешно продан!')
         loadInventory()
-        updateBalance(data)
+        // FIX: Map newBalance/newBonusBalance to balance/bonusBalance for context
+        updateBalance({
+          balance: data.newBalance,
+          bonusBalance: data.newBonusBalance
+        })
         setShowGiftDetails(false)
       } else {
         if (tg?.showAlert) tg.showAlert(data.message || 'Ошибка продажи')
@@ -401,19 +445,37 @@ function Inventory({ onNavigateToTopUp }) {
         />
       )}
 
-      {/* NEW ActionStatusModal for Errors */}
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        invoiceUrl={paymentData?.invoice_url}
+        amount={paymentData?.amount}
+        giftTitle={paymentData?.gift_title}
+        giftSlug={paymentData?.gift_slug}
+        onCheckPayment={async () => {
+          if (paymentData?.originalGift) {
+            await handleWithdrawNFT(paymentData.originalGift)
+          }
+        }}
+      />
+
+      {/* Action Status Modal (Error / Success) */}
       <ActionStatusModal
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
-        title="Ошибка отправки"
-        message={errorData?.error || 'Произошла ошибка'}
-        actionButtonText="Повторить"
-        onAction={handleRetry}
-        secondaryButtonText="Вывод администрацией"
-        onSecondaryAction={handleManualAdminWithdraw}
-        helpText="Убедитесь что вы написали боту"
-        helpLink="https://t.me/shellrelayer"
+        title={errorData?.title || "Ошибка"} // Default title
+        message={errorData?.error}
         isError={true}
+        actionButtonText="Закрыть"
+        onAction={() => setShowErrorModal(false)}
+        lottieSrc={errorData?.lottieSrc}
+        secondaryButtonText={errorData?.type === 'manual' ? "Написать в поддержку" : null}
+        onSecondaryAction={() => {
+          if (errorData?.type === 'manual') {
+            window.Telegram?.WebApp?.openTelegramLink('https://t.me/shelloch_support_bot')
+          }
+        }}
       />
     </div >
   )

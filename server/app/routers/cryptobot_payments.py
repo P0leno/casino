@@ -75,15 +75,18 @@ async def create_invoice(invoice_request: CreateInvoiceRequest, request: Request
         
         # Создаем счет через CryptoPay
         crypto = get_crypto()
-        invoice = await crypto.create_invoice(
-            amount=usdt_amount,
-            currency_type="crypto",
-            asset="USDT",
-            description=f"Пополнение баланса (+5% бонус)",
-            hidden_message=f"✅ Зачисление произойдет в течении 30 секунд",
-            payload=str(user_id),
-            expires_in=1800
-        )
+        try:
+            invoice = await crypto.create_invoice(
+                amount=usdt_amount,
+                currency_type="crypto",
+                asset="USDT",
+                description=f"Пополнение баланса (+5% бонус)",
+                hidden_message=f"✅ Зачисление произойдет в течении 30 секунд",
+                payload=str(user_id),
+                expires_in=1800
+            )
+        finally:
+            await crypto.close()
         
         # Сохраняем в БД
         conn = get_db_connection()

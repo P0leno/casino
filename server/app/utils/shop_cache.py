@@ -140,35 +140,74 @@ def get_shop_gifts_with_prices() -> List[Dict]:
 
 def get_cached_shop_gifts() -> List[Dict]:
     """
-    Получить подарки с кэшированием в Redis
+    Получить подарки с кэшированием в Redis (HASH Structure)
     
     Returns:
         List[Dict]: Список подарков с ценами
     """
-    cache_key = "shop:gifts:with_prices"
+    cache_key = "shop:gifts:data"
     
-    # Пробуем получить из Redis
+    # 1. Пробуем получить из Redis (HVALS)
     if cache.is_available():
-        cached = cache.get(cache_key)
-        if cached:
-            print(f"[SHOP_CACHE] ✅ Загружено из Redis: {len(cached)} подарков")
-            return cached
+        count = cache.hlen(cache_key)
+        if count > 0:
+            cached = cache.hvals(cache_key)
+            if cached:
+                # logger.debug(f"[SHOP_CACHE] ✅ Загружено из Redis HASH: {len(cached)} подарков")
+                return cached
     
-    # Если нет в кэше - загружаем из БД
+    # 2. Если кэш пуст - загружаем из БД
     gifts = get_shop_gifts_with_prices()
     
-    # Сохраняем в Redis
+    # 3. Сохраняем в Redis (поштучно в HASH)
     if cache.is_available() and gifts:
-        cache.set(cache_key, gifts, TTL_SHOP_PRICES)
-        print(f"[SHOP_CACHE] 💾 Сохранено в Redis: {len(gifts)} подарков (TTL: {TTL_SHOP_PRICES}s)")
+        # Используем pipeline или просто цикл (для простоты цикл, так как redis_client wrapper не имеет pipeline)
+        # TODO: Add pipeline support to wrapper later for perf
+        for gift in gifts:
+            slug = gift.get('slug')
+            if slug:
+                cache.hset(cache_key, slug, gift)
+        
+        # Ставим TTL на весь хэш
+        cache.expire(cache_key, TTL_SHOP_PRICES)
+        print(f"[SHOP_CACHE] 💾 Сохранено в Redis HASH: {len(gifts)} подарков (TTL: {TTL_SHOP_PRICES}s)")
     
     return gifts
 
+def update_cached_gift(slug: str, new_amount: int):
+    """
+    Обновить количество доступных подарков в кэше (без полной инвалидации)
+    """
+    if not cache.is_available() or not slug:
+        return
+
+    cache_key = "shop:gifts:data"
+    
+    # 1. Получаем текущие данные подарка
+    gift_data = cache.hget(cache_key, slug)
+    
+    if gift_data:
+        # 2. Обновляем поле
+        gift_data['available_amount'] = new_amount
+        
+        # 3. Записываем обратно (если amount <= 0, можно было бы удалять, 
+        # но лучше оставить с 0 чтобы фильтры работали корректно и не вызывали перефетч)
+        cache.hset(cache_key, slug, gift_data)
+        # Продлеваем жизнь кэша при активности
+        cache.expire(cache_key, TTL_SHOP_PRICES)
+        print(f"[SHOP_CACHE] 🔄 Gift {slug} updated in cache (available: {new_amount})")
+    else:
+        # Если подарка нет в кэше - ничего страшного, при следующем чтении загрузится из БД
+        pass
+
 def invalidate_shop_cache():
-    """Инвалидировать кэш магазина (вызывается при обновлении цен)"""
-    cache_key = "shop:gifts:with_prices"
+    """Инвалидировать кэш магазина (вызывается при изменении цен/глобальных настройках)"""
+    cache_key = "shop:gifts:data"
+    # Legacy key cleanup
+    cache.delete("shop:gifts:with_prices") 
+    
     if cache.is_available():
         deleted = cache.delete(cache_key)
-        print(f"[SHOP_CACHE] 🗑️ Кэш инвалидирован: {deleted}")
+        print(f"[SHOP_CACHE] 🗑️ Кэш (HASH) инвалидирован: {deleted}")
         return deleted
     return 0

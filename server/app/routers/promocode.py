@@ -141,6 +141,12 @@ async def activate_promocode(activate_req: ActivateRequest, request: Request):
             (reward, user_id)
         )
         
+        # Log to payments history
+        cursor.execute("""
+            INSERT INTO payments (user_id, amount, method, is_promo, type, date)
+            VALUES (?, ?, ?, 1, 'income', ?)
+        """, (user_id, reward, 'promocode', datetime.now().isoformat()))
+        
         # Добавляем ID промокода в список активированных
         activated_promocodes.append(promo_id)
         cursor.execute(

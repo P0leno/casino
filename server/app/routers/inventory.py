@@ -11,7 +11,9 @@ from app.tasks.price_updater import search_tonnel_resale
 from app.utils.redis_models import RedisSettings, RedisUser
 from app.utils.redis_client import cache
 from app.utils.database import get_db_connection, DB_PATH
+from app.utils.database import get_db_connection, DB_PATH
 from app.utils.error_logger import send_error_log
+from app.utils.gift_sender import transfer_nft_gift_async
 
 router = APIRouter(prefix="/api", tags=["inventory"])
 
@@ -35,13 +37,18 @@ class ManualWithdrawRequest(BaseModel):
     giftTitle: str
     error: str | None = None
 
+
 class ManualWithdrawNFTRequest(BaseModel):
     initData: str
-    slug: str
     slug: str
     giftTitle: str
     messageId: int | None = None
     error: str | None = None
+
+class WithdrawNFTGiftRequest(BaseModel):
+    initData: str
+    slug: str
+
 
 def sanitize_error(error: Exception) -> str:
     """
@@ -130,12 +137,29 @@ async def get_inventory(request: GetInventoryRequest):
             conn.close()
             return {"inventory": [], "isAdmin": is_admin}
         
-        # Получаем комиссию на продажу из Redis
+        # Получаем комиссию на продажу из Redis (для NFT)
         sell_commission = RedisSettings.get_float('sell_commission', 10.0)
+        # Получаем наценку на продажу для регулярных подарков
+        regular_markup = RedisSettings.get_float('regular_gift_markup_percent', 10.0)
         
-        # Разделяем на обычные подарки (по имени) и NFT (по slug)
-        regular_gift_names = [item for item in inventory_items if item in REGULAR_GIFTS]
-        nft_slugs = [item for item in inventory_items if item not in REGULAR_GIFTS]
+        # Разделяем на обычные подарки и NFT, поддерживая оба формата (str и dict)
+        parsed_inventory = []
+        for item in inventory_items:
+            if isinstance(item, dict):
+                parsed_inventory.append(item)
+            else:
+                # Legacy format: simple string slug
+                parsed_inventory.append({"slug": item, "unlock_at": None, "bought_at": None})
+                
+        # regular_gift_names - только строки slug
+        regular_gift_names = [item['slug'] for item in parsed_inventory if item['slug'] in REGULAR_GIFTS]
+        
+        # nft_slugs - только строки slug
+        nft_slugs = [item['slug'] for item in parsed_inventory if item['slug'] not in REGULAR_GIFTS]
+        
+        # Lookup map for metadata (unlock_at, etc) by slug
+        # Problem: multiple items with same slug (regular gifts).
+        # We need to map by index or just iterate parsed_inventory and match.
         
         inventory_gifts = []
         
@@ -156,7 +180,8 @@ async def get_inventory(request: GetInventoryRequest):
                 gift_name, price, gift_id = row
                 sell_price = None
                 if price and price > 0:
-                    sell_price = int(price * (1 - sell_commission / 100))
+                    # Для обычных подарков применяем наценку (markup)
+                    sell_price = int(price * (1 + regular_markup / 100))
                     sell_price = max(1, sell_price)
                 prices_dict[gift_name] = {
                     'gift_id': gift_id,
@@ -164,16 +189,17 @@ async def get_inventory(request: GetInventoryRequest):
                     'sell_price': sell_price
                 }
             
-            # Добавляем КАЖДЫЙ подарок из инвентаря (включая дубликаты)
-            for idx, gift_name in enumerate(regular_gift_names):
-                if gift_name in prices_dict:
-                    info = prices_dict[gift_name]
+            # Итерируем по parsed_inventory, чтобы сохранить порядок и метаданные
+            for idx, item in enumerate(parsed_inventory):
+                slug = item['slug']
+                if slug in REGULAR_GIFTS and slug in prices_dict:
+                    info = prices_dict[slug]
                     inventory_gifts.append({
                         'gift_id': info['gift_id'],
-                        'slug': gift_name,
-                        'title': gift_name.capitalize(),
+                        'slug': slug,
+                        'title': slug.capitalize(),
                         'model_name': None,
-                        'model_path': f"/gifts/{gift_name}.json",
+                        'model_path': f"/gifts/{slug}.json",
                         'symbol_name': None,
                         'backdrop_name': None,
                         'center_color': None,
@@ -187,7 +213,9 @@ async def get_inventory(request: GetInventoryRequest):
                         'price': info['price'],
                         'sell_price': info['sell_price'],
                         'is_regular_gift': True,
-                        'inventory_index': idx  # Индекс для идентификации при продаже
+                        'inventory_index': idx,
+                        'unlock_at': item.get('unlock_at'), # Pass lock data
+                        'bought_at': item.get('bought_at')
                     })
         
         # Получаем NFT подарки из shop_gifts
@@ -224,6 +252,11 @@ async def get_inventory(request: GetInventoryRequest):
                     gift_dict['sell_price'] = max(1, sell_price)
                 else:
                     gift_dict['sell_price'] = None
+                
+                # Ищем метаданные для этого NFT в parsed_inventory
+                meta = next((i for i in parsed_inventory if i['slug'] == gift_dict['slug']), {})
+                gift_dict['unlock_at'] = meta.get('unlock_at')
+                gift_dict['bought_at'] = meta.get('bought_at')
                 
                 inventory_gifts.append(gift_dict)
         
@@ -365,8 +398,19 @@ async def sell_gift(request: SellGiftRequest):
         inventory_json, balance = result
         inventory = json.loads(inventory_json) if inventory_json else []
         
-        # Проверяем что подарок в инвентаре
-        if request.slug not in inventory:
+        # Проверяем что подарок в инвентаре (поддержка строки и объекта)
+        found_in_inventory = False
+        for item in inventory:
+            if isinstance(item, str):
+                if item == request.slug:
+                    found_in_inventory = True
+                    break
+            elif isinstance(item, dict):
+                if item.get('slug') == request.slug:
+                    found_in_inventory = True
+                    break
+        
+        if not found_in_inventory:
             conn.close()
             raise HTTPException(status_code=400, detail="Подарок не найден в инвентаре")
         
@@ -406,14 +450,35 @@ async def sell_gift(request: SellGiftRequest):
             conn.close()
             raise HTTPException(status_code=400, detail="Цена подарка не установлена")
         
-        # Получаем комиссию из Redis
+        # Получаем комиссию и наценку из Redis
         sell_commission = RedisSettings.get_float('sell_commission', 10.0)
+        regular_markup = RedisSettings.get_float('regular_gift_markup_percent', 10.0)
         
-        # Вычисляем цену продажи с комиссией
-        stars_price = int(current_price * (1 - sell_commission / 100))
+        # Вычисляем цену продажи
+        if not is_nft:
+            # Regular gifts: Price + Markup
+            stars_price = int(current_price * (1 + regular_markup / 100))
+        else:
+            # NFT gifts: Price - Commission
+            stars_price = int(current_price * (1 - sell_commission / 100))
         
         # Удаляем подарок из инвентаря (только первое вхождение)
-        inventory.remove(request.slug)
+        # Handle mixed format (str and dict)
+        found_idx = -1
+        for i, item in enumerate(inventory):
+            if isinstance(item, dict):
+                if item.get('slug') == request.slug:
+                    found_idx = i
+                    break
+            elif item == request.slug:
+                found_idx = i
+                break
+                
+        if found_idx != -1:
+            inventory.pop(found_idx)
+        else:
+            # Should not happen due to check above, but safe fallback
+            pass
         
         # Обновляем баланс и инвентарь
         # Обновляем баланс и инвентарь
@@ -425,11 +490,16 @@ async def sell_gift(request: SellGiftRequest):
         """, (json.dumps(inventory), new_balance, user_id))
         
         # Если это NFT (из shop_gifts) - просто продаем, но не возвращаем в "наличие" (по просьбе пользователя)
-        # if is_nft:
-        #    cursor.execute("UPDATE shop_gifts SET available_amount = available_amount + 1 WHERE slug = ?", (request.slug,))
-        #    from app.utils.shop_cache import invalidate_shop_cache
-        #    invalidate_shop_cache()
-        #    print(f"✅ NFT {request.slug} возвращен в магазин (available +1)")
+        if is_nft:
+           # Возвращаем в "наличие" (увеличиваем available_amount)
+           cursor.execute("UPDATE shop_gifts SET available_amount = available_amount + 1 WHERE slug = ?", (request.slug,))
+           
+           # Удаляем из таблицы проданных подарков (чтобы снова стал доступен в магазине)
+           cursor.execute("DELETE FROM sold_gifts WHERE slug = ?", (request.slug,)) # Важно!
+           
+           from app.utils.shop_cache import invalidate_shop_cache
+           invalidate_shop_cache()
+           print(f"✅ NFT {request.slug} возвращен в магазин (available +1, removed from sold_gifts)")
         
         conn.commit()
         conn.close()
@@ -466,7 +536,128 @@ async def sell_gift(request: SellGiftRequest):
         raise HTTPException(status_code=500, detail=sanitize_error(e))
 
 
-@router.post("/inventory/manual-withdraw")
+@router.post("/inventory/withdraw-nft-gift")
+async def withdraw_nft_gift(request: WithdrawNFTGiftRequest):
+    """
+    Автоматический вывод NFT подарка
+    """
+    user_data = verify_init_data(request.initData)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_id = user_data['id']
+    username = user_data.get('username', '')
+    
+    if not username:
+        return {
+            "success": False,
+            "error": "Пожалуйста, установите юзернейм в Telegram для получения подарка.",
+            "canRetry": True,
+            "needAdmin": False
+        }
+
+    # 1. Проверяем включена ли авто-выдача
+    withdraw_enabled = RedisSettings.get_bool('withdraw_nft_enabled', True)
+    if not withdraw_enabled:
+        return {
+            "success": False,
+            "error": "Автоматическая выдача NFT временно отключена. Пожалуйста, обратитесь к администратору.",
+            "canRetry": False,
+            "needAdmin": True
+        }
+
+    conn = get_db_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # 2. Проверяем инвентарь (User owns the gift)
+        cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
+        user_row = cursor.fetchone()
+        
+        if not user_row:
+             conn.close()
+             return {"success": False, "error": "Пользователь не найден", "canRetry": False}
+
+        inventory_json = user_row['inventory']
+        inventory_items = json.loads(inventory_json) if inventory_json else []
+        
+        # Check if slug is in inventory
+        if request.slug not in inventory_items:
+             conn.close()
+             return {"success": False, "error": "Подарок не найден в вашем инвентаре", "canRetry": False}
+
+        # 3. Находим message_id в shop_gifts
+        cursor.execute("SELECT message_id FROM shop_gifts WHERE slug = ?", (request.slug,))
+        gift_row = cursor.fetchone()
+        
+        if not gift_row or not gift_row['message_id']:
+            conn.close()
+            # Если message_id нет - значит это либо не NFT из нашего шопа, либо старый формат
+            # Предлагаем ручной вывод
+            return {
+                "success": False, 
+                "error": "Системная ошибка: данные подарка не полные. Используйте ручной вывод.", 
+                "canRetry": False,
+                "needAdmin": True
+            }
+            
+        message_id = gift_row['message_id']
+        
+        # 4. Выполняем трансфер
+        # Закрываем коннект перед асинхронным вызовом (хотя sqlite позволяет read но лучше не держать)
+        # Но нам нужно будет обновить инвентарь если успешно.
+        # Оставим открытым, но не держим транзакцию (select не лочит).
+        
+        success, error_msg, is_peer_invalid = await transfer_nft_gift_async(user_id, message_id)
+        
+        if success:
+            # 5. Успех - удаляем из инвентаря
+            if request.slug in inventory_items:
+                inventory_items.remove(request.slug)
+                cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory_items), user_id))
+                conn.commit()
+            
+            conn.close()
+            RedisUser.invalidate(user_id)
+            print(f"✅ NFT Gift {request.slug} (MsgID: {message_id}) withdrawn by {user_id}")
+            return {"success": True}
+        
+        else:
+            conn.close()
+            # 6. Ошибка
+            # Если PeerIdInvalid - предлагаем повторить (юзернейм уже проверили, но вдруг кэш не прогрелся)
+            # Или предлагаем админ вывод
+            
+            can_retry = True
+            need_admin = True
+            
+            error_text = f"Ошибка передачи: {error_msg}"
+            
+            if is_peer_invalid:
+                error_text = "Бот не может найти вас. Напишите любое сообщение боту и попробуйте снова."
+            elif "balance" in error_msg.lower():
+                can_retry = False # Баланс кончился, ретрай не поможет
+                error_text = "Техническая ошибка (баланс). Обратитесь к администратору."
+            
+            return {
+                "success": False,
+                "error": error_text,
+                "canRetry": can_retry,
+                "needAdmin": need_admin
+            }
+
+    except Exception as e:
+        if conn: conn.close()
+        print(f"Error withdrawing NFT: {e}")
+        # await send_error_log(e, "inventory.py: withdraw_nft_gift") <-- Silenced as requested
+        return {
+            "success": False,
+            "error": "Произошла внутренняя ошибка сервера",
+            "canRetry": True,
+            "needAdmin": True
+        }
+
 async def manual_withdraw(request: ManualWithdrawRequest):
     """Ручной вывод подарка (при ошибке PeerIdInvalid)"""
     user_data = verify_init_data(request.initData)
@@ -612,6 +803,15 @@ async def manual_withdraw_nft(request: ManualWithdrawNFTRequest):
             # Удаляем 1 экземпляр
             inventory_items.remove(request.slug)
             cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory_items), user_id))
+            
+            # Lookup message_id if not provided
+            msg_id = request.messageId
+            if not msg_id:
+                cursor.execute("SELECT message_id FROM shop_gifts WHERE slug = ?", (request.slug,))
+                row = cursor.fetchone()
+                if row and row['message_id']:
+                    msg_id = row['message_id']
+            
             conn.commit()
             
         except HTTPException:
@@ -631,14 +831,14 @@ async def manual_withdraw_nft(request: ManualWithdrawNFTRequest):
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Выполнен", callback_data=f"manual_nft_done_{user_id}_{request.messageId}")]
+            [InlineKeyboardButton(text="✅ Выполнен", callback_data=f"manual_nft_done_{user_id}_{msg_id or '0'}")]
         ])
         
         await send_message_to_logs(
             f"📦 <b>Ручной вывод NFT подарка</b>\n\n"
             f"🎁 Подарок: <code>{request.giftTitle}</code>\n"
             f"📝 Slug: <code>{request.slug}</code>\n"
-            f"🔢 Message ID: <code>{request.messageId}</code>\n"
+            f"🔢 Message ID: <code>{msg_id or 'Не найден'}</code>\n"
             f"👤 Пользователь: @{username}\n"
             f"🆔 ID: <code>{user_id}</code>",
             parse_mode="HTML",

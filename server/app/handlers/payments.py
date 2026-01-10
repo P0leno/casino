@@ -15,6 +15,32 @@ async def process_pre_checkout_query(pre_checkout_query: PreCheckoutQuery):
         payload_data = json.loads(pre_checkout_query.invoice_payload)
         payment_type = payload_data.get("type")
         
+        # NFT Transfer Fee
+        # t = "nft" (shortened)
+        if payment_type == "nft_transfer_fee" or payload_data.get("t") == "nft":
+            invoice_id = payload_data.get("i")
+            if not invoice_id and payload_data.get("invoice_id"):
+                 invoice_id = payload_data.get("invoice_id")
+                 
+            # Verify invoice exists in DB
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT amount FROM nft_invoices WHERE id = ?", (invoice_id,))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if not row:
+                 await pre_checkout_query.answer(ok=False, error_message="Invoice not found")
+                 return
+                 
+            # Verify amount matches (optional but good)
+            if pre_checkout_query.total_amount != row[0]:
+                 await pre_checkout_query.answer(ok=False, error_message="New price invalid") 
+                 return
+
+            await pre_checkout_query.answer(ok=True)
+            return
+
         # Для приоритетной очереди сумма всегда 1 звезда
         if payment_type == "priority":
             if pre_checkout_query.total_amount != 1:
@@ -52,6 +78,35 @@ async def process_successful_payment(message: Message):
     try:
         payload_data = json.loads(payment.invoice_payload)
         payment_type = payload_data.get("type")
+        
+        # === NFT TRANSFER FEE ===
+        # === NFT TRANSFER FEE ===
+        if payment_type == "nft_transfer_fee" or payload_data.get("t") == "nft":
+            invoice_id = payload_data.get("invoice_id") or payload_data.get("i")
+            
+            # Lookup invoice in DB to get details if needed (mostly just need to mark it paid)
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "UPDATE nft_invoices SET status = 'paid', payment_charge_id = ? WHERE id = ?",
+                (payment.telegram_payment_charge_id, invoice_id)
+            )
+            # Fetch slug/user_id for logging
+            cursor.execute("SELECT slug, user_id FROM nft_invoices WHERE id = ?", (invoice_id,))
+            row = cursor.fetchone()
+            slug = row[0] if row else "unknown_slug"
+            user_id = row[1] if row else "unknown_user"
+            
+            conn.commit()
+            conn.close()
+            
+            # Уведомляем пользователя что оплата прошла
+            # Но основное действие (вывод) он должен сделать сам нажав кнопку "Проверить"
+            # Можно отправить сообщение в бота
+            print(f"✅ NFT Fee paid: {slug} by {user_id} (Invoice: {invoice_id})")
+            return
         
         # Обработка приоритетной очереди
         if payment_type == "priority":

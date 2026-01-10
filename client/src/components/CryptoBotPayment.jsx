@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './TopUp.css'
 
-function CryptoBotPayment({ onNavigateBack }) {
+function CryptoBotPayment({ onNavigateBack, isEmbedded = false }) {
   const [usdtAmount, setUsdtAmount] = useState(1)
   const [starsAmount, setStarsAmount] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -10,11 +10,11 @@ function CryptoBotPayment({ onNavigateBack }) {
   const [paymentData, setPaymentData] = useState(null)
   const [returnTab, setReturnTab] = useState('home')
   const [isEditing, setIsEditing] = useState(false)
-  
-  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
-                   window.Telegram?.WebApp?.platform === 'ios'
-  const safeAreaTopValue = window.Telegram?.WebApp?.safeAreaInset?.top || 
-                           window.Telegram?.WebApp?.contentSafeAreaInset?.top || 0
+
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
+    window.Telegram?.WebApp?.platform === 'ios'
+  const safeAreaTopValue = window.Telegram?.WebApp?.safeAreaInset?.top ||
+    window.Telegram?.WebApp?.contentSafeAreaInset?.top || 0
   const topPadding = isMobile ? (safeAreaTopValue + 10) : 10
 
   const presetAmounts = [1, 5, 10, 25]
@@ -22,11 +22,14 @@ function CryptoBotPayment({ onNavigateBack }) {
   useEffect(() => {
     const savedTab = localStorage.getItem('previousTab') || 'home'
     setReturnTab(savedTab)
-    
+
+    // Если встроенный, не управляем нативной кнопкой назад
+    if (isEmbedded) return
+
     const tg = window.Telegram?.WebApp
     if (tg?.BackButton) {
       tg.BackButton.show()
-      
+
       const handleBackClick = () => {
         if (showPayment) {
           setShowPayment(false)
@@ -34,15 +37,15 @@ function CryptoBotPayment({ onNavigateBack }) {
           onNavigateBack(savedTab)
         }
       }
-      
+
       tg.BackButton.onClick(handleBackClick)
-      
+
       return () => {
         tg.BackButton.hide()
         tg.BackButton.offClick(handleBackClick)
       }
     }
-  }, [showPayment])
+  }, [showPayment, isEmbedded])
 
   // Рассчитываем Stars при изменении USDT
   useEffect(() => {
@@ -105,8 +108,9 @@ function CryptoBotPayment({ onNavigateBack }) {
       if (data.success) {
         setPaymentData(data)
         setShowPayment(true)
-        
-        // Открываем счет сразу
+
+        // Авто-открытие (как в handleTopUpStars)
+        // User requested: "оно открывает эту ссылку в телеграмме само а кнопка оплатить ткрывает ссылку в барузере"
         if (data.invoiceUrl && tg && tg.openLink) {
           tg.openLink(data.invoiceUrl)
         }
@@ -123,28 +127,29 @@ function CryptoBotPayment({ onNavigateBack }) {
 
   const handleOpenInvoice = () => {
     if (!paymentData) return
-    
-    const tg = window.Telegram?.WebApp
-    
-    if (tg && tg.openLink) {
-      tg.openLink(paymentData.invoiceUrl)
-    } else {
+
+    // User requested: "Pay button opens link in browser"
+    // window.open usually opens in browser (system browser on mobile)
+    if (paymentData.invoiceUrl) {
       window.open(paymentData.invoiceUrl, '_blank')
     }
   }
 
-  if (showPayment && paymentData) {
-    return (
-      <div className="topup-page">
-        <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Оплата через CryptoBot</h2>
-          
+  // Render Inner Content
+  const renderContent = () => {
+    if (showPayment && paymentData) {
+      return (
+        <div className={`topup-body ${isEmbedded ? '' : 'topup-content'}`} style={!isEmbedded ? { paddingTop: `${topPadding}px` } : {}}>
+          {!isEmbedded && <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Оплата через CryptoBot</h2>}
+
           {/* Информация о платеже */}
-          <div className="payment-info" style={{ marginTop: '30px' }}>
-            <div className="info-row">
-              <span>Сумма:</span>
-              <span style={{ fontWeight: 'bold' }}>{paymentData.usdtAmount} USDT</span>
-            </div>
+          {/* Input is displayed disabled to show amount */}
+          <div className="amount-display disabled" style={{ opacity: 0.7 }}>
+            <div className="amount-number">{paymentData.usdtAmount}</div>
+            <div className="amount-label">USDT</div>
+          </div>
+
+          <div className="payment-info" style={{ marginTop: '20px' }}>
             <div className="info-row">
               <span>Вы получите:</span>
               <span style={{ fontWeight: 'bold', color: '#0FBCE0' }}>
@@ -158,91 +163,107 @@ function CryptoBotPayment({ onNavigateBack }) {
           </div>
 
           {/* Кнопка оплаты */}
-          <button 
-            className="topup-btn" 
+          <button
+            className="topup-btn"
             onClick={handleOpenInvoice}
             style={{ marginTop: '30px' }}
           >
-            Открыть счет для оплаты
+            Оплатить
           </button>
 
-          <div style={{ 
-            marginTop: '16px', 
-            textAlign: 'center', 
-            fontSize: '13px', 
+          <div style={{
+            marginTop: '16px',
+            textAlign: 'center',
+            fontSize: '13px',
             color: '#888',
             lineHeight: '1.5'
           }}>
-            💡 Оплатите счет через @CryptoBot<br/>
+            💡 Оплатите счет через @CryptoBot<br />
             После оплаты баланс будет автоматически пополнен
           </div>
+
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+            <button
+              className="text-btn"
+              onClick={() => setShowPayment(false)}
+              style={{ color: '#888', background: 'none', border: 'none', padding: '10px' }}
+            >
+              Отменить / Изменить сумму
+            </button>
+          </div>
         </div>
+      )
+    }
+
+    return (
+      <div className={`topup-body ${isEmbedded ? '' : 'topup-content'}`} style={!isEmbedded ? { paddingTop: `${topPadding}px` } : {}}>
+        {!isEmbedded && <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>CryptoBot</h2>}
+
+        {/* Количество USDT по середине */}
+        <div className="amount-display" onClick={() => setIsEditing(true)}>
+          {isEditing ? (
+            <input
+              type="number"
+              step="1"
+              min="1"
+              className="amount-input"
+              value={usdtAmount}
+              onChange={(e) => setUsdtAmount(Math.max(1, parseFloat(e.target.value) || 1))}
+              onBlur={() => setIsEditing(false)}
+              autoFocus
+            />
+          ) : (
+            <div className="amount-number">{usdtAmount}</div>
+          )}
+          <div className="amount-label">USDT</div>
+        </div>
+
+        {/* Показываем сколько получит Stars */}
+        {starsAmount > 0 && (
+          <div style={{
+            textAlign: 'center',
+            marginTop: '12px',
+            marginBottom: '20px',
+            fontSize: '16px',
+            color: '#0FBCE0'
+          }}>
+            Получите {starsAmount} ⭐
+          </div>
+        )}
+
+        {error && <div className="error-message">{error}</div>}
+
+        {/* Быстрые кнопки */}
+        <div className="preset-amounts">
+          {presetAmounts.map(preset => (
+            <button
+              key={preset}
+              className="preset-btn"
+              onClick={() => setUsdtAmount(usdtAmount + preset)}
+            >
+              + {preset} USDT
+            </button>
+          ))}
+        </div>
+
+        <button
+          className="topup-btn"
+          onClick={handleCreatePayment}
+          disabled={loading || usdtAmount < 1}
+        >
+          {loading ? 'Создание...' : 'Оплатить'}
+        </button>
       </div>
     )
   }
 
+  if (isEmbedded) {
+    return renderContent()
+  }
+
   return (
     <div className="topup-page">
-      <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>CryptoBot</h2>
-
-        <div className="topup-body">
-          {/* Количество USDT по середине */}
-          <div className="amount-display" onClick={() => setIsEditing(true)}>
-            {isEditing ? (
-              <input
-                type="number"
-                step="1"
-                min="1"
-                className="amount-input"
-                value={usdtAmount}
-                onChange={(e) => setUsdtAmount(Math.max(1, parseFloat(e.target.value) || 1))}
-                onBlur={() => setIsEditing(false)}
-                autoFocus
-              />
-            ) : (
-              <div className="amount-number">{usdtAmount}</div>
-            )}
-            <div className="amount-label">USDT</div>
-          </div>
-
-          {/* Показываем сколько получит Stars */}
-          {starsAmount > 0 && (
-            <div style={{
-              textAlign: 'center',
-              marginTop: '12px',
-              marginBottom: '20px',
-              fontSize: '16px',
-              color: '#0FBCE0'
-            }}>
-              Получите {starsAmount} ⭐
-            </div>
-          )}
-
-          {error && <div className="error-message">{error}</div>}
-
-          {/* Быстрые кнопки */}
-          <div className="preset-amounts">
-            {presetAmounts.map(preset => (
-              <button
-                key={preset}
-                className="preset-btn"
-                onClick={() => setUsdtAmount(usdtAmount + preset)}
-              >
-                + {preset} USDT
-              </button>
-            ))}
-          </div>
-
-          <button 
-            className="topup-btn" 
-            onClick={handleCreatePayment}
-            disabled={loading || usdtAmount < 1}
-          >
-            {loading ? 'Создание...' : 'Оплатить'}
-          </button>
-        </div>
-      </div>
+      {renderContent()}
     </div>
   )
 }

@@ -3,11 +3,12 @@ from typing import List, Optional
 from pydantic import BaseModel
 import os
 import json
+import sqlite3
 from datetime import datetime
 from app.routers.auth import verify_init_data
 from app.utils.rate_limit import buy_gift_rate_limiter, get_shop_gifts_rate_limiter
 from app.utils.balance import get_user_balance
-from app.utils.shop_cache import get_cached_shop_gifts, invalidate_shop_cache
+from app.utils.shop_cache import get_cached_shop_gifts, invalidate_shop_cache, update_cached_gift
 from app.utils.redis_models import RedisUser
 from app.utils.database import get_db_connection, DB_PATH
 from app.utils.error_logger import send_error_log
@@ -87,26 +88,47 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
         inventory_slugs = []
         if user_result and user_result[0]:
             try:
-                inventory_slugs = json.loads(user_result[0])
+                raw_inv = json.loads(user_result[0])
+                # Support mixed format (strings and objects)
+                for item in raw_inv:
+                    if isinstance(item, dict):
+                        inventory_slugs.append(item.get('slug'))
+                    else:
+                        inventory_slugs.append(item)
             except:
                 inventory_slugs = []
         
         # Получаем подарки с ценами из кэша (ton_price из SQLite, stars_price пересчитана)
         all_gifts = get_cached_shop_gifts()
         
-        # Фильтруем: убираем те, что в инвентаре
+        # Получаем список уже проданных подарков (для глобальной уникальности)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT slug FROM sold_gifts")
+        sold_slugs = {row[0] for row in cursor.fetchall()}
+        conn.close()
+
+        # Фильтруем: убираем те, что в инвентаре ИЛИ уже проданы кому-то ещё
         gifts = []
-        print(f"[DEBUG] User {user_id} inventory: {inventory_slugs}")
+        print(f"[DEBUG_SHOP] User {user_id} Inventory: {len(inventory_slugs)} items")
+        print(f"[DEBUG_SHOP] Global Sold: {len(sold_slugs)} items")
+        
         for gift in all_gifts:
             slug = gift.get('slug')
-            # print(f"[DEBUG] Checking gift {slug}: in_inventory={slug in inventory_slugs}, available={gift.get('available_amount')}")
-            
+            # Debug why skipped
             if slug and slug in inventory_slugs:
-                continue  # Пропускаем подарки из инвентаря
-            
-            if gift['available_amount'] > 0:
-                gifts.append(ShopGift(**gift))
+                print(f"[DEBUG_SHOP] Skipped {slug}: In user inventory")
+                continue
+            if slug and slug in sold_slugs:
+                print(f"[DEBUG_SHOP] Skipped {slug}: In sold_gifts")
+                continue
+            # if gift['available_amount'] <= 0:
+            #     print(f"[DEBUG_SHOP] Skipped {slug}: Available amount {gift['available_amount']}")
+            #     continue
+                
+            gifts.append(ShopGift(**gift))
         
+        print(f"[DEBUG_SHOP] Returning {len(gifts)} gifts to user")
         return gifts
         
     except Exception as e:
@@ -209,23 +231,55 @@ async def buy_gift(request: BuyGiftRequest):
             conn.close()
             raise HTTPException(status_code=400, detail=f"Недостаточно звезд. Нужно: {price}⭐, есть: {balance}⭐")
         
-        # Парсим инвентарь
+        # Парсим инвентарь (поддержка старого и нового формата)
         try:
             inventory = json.loads(inventory_json) if inventory_json else []
         except:
             inventory = []
-        
-        if slug in inventory:
+            
+        # Проверка наличия (для slug)
+        current_slugs = []
+        for item in inventory:
+            if isinstance(item, dict):
+                current_slugs.append(item.get('slug'))
+            else:
+                current_slugs.append(item)
+                
+        if slug in current_slugs:
             conn.close()
             raise HTTPException(status_code=400, detail="У вас уже есть этот подарок")
 
-        # Добавляем slug в инвентарь
-        inventory.append(slug)
+        # --- PAYMENT & LOCK LOGIC ---
+        # Проверяем общую сумму пополнений для определения блокировки
+        cursor.execute("SELECT SUM(amount) FROM payments WHERE user_id = ? AND type = 'income'", (user_id,))
+        total_income_result = cursor.fetchone()
+        total_income = total_income_result[0] if total_income_result and total_income_result[0] else 0
+        
+        # Если пополнений меньше 6767, ставим лок на 72 часа
+        unlock_at = None
+        if total_income < 6767:
+            from datetime import timedelta
+            unlock_at = (datetime.now() + timedelta(hours=72)).isoformat()
+            print(f"🔒 User {user_id} total income {total_income} < 6767. Gift {slug} locked until {unlock_at}")
+        
+        # Добавляем в инвентарь как объект
+        inventory.append({
+            "slug": slug,
+            "bought_at": datetime.now().isoformat(),
+            "unlock_at": unlock_at,
+            "price": price
+        })
+        
+        # Log expense to payments
+        cursor.execute("""
+            INSERT INTO payments (user_id, amount, method, is_promo, type, date)
+            VALUES (?, ?, 'shop', 0, 'expense', ?)
+        """, (user_id, price, datetime.now().isoformat()))
         
         # КРИТИЧНО: Используем транзакцию и блокировку для избежания двойной покупки
         try:
             # Блокируем строку подарка для обновления
-            cursor.execute("BEGIN IMMEDIATE")
+            # cursor.execute("BEGIN IMMEDIATE") # Already in transaction due to previous INSERT
             
             # Проверяем доступность еще раз с блокировкой
             cursor.execute("""
@@ -258,11 +312,36 @@ async def buy_gift(request: BuyGiftRequest):
                 WHERE slug = ?
             """, (request.slug,))
             
+            # Записываем в таблицу проданных подарков (для глобальной уникальности)
+            # STRICT INSERT: will fail if slug already exists (race condition protection)
+            try:
+                cursor.execute("""
+                    INSERT INTO sold_gifts (slug, user_id, purchased_at)
+                    VALUES (?, ?, ?)
+                """, (slug, user_id, datetime.now().isoformat()))
+            except sqlite3.IntegrityError:
+                conn.rollback()
+                conn.close()
+                raise HTTPException(status_code=409, detail="Подарок только что был куплен другим пользователем")
+            
             conn.commit()
+            
+            # Record global sale
+            try:
+                # Re-open for global sale record (keep main transaction clean or include inside? Including inside is better but conn closed above)
+                # Wait, conn.commit() closed the transaction but conn object is still open? 
+                # No, conn.close() call is at line 262.
+                # I should insert BEFORE commit.
+                pass 
+            except:
+                pass
             conn.close()
             
-            # ВАЖНО: Инвалидируем кэш Redis сразу после покупки
-            invalidate_shop_cache()
+            # ВАЖНО: Обновляем кэш Redis точечно (без полной инвалидации)
+            # current_amount[0] - это количество ДО покупки (из SELECT FOR UPDATE)
+            new_amount = current_amount[0] - 1
+            update_cached_gift(slug, new_amount)
+            
             RedisUser.invalidate(user_id)  # Инвалидируем кэш пользователя
             print(f"✅ Подарок {title} куплен пользователем {user_id} за {price}⭐, новый баланс: {new_balance}⭐")
             
@@ -272,10 +351,15 @@ async def buy_gift(request: BuyGiftRequest):
                 "new_balance": new_balance,
                 "gift_slug": slug
             }
+        except HTTPException:
+            raise
         except Exception as e:
             await send_error_log(e, "shop.py: buy_gift (inner)")
-            conn.rollback()
-            conn.close()
+            try:
+                conn.rollback()
+                conn.close()
+            except:
+                pass
             raise
         
     except HTTPException:

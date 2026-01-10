@@ -287,7 +287,33 @@ function Shop({ onNavigateToTopUp }) {
         <ShopFilterModal
           category={activeCategory}
           currentFilters={appliedFilters}
-          modelsList={modelsList}
+          dynamicFilters={{
+            titles: [...new Set(gifts.map(g => g.title))].sort(),
+            models: [...new Set(gifts.map(g => g.model_name).filter(Boolean))].sort(),
+            backdrops: (() => {
+              const unique = new Map();
+              gifts.forEach(g => {
+                if (g.backdrop_name && !unique.has(g.backdrop_name)) {
+                  unique.set(g.backdrop_name, {
+                    name: g.backdrop_name,
+                    center_color: g.center_color,
+                    edge_color: g.edge_color
+                  });
+                }
+              });
+              return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
+            })(),
+            giftModels: (() => {
+              const map = {};
+              gifts.forEach(g => {
+                if (!map[g.title]) map[g.title] = new Set();
+                if (g.model_name) map[g.title].add(g.model_name);
+              });
+              // Convert Sets to Arrays
+              Object.keys(map).forEach(k => map[k] = Array.from(map[k]).sort());
+              return map;
+            })()
+          }}
           onClose={() => setShowFilterModal(false)}
           onApplyFilter={(filters) => {
             setAppliedFilters(filters)

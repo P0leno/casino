@@ -1,31 +1,9 @@
 import { useState, useEffect } from 'react'
 import './ShopFilterModal.css'
 
-const GIFT_MODELS = [
-  'Artisan Brick', 'Astral Shard', 'B-Day Candle', 'Berry Box', 'Big Year',
-  'Bling Binky', 'Bonded Ring', 'Bow Tie', 'Bunny Muffin', 'Candy Cane',
-  'Clover Pin', 'Cookie Heart', 'Crystal Ball', 'Cupid Charm', 'Desk Calendar',
-  'Diamond Ring', "Durov's Cap", 'Easter Egg', 'Electric Skull', 'Eternal Candle',
-  'Eternal Rose', 'Evil Eye', 'Faith Amulet', 'Flying Broom', 'Fresh Socks',
-  'Gem Signet', 'Genie Lamp', 'Ginger Cookie', 'Hanging Star', 'Happy Brownie',
-  'Heart Locket', 'Heroic Helmet', 'Hex Pot', 'Holiday Drink', 'Homemade Cake',
-  'Hypno Lollipop', 'Ice Cream', 'Input Key', 'Instant Ramen', 'Ion Gem',
-  'Ionic Dryer', 'Jack-in-the-Box', 'Jelly Bunny', 'Jester Hat', 'Jingle Bells',
-  'Jolly Chimp', 'Joyful Bundle', 'Kissed Frog', 'Light Sword', 'Lol Pop',
-  'Love Candle', 'Love Potion', 'Low Rider', 'Lush Bouquet', 'Lunar Snake',
-  'Loot Bag', 'Mad Pumpkin', 'Magic Potion', 'Mighty Arm', 'Mini Oscar',
-  'Money Pot', 'Moon Pendant', 'Mousse Cake', 'Nail Bracelet', 'Neko Helmet',
-  'Party Sparkler', 'Perfume Bottle', 'Pet Snake', 'Plush Pepe', 'Precious Peach',
-  'Pretty Posy', 'Record Player', 'Restless Jar', 'Sakura Flower', 'Santa Hat',
-  'Scared Cat', 'Sharp Tongue', 'Signet Ring', 'Skull Flower', 'Sky Stilettos',
-  'Sleigh Bell', 'Snoop Cigar', 'Snoop Dogg', 'Snow Globe', 'Snow Mittens',
-  'Snake Box', 'Spiced Wine', 'Spring Basket', 'Spy Agaric', 'Star Notepad',
-  'Stellar Rocket', 'Swag Bag', 'Swiss Watch', 'Tama Gadget', 'Top Hat',
-  'Toy Bear', 'Trapped Heart', 'Valentine Box', 'Vintage Cigar', 'Voodoo Doll',
-  'Westside Sign', 'Whip Cupcake', 'Winter Wreath', 'Witch Hat', 'Xmas Stocking'
-]
 
-function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsList = {} }) {
+
+function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, dynamicFilters = { titles: [], models: [], backdrops: [] } }) {
   // expandedCategory: 'gift', 'model', 'background'
   const [expandedCategory, setExpandedCategory] = useState('gift')
   const [searchQuery, setSearchQuery] = useState('')
@@ -37,60 +15,22 @@ function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsLi
     backdrops: currentFilters.backdrops || []
   })
 
-  const [backdrops, setBackdrops] = useState([])
-  const [availableModels, setAvailableModels] = useState([]) // Models for selected gifts
-
-  // Load backdrops
-  useEffect(() => {
-    if (expandedCategory === 'background' && backdrops.length === 0) {
-      loadBackdrops()
-    }
-  }, [expandedCategory])
-
-  // Load models when Model section expanded or selected gifts change
-  useEffect(() => {
-    if (expandedCategory === 'model' && filters.gifts.length > 0) {
-      loadModelsForSelectedGifts()
-    }
-  }, [expandedCategory, filters.gifts])
-
-  const loadBackdrops = async () => {
-    try {
-      const response = await fetch('https://shelloch.xyz/gifts/backdrops.json')
-      const data = await response.json()
-      setBackdrops(data)
-    } catch (error) {
-      console.error('Error loading backdrops:', error)
-    }
-  }
-
-  const loadModelsForSelectedGifts = async () => {
-    try {
-      // Fetch models for ALL selected gifts
-      const uniqueModels = new Set()
-      const promises = filters.gifts.map(giftName =>
-        fetch(`https://shelloch.xyz/gifts/models/${encodeURIComponent(giftName)}/model.json`)
-          .then(r => r.json())
-          .then(data => data.models || [])
-          .catch(() => [])
-      )
-
-      const results = await Promise.all(promises)
-      results.flat().forEach(m => uniqueModels.add(m))
-      setAvailableModels(Array.from(uniqueModels).sort())
-    } catch (error) {
-      console.error('Error loading models:', error)
-      setAvailableModels([])
-    }
-  }
-
+  // Helper to get items for the current category
   const getFilterItems = (category) => {
     if (category === 'gift') {
-      return Object.keys(modelsList).length > 0 ? Object.keys(modelsList) : GIFT_MODELS
+      return dynamicFilters.titles
     } else if (category === 'background') {
-      return backdrops.map(b => b.name)
+      return dynamicFilters.backdrops.map(b => b.name)
     } else if (category === 'model') {
-      return availableModels
+      // Only show models for SELECTED gifts
+      if (filters.gifts.length === 0) return []
+
+      const available = new Set()
+      filters.gifts.forEach(giftTitle => {
+        const models = dynamicFilters.giftModels?.[giftTitle] || []
+        models.forEach(m => available.add(m))
+      })
+      return Array.from(available).sort()
     }
     return []
   }
@@ -115,14 +55,33 @@ function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsLi
         newArray = [...targetArray, item]
       }
 
-      // If expanding gifts, and we deselect a gift, we might need to remove models that are no longer available?
-      // For simplicity, we keep selected models but they might filter nothing. 
-      // But typically we should cleanup. Leaving it simple for now (user didn't request complex cleanup).
-
-      return {
+      // Cleanup logic: If we deselected a gift, remove its models if they are no longer valid for other selected gifts?
+      // For now, simpler approach: Just filter the View. 
+      // User selection remains in state, but won't match anything in Shop unless valid.
+      // However, it's better UX to clear invalid models.
+      let nextState = {
         ...prev,
         [category === 'gift' ? 'gifts' : category === 'model' ? 'models' : 'backdrops']: newArray
       }
+
+      // If gifts changed, cleanup invalid models
+      if (category === 'gift') {
+        const selectedGifts = newArray
+        if (selectedGifts.length === 0) {
+          nextState.models = []
+        } else {
+          // Re-calculate available models
+          const validModels = new Set()
+          selectedGifts.forEach(g => {
+            const ms = dynamicFilters.giftModels?.[g] || []
+            ms.forEach(m => validModels.add(m))
+          })
+          // Remove models that are not in validModels
+          nextState.models = prev.models.filter(m => validModels.has(m))
+        }
+      }
+
+      return nextState
     })
   }
 
@@ -135,11 +94,11 @@ function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsLi
     setFilters({ gifts: [], models: [], backdrops: [] })
   }
 
+  // Model selection is disabled if no Collection is selected
   const isModelDisabled = filters.gifts.length === 0
 
   const toggleCategory = (category) => {
     if (category === 'model' && isModelDisabled) return // Block if disabled
-
     if (expandedCategory === category) {
       setExpandedCategory(null)
       setSearchQuery('')
@@ -149,8 +108,8 @@ function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsLi
     }
   }
 
-  const getBackdropById = (name) => {
-    return backdrops.find(b => b.name === name)
+  const getBackdropByName = (name) => {
+    return dynamicFilters.backdrops.find(b => b.name === name)
   }
 
   const renderCategoryContent = (category, placeholder) => {
@@ -176,7 +135,7 @@ function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsLi
           {items.length === 0 && <div style={{ padding: '10px', color: '#666', textAlign: 'center' }}>Нет данных</div>}
 
           {items.map((item, index) => {
-            const backdrop = category === 'background' ? getBackdropById(item) : null
+            const backdrop = category === 'background' ? getBackdropByName(item) : null
             const isSelected = currentSelection.includes(item)
             return (
               <div
@@ -191,7 +150,7 @@ function ShopFilterModal({ onClose, onApplyFilter, currentFilters = {}, modelsLi
                       <div
                         className="backdrop-circle-small"
                         style={{
-                          background: `radial-gradient(circle, ${backdrop.hex.centerColor}, ${backdrop.hex.edgeColor})`
+                          background: `radial-gradient(circle, ${backdrop.center_color || '#333'}, ${backdrop.edge_color || '#000'})`
                         }}
                       />
                     )}

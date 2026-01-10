@@ -1,0 +1,2420 @@
+Gift #1:
+{
+    "_": "Gift",
+    "id": 6012655718467896001,
+    "regular_gift_id": 6005564615793050414,
+    "message_id": 16368,
+    "date": "2026-01-02 14:10:45",
+    "from_user": {
+        "_": "User",
+        "id": 1056148947,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "енaзва",
+        "status": "UserStatus.RECENTLY",
+        "username": "enazva",
+        "usernames": [
+            {
+                "_": "Username",
+                "username": "enazva",
+                "editable": true,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "enazv",
+                "editable": false,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "ahexy",
+                "editable": false,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "nocyo",
+                "editable": false,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "irler",
+                "editable": false,
+                "active": true
+            }
+        ],
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5458719058859951103,
+            "gift_id": 5784919737637012274,
+            "title": "Money Pot #13790",
+            "name": "MoneyPot-13790",
+            "pattern_custom_emoji_id": 5312231485468602152,
+            "center_color": 11636862,
+            "edge_color": 8151894,
+            "pattern_color": 4862502,
+            "text_color": 15455432
+        },
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADAgtrG9ON8z4AEAIAA9ON8z4ABOFn4od1-vvgAAQeBA",
+            "small_photo_unique_id": "AgADAgtrG9ON8z4",
+            "big_file_id": "AQADAgADAgtrG9ON8z4AEAMAA9ON8z4ABOFn4od1-vvgAAQeBA",
+            "big_photo_unique_id": "AgADAgtrG9ON8z4",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.BLUE_DARK_BLUE",
+            "background_emoji_id": 5264892613630111886
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GRAY",
+            "background_emoji_id": 5434033386433830171
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "InstantRamen-261958",
+    "title": "Instant Ramen",
+    "collectible_id": 261958,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Classic Ramen",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 25,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBeDOsOl5mO8PwWHCruVeYPNAAK4fQACEvDISVqY_5JI5UNkHgQ",
+                "file_unique_id": "AgADuH0AAhLwyEk",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 42789,
+                "date": "2025-09-04 08:27:24",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🍽",
+                "set_name": "InstantRamenSkins",
+                "custom_emoji_id": 5316763320210980280,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF4M6w6XmY7w_BYcKu5V5g80AArh9AAIS8MhJWpj_kkjlQ2QACAEAB20ABx4E",
+                        "file_unique_id": "AgADuH0AAhLwyEk",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 8034
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Thunderbird",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 5,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgEAAxUAAWlhYBd50uJrqvsPRLyw9cWawBvzAAIjAAPHK_hMQ4M0eEINPSceBA",
+                "file_unique_id": "AgADIwADxyv4TA",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 2488,
+                "date": "2025-02-01 20:43:39",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "PatternsEmoji2",
+                "custom_emoji_id": 5546231074805252131,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAQADFQABaWFgF3nS4muq-w9EvLD1xZrAG_MAAiMAA8cr-ExDgzR4Qg09JwAIAQAHbQAHHgQ",
+                        "file_unique_id": "AgADIwADxyv4TA",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 2946
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Feldgrau",
+            "backdrop_id": 68,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 12,
+            "center_color": 9015944,
+            "edge_color": 6187875,
+            "pattern_color": 1844767,
+            "text_color": 14608865
+        }
+    ],
+    "number": 362552,
+    "total_upgraded_count": 457382,
+    "max_upgraded_count": 362552,
+    "value_currency": "RUB",
+    "value_amount": 39700,
+    "value_usd_amount": 453,
+    "can_upgrade": false,
+    "can_export_at": "2026-01-16 14:10:45",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #2:
+{
+    "_": "Gift",
+    "id": 6012547618436023581,
+    "regular_gift_id": 5900177027566142759,
+    "message_id": 16127,
+    "date": "2025-12-11 15:46:56",
+    "from_user": {
+        "_": "User",
+        "id": 7804544881,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false,
+            "bot_verification_icon_custom_emoji_id": 6016937066422604737
+        },
+        "is_min": false,
+        "first_name": "Portal",
+        "status": "UserStatus.RECENTLY",
+        "username": "GiftsToPortals",
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADpvYxG_sXsUkAEAIAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "small_photo_unique_id": "AgADpvYxG_sXsUk",
+            "big_file_id": "AQADAgADpvYxG_sXsUkAEAMAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "big_photo_unique_id": "AgADpvYxG_sXsUk",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "IceCream-293602",
+    "title": "Ice Cream",
+    "collectible_id": 293602,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Starship",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 30,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBc8SCfLIlVDKfyB-qlYCxENAALwgQACNHPBSwPyoBNIScdtHgQ",
+                "file_unique_id": "AgAD8IEAAjRzwUs",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 43435,
+                "date": "2025-07-16 20:56:46",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🍦",
+                "set_name": "IceCreamSkins",
+                "custom_emoji_id": 5458770890525278704,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgFzxIJ8siVUMp_IH6qVgLEQ0AAvCBAAI0c8FLA_KgE0hJx20ACAEAB20ABx4E",
+                        "file_unique_id": "AgAD8IEAAjRzwUs",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 3716
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Car",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 7,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBfo1keQqsugrAWvGf40lHE5AAKKYgAC_25oS_Bgb27IfRGaHgQ",
+                "file_unique_id": "AgADimIAAv9uaEs",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 1321,
+                "date": "2024-12-26 14:37:21",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🚘",
+                "set_name": "PatternsEmoji4",
+                "custom_emoji_id": 5433714991918244490,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF-jWR5Cqy6CsBa8Z_jSUcTkAAopiAAL_bmhL8GBvbsh9EZoACAEAB20ABx4E",
+                        "file_unique_id": "AgADimIAAv9uaEs",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1810
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Indigo Dye",
+            "backdrop_id": 47,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 15,
+            "center_color": 5470609,
+            "edge_color": 4285561,
+            "pattern_color": 203561,
+            "text_color": 12770542
+        }
+    ],
+    "number": 322488,
+    "total_upgraded_count": 342255,
+    "max_upgraded_count": 322488,
+    "value_currency": "RUB",
+    "value_amount": 46400,
+    "value_usd_amount": 529,
+    "can_upgrade": false,
+    "can_export_at": "2025-12-25 15:46:55",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #3:
+{
+    "_": "Gift",
+    "id": 5956544088164533038,
+    "regular_gift_id": 6028426950047957932,
+    "message_id": 16124,
+    "date": "2025-12-11 15:44:57",
+    "from_user": {
+        "_": "User",
+        "id": 7804544881,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false,
+            "bot_verification_icon_custom_emoji_id": 6016937066422604737
+        },
+        "is_min": false,
+        "first_name": "Portal",
+        "status": "UserStatus.RECENTLY",
+        "username": "GiftsToPortals",
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADpvYxG_sXsUkAEAIAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "small_photo_unique_id": "AgADpvYxG_sXsUk",
+            "big_file_id": "AQADAgADpvYxG_sXsUkAEAMAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "big_photo_unique_id": "AgADpvYxG_sXsUk",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "LunarSnake-95108",
+    "title": "Lunar Snake",
+    "collectible_id": 95108,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Hissium",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 13,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBcdgcR7mm-Bq9SBT-IHobHiAAJPaQAC3gJwSEDnEAdJ85JMHgQ",
+                "file_unique_id": "AgADT2kAAt4CcEg",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 64380,
+                "date": "2025-01-20 15:42:19",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🐍",
+                "set_name": "LunarSnakeSkins",
+                "custom_emoji_id": 5219675120628427087,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgFx2BxHuab4Gr1IFP4gehseIAAk9pAALeAnBIQOcQB0nzkkwACAEAB20ABx4E",
+                        "file_unique_id": "AgADT2kAAt4CcEg",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 6744
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Christmas Tree",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 18,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBfxy6jrYTQ3WFoHU1HAaRUYAAIIPwACsJV5S0kbVqMaDP-tHgQ",
+                "file_unique_id": "AgADCD8AArCVeUs",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 809,
+                "date": "2023-12-05 19:28:54",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎄",
+                "set_name": "ChristmasIcons",
+                "custom_emoji_id": 5438542608173383432,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF_HLqOthNDdYWgdTUcBpFRgAAgg_AAKwlXlLSRtWoxoM_60ACAEAB20ABx4E",
+                        "file_unique_id": "AgADCD8AArCVeUs",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1336
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Coral Red",
+            "backdrop_id": 25,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 20,
+            "center_color": 14322027,
+            "edge_color": 12870991,
+            "pattern_color": 8983040,
+            "text_color": 16767442
+        },
+        {
+            "_": "GiftAttribute",
+            "type": "GiftAttributeType.ORIGINAL_DETAILS",
+            "date": "2025-01-04 10:19:04",
+            "caption": "🦅",
+            "caption_entities": [
+                {
+                    "_": "MessageEntity",
+                    "type": "MessageEntityType.CUSTOM_EMOJI",
+                    "offset": 0,
+                    "length": 2,
+                    "custom_emoji_id": 5415948735144278895
+                }
+            ],
+            "from_user": {
+                "_": "User",
+                "id": 1227661473,
+                "is_self": false,
+                "is_contact": false,
+                "is_mutual_contact": false,
+                "is_deleted": false,
+                "is_bot": false,
+                "is_restricted": false,
+                "is_support": false,
+                "is_premium": true,
+                "is_contact_require_premium": false,
+                "is_close_friend": false,
+                "is_stories_hidden": false,
+                "is_stories_unavailable": true,
+                "verification_status": {
+                    "_": "VerificationStatus",
+                    "is_verified": false,
+                    "is_scam": false,
+                    "is_fake": false
+                },
+                "is_min": false,
+                "first_name": "ᅠᅠᅠ",
+                "status": "UserStatus.RECENTLY",
+                "username": "richsensov",
+                "emoji_status": {
+                    "_": "EmojiStatus",
+                    "custom_emoji_id": 5201706180052808172,
+                    "gift_id": 5832257552913531234,
+                    "title": "Swiss Watch #2471",
+                    "name": "SwissWatch-2471",
+                    "pattern_custom_emoji_id": 5433846813054494068,
+                    "center_color": 14519919,
+                    "edge_color": 12016224,
+                    "pattern_color": 11078668,
+                    "text_color": 16765907
+                },
+                "reply_color": {
+                    "_": "ChatColor",
+                    "color": "ReplyColor.PINK_DARK_PINK"
+                },
+                "added_to_attachment_menu": false,
+                "inline_need_location": false,
+                "can_be_edited": false,
+                "can_be_added_to_attachment_menu": false,
+                "can_join_groups": false,
+                "can_read_all_group_messages": false,
+                "can_connect_to_business": false,
+                "has_main_web_app": false
+            },
+            "to_user": {
+                "_": "User",
+                "id": 5131260675,
+                "is_self": false,
+                "is_contact": false,
+                "is_mutual_contact": false,
+                "is_deleted": false,
+                "is_bot": false,
+                "is_restricted": false,
+                "is_support": false,
+                "is_premium": true,
+                "is_contact_require_premium": false,
+                "is_close_friend": false,
+                "is_stories_hidden": false,
+                "is_stories_unavailable": true,
+                "verification_status": {
+                    "_": "VerificationStatus",
+                    "is_verified": false,
+                    "is_scam": false,
+                    "is_fake": false
+                },
+                "is_min": false,
+                "first_name": "@wtzzzp",
+                "status": "UserStatus.RECENTLY",
+                "username": "kateqwsk",
+                "dc_id": 2,
+                "photo": {
+                    "_": "ChatPhoto",
+                    "small_file_id": "AQADAgADWwtrG0dZcEoAEAIAAwPT2DEBAAPIPVoPGbwwmgAEHgQ",
+                    "small_photo_unique_id": "AgADWwtrG0dZcEo",
+                    "big_file_id": "AQADAgADWwtrG0dZcEoAEAMAAwPT2DEBAAPIPVoPGbwwmgAEHgQ",
+                    "big_photo_unique_id": "AgADWwtrG0dZcEo",
+                    "has_animation": false,
+                    "is_personal": false
+                },
+                "added_to_attachment_menu": false,
+                "inline_need_location": false,
+                "can_be_edited": false,
+                "can_be_added_to_attachment_menu": false,
+                "can_join_groups": false,
+                "can_read_all_group_messages": false,
+                "can_connect_to_business": false,
+                "has_main_web_app": false
+            }
+        }
+    ],
+    "number": 185828,
+    "total_upgraded_count": 259346,
+    "max_upgraded_count": 185828,
+    "value_currency": "RUB",
+    "value_amount": 46100,
+    "value_usd_amount": 525,
+    "drop_original_details_star_count": 500,
+    "can_upgrade": false,
+    "can_export_at": "2025-12-25 15:44:56",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #4:
+{
+    "_": "Gift",
+    "id": 5791779199840682620,
+    "regular_gift_id": 6003373314888696650,
+    "message_id": 16122,
+    "date": "2025-12-11 15:42:23",
+    "from_user": {
+        "_": "User",
+        "id": 7804544881,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false,
+            "bot_verification_icon_custom_emoji_id": 6016937066422604737
+        },
+        "is_min": false,
+        "first_name": "Portal",
+        "status": "UserStatus.RECENTLY",
+        "username": "GiftsToPortals",
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADpvYxG_sXsUkAEAIAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "small_photo_unique_id": "AgADpvYxG_sXsUk",
+            "big_file_id": "AQADAgADpvYxG_sXsUkAEAMAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "big_photo_unique_id": "AgADpvYxG_sXsUk",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "CandyCane-85668",
+    "title": "Candy Cane",
+    "collectible_id": 85668,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Toxicane",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 26,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBe-lHhNwYmie5XmjcNmdXYUAAJZYQAC4osgSuGGx64dCkeDHgQ",
+                "file_unique_id": "AgADWWEAAuKLIEo",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 49283,
+                "date": "2025-03-02 01:44:55",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🍭",
+                "set_name": "CandyCaneSkins",
+                "custom_emoji_id": 5341422960840302937,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF76UeE3BiaJ7leaNw2Z1dhQAAllhAALiiyBK4YbHrh0KR4MACAEAB20ABx4E",
+                        "file_unique_id": "AgADWWEAAuKLIEo",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 9126
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Eikthyrnir",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 24,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgEAAxUAAWlhYBc4KojxnTc2KHBkrgs29ikPAAIVAAOb-WlP6CzJFPz4JegeBA",
+                "file_unique_id": "AgADFQADm_lpTw",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 2569,
+                "date": "2024-12-26 15:03:19",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "PatternsEmoji2",
+                "custom_emoji_id": 5722379245666172949,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAQADFQABaWFgFzgqiPGdNzYocGSuCzb2KQ8AAhUAA5v5aU_oLMkU_Pgl6AAIAQAHbQAHHgQ",
+                        "file_unique_id": "AgADFQADm_lpTw",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1958
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Feldgrau",
+            "backdrop_id": 68,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 10,
+            "center_color": 9015944,
+            "edge_color": 6187875,
+            "pattern_color": 1844767,
+            "text_color": 14608865
+        }
+    ],
+    "number": 203565,
+    "total_upgraded_count": 320622,
+    "max_upgraded_count": 203565,
+    "value_currency": "RUB",
+    "value_amount": 59200,
+    "value_usd_amount": 675,
+    "can_upgrade": false,
+    "can_export_at": "2025-12-25 15:42:23",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #5:
+{
+    "_": "Gift",
+    "id": 6039643235666625053,
+    "regular_gift_id": 5782984811920491178,
+    "message_id": 15928,
+    "date": "2025-11-25 21:18:16",
+    "from_user": {
+        "_": "User",
+        "id": 7471356291,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "Gift Rolls",
+        "last_name": "Transfer",
+        "status": "UserStatus.RECENTLY",
+        "username": "rolls_transfer",
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5400238655308593729
+        },
+        "dc_id": 2,
+        "phone_number": "*********",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADXuwxG5NOwUsAEAIAA4PZU70BAAMpVPD5f29F9AAEHgQ",
+            "small_photo_unique_id": "AgADXuwxG5NOwUs",
+            "big_file_id": "AQADAgADXuwxG5NOwUsAEAMAA4PZU70BAAMpVPD5f29F9AAEHgQ",
+            "big_photo_unique_id": "AgADXuwxG5NOwUs",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "BDayCandle-58341",
+    "title": "B-Day Candle",
+    "collectible_id": 58341,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Icicle",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 15,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBcZvY-AMtgJfVr4vKmY5IbqAAKebgACcKjQSnM6Me6Rv7gDHgQ",
+                "file_unique_id": "AgADnm4AAnCo0Eo",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 25096,
+                "date": "2024-12-11 23:41:09",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🕯",
+                "set_name": "BDayCandleSkins",
+                "custom_emoji_id": 5390993952952315550,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgFxm9j4Ay2Al9Wvi8qZjkhuoAAp5uAAJwqNBKczox7pG_uAMACAEAB20ABx4E",
+                        "file_unique_id": "AgADnm4AAnCo0Eo",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 7904
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Mountain Goat",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 2,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgEAAxUAAWlhYBd28AaCVLLNC6khL8QLsg9IAAINAAMyA2lPbQqJJCyEZZceBA",
+                "file_unique_id": "AgADDQADMgNpTw",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 2055,
+                "date": "2024-12-26 15:03:24",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "PatternsEmoji2",
+                "custom_emoji_id": 5722108314834173965,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAQADFQABaWFgF3bwBoJUss0LqSEvxAuyD0gAAg0AAzIDaU9tCokkLIRllwAIAQAHbQAHHgQ",
+                        "file_unique_id": "AgADDQADMgNpTw",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1894
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Navy Blue",
+            "backdrop_id": 6,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 20,
+            "center_color": 7118557,
+            "edge_color": 6057673,
+            "pattern_color": 1194402,
+            "text_color": 13885951
+        },
+        {
+            "_": "GiftAttribute",
+            "type": "GiftAttributeType.ORIGINAL_DETAILS",
+            "date": "2025-04-12 08:20:21",
+            "from_user": {
+                "_": "User",
+                "id": 830840828,
+                "is_self": false,
+                "is_contact": false,
+                "is_mutual_contact": false,
+                "is_deleted": false,
+                "is_bot": false,
+                "is_restricted": false,
+                "is_support": false,
+                "is_premium": true,
+                "is_contact_require_premium": false,
+                "is_close_friend": false,
+                "is_stories_hidden": false,
+                "is_stories_unavailable": false,
+                "verification_status": {
+                    "_": "VerificationStatus",
+                    "is_verified": false,
+                    "is_scam": false,
+                    "is_fake": false
+                },
+                "is_min": false,
+                "first_name": "SQ",
+                "status": "UserStatus.RECENTLY",
+                "username": "sound_quality16",
+                "emoji_status": {
+                    "_": "EmojiStatus",
+                    "custom_emoji_id": 5299033716687913920
+                },
+                "dc_id": 2,
+                "photo": {
+                    "_": "ChatPhoto",
+                    "small_file_id": "AQADAgADBQtrG_yfhTEAEAIAA_yfhTEABH-X71k81dyAAAQeBA",
+                    "small_photo_unique_id": "AgADBQtrG_yfhTE",
+                    "big_file_id": "AQADAgADBQtrG_yfhTEAEAMAA_yfhTEABH-X71k81dyAAAQeBA",
+                    "big_photo_unique_id": "AgADBQtrG_yfhTE",
+                    "has_animation": false,
+                    "is_personal": false
+                },
+                "reply_color": {
+                    "_": "ChatColor",
+                    "color": "ReplyColor.BLUE_WHITE_ORANGE",
+                    "background_emoji_id": 5395440210471297453
+                },
+                "profile_color": {
+                    "_": "ChatColor",
+                    "color": "ProfileColor.GRAY",
+                    "background_emoji_id": 5363930870098984095
+                },
+                "added_to_attachment_menu": false,
+                "inline_need_location": false,
+                "can_be_edited": false,
+                "can_be_added_to_attachment_menu": false,
+                "can_join_groups": false,
+                "can_read_all_group_messages": false,
+                "can_connect_to_business": false,
+                "has_main_web_app": false
+            },
+            "to_user": {
+                "_": "User",
+                "id": 1215228755,
+                "is_self": false,
+                "is_contact": false,
+                "is_mutual_contact": false,
+                "is_deleted": false,
+                "is_bot": false,
+                "is_restricted": false,
+                "is_support": false,
+                "is_premium": true,
+                "is_contact_require_premium": false,
+                "is_close_friend": false,
+                "is_stories_hidden": false,
+                "is_stories_unavailable": true,
+                "verification_status": {
+                    "_": "VerificationStatus",
+                    "is_verified": false,
+                    "is_scam": false,
+                    "is_fake": false
+                },
+                "is_min": false,
+                "first_name": "Даниил",
+                "status": "UserStatus.RECENTLY",
+                "username": "the_brnv",
+                "emoji_status": {
+                    "_": "EmojiStatus",
+                    "custom_emoji_id": 5447128724539463488
+                },
+                "dc_id": 2,
+                "photo": {
+                    "_": "ChatPhoto",
+                    "small_file_id": "AQADAgADm_YxG9i-aEsAEAIAA1PrbkgABPnPFgiS2cMwAAQeBA",
+                    "small_photo_unique_id": "AgADm_YxG9i-aEs",
+                    "big_file_id": "AQADAgADm_YxG9i-aEsAEAMAA1PrbkgABPnPFgiS2cMwAAQeBA",
+                    "big_photo_unique_id": "AgADm_YxG9i-aEs",
+                    "has_animation": false,
+                    "is_personal": false
+                },
+                "reply_color": {
+                    "_": "ChatColor",
+                    "color": "ReplyColor.PINK"
+                },
+                "profile_color": {
+                    "_": "ChatColor",
+                    "color": "ProfileColor.GRAY_LIGHT_GRAY",
+                    "background_emoji_id": 5361610161829985952
+                },
+                "added_to_attachment_menu": false,
+                "inline_need_location": false,
+                "can_be_edited": false,
+                "can_be_added_to_attachment_menu": false,
+                "can_join_groups": false,
+                "can_read_all_group_messages": false,
+                "can_connect_to_business": false,
+                "has_main_web_app": false
+            }
+        }
+    ],
+    "number": 266176,
+    "total_upgraded_count": 307521,
+    "max_upgraded_count": 266176,
+    "value_currency": "RUB",
+    "value_amount": 49400,
+    "value_usd_amount": 563,
+    "drop_original_details_star_count": 500,
+    "can_upgrade": false,
+    "can_export_at": "2025-12-09 21:18:16",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #6:
+{
+    "_": "Gift",
+    "id": 5859420476576630019,
+    "regular_gift_id": 5782988952268964995,
+    "message_id": 15927,
+    "date": "2025-11-25 21:18:16",
+    "from_user": {
+        "_": "User",
+        "id": 7471356291,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "Gift Rolls",
+        "last_name": "Transfer",
+        "status": "UserStatus.RECENTLY",
+        "username": "rolls_transfer",
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5400238655308593729
+        },
+        "dc_id": 2,
+        "phone_number": "*********",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADXuwxG5NOwUsAEAIAA4PZU70BAAMpVPD5f29F9AAEHgQ",
+            "small_photo_unique_id": "AgADXuwxG5NOwUs",
+            "big_file_id": "AQADAgADXuwxG5NOwUsAEAMAA4PZU70BAAMpVPD5f29F9AAEHgQ",
+            "big_photo_unique_id": "AgADXuwxG5NOwUs",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "DeskCalendar-94477",
+    "title": "Desk Calendar",
+    "collectible_id": 94477,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Basic Blue",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 15,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBfX-YMv91Rf8X1AU8wOeSBRAALmYgAC3JKhSHxJ0FJuRtmWHgQ",
+                "file_unique_id": "AgAD5mIAAtySoUg",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 19810,
+                "date": "2025-01-25 02:46:20",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🗓",
+                "set_name": "DeskCalendarSkins",
+                "custom_emoji_id": 5233625715571712742,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF9f5gy_3VF_xfUBTzA55IFEAAuZiAALckqFIfEnQUm5G2ZYACAEAB20ABx4E",
+                        "file_unique_id": "AgAD5mIAAtySoUg",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 6378
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Tie",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 4,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBdywh5ENfhNSAZDeXkd1hByAAKHZAAC9CiBS08kdg3uNfvUHgQ",
+                "file_unique_id": "AgADh2QAAvQogUs",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 709,
+                "date": "2024-12-28 14:33:02",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "👔",
+                "set_name": "PatternsEmoji4",
+                "custom_emoji_id": 5440674853277426823,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF3LCHkQ1-E1IBkN5eR3WEHIAAodkAAL0KIFLTyR2De41-9QACAEAB20ABx4E",
+                        "file_unique_id": "AgADh2QAAvQogUs",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1292
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Roman Silver",
+            "backdrop_id": 43,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 15,
+            "center_color": 10725557,
+            "edge_color": 8159370,
+            "pattern_color": 4146512,
+            "text_color": 14344162
+        }
+    ],
+    "number": 341423,
+    "total_upgraded_count": 374077,
+    "max_upgraded_count": 341423,
+    "value_currency": "RUB",
+    "value_amount": 33300,
+    "value_usd_amount": 380,
+    "can_upgrade": false,
+    "can_export_at": "2025-12-09 21:18:16",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #7:
+{
+    "_": "Gift",
+    "id": 5882140570104628456,
+    "regular_gift_id": 6003767644426076664,
+    "message_id": 15847,
+    "date": "2025-11-23 18:31:03",
+    "from_user": {
+        "_": "User",
+        "id": 7804544881,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false,
+            "bot_verification_icon_custom_emoji_id": 6016937066422604737
+        },
+        "is_min": false,
+        "first_name": "Portal",
+        "status": "UserStatus.RECENTLY",
+        "username": "GiftsToPortals",
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADpvYxG_sXsUkAEAIAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "small_photo_unique_id": "AgADpvYxG_sXsUk",
+            "big_file_id": "AQADAgADpvYxG_sXsUkAEAMAA3HnL9EBAAMCfWuXthr00gAEHgQ",
+            "big_photo_unique_id": "AgADpvYxG_sXsUk",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "XmasStocking-61120",
+    "title": "Xmas Stocking",
+    "collectible_id": 61120,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Vintage",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 30,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBcTIC9CgJw58SNDDZeU0V-AAALqcAACjLL5Se5ORrzS9SPKHgQ",
+                "file_unique_id": "AgAD6nAAAoyy-Uk",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 44821,
+                "date": "2025-02-26 20:07:48",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "XmasStockingSkins",
+                "custom_emoji_id": 5330487948334887146,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgFxMgL0KAnDnxI0MNl5TRX4AAAupwAAKMsvlJ7k5GvNL1I8oACAEAB20ABx4E",
+                        "file_unique_id": "AgAD6nAAAoyy-Uk",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 4840
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Candle",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 10,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBd3rWLmXNntMIwCWd0XkXj5AALDWQACBtSBSylmjwSobsxaHgQ",
+                "file_unique_id": "AgADw1kAAgbUgUs",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 875,
+                "date": "2024-12-28 14:47:35",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🕯",
+                "set_name": "PatternsEmoji4",
+                "custom_emoji_id": 5440862947075185091,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF3etYuZc2e0wjAJZ3ReRePkAAsNZAAIG1IFLKWaPBKhuzFoACAEAB20ABx4E",
+                        "file_unique_id": "AgADw1kAAgbUgUs",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1128
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Purple",
+            "backdrop_id": 51,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 15,
+            "center_color": 11431086,
+            "edge_color": 8669060,
+            "pattern_color": 4656199,
+            "text_color": 15977459
+        }
+    ],
+    "number": 200684,
+    "total_upgraded_count": 334632,
+    "max_upgraded_count": 200684,
+    "value_currency": "RUB",
+    "value_amount": 56400,
+    "value_usd_amount": 643,
+    "can_upgrade": false,
+    "can_export_at": "2025-12-07 18:31:02",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #8:
+{
+    "_": "Gift",
+    "id": 6003592259436544931,
+    "regular_gift_id": 6006064678835323371,
+    "message_id": 15565,
+    "date": "2025-11-02 10:54:52",
+    "from_user": {
+        "_": "User",
+        "id": 7562730871,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "丰#ghostgirl",
+        "status": "UserStatus.RECENTLY",
+        "username": "alisckt",
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5391365570702639651
+        },
+        "dc_id": 4,
+        "phone_number": "*********",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBAAD_gtrGwTwyVIAEAIAA3cdxsIBAAMqsd63Tba8xwAEHgQ",
+            "small_photo_unique_id": "AgAD_gtrGwTwyVI",
+            "big_file_id": "AQADBAAD_gtrGwTwyVIAEAMAA3cdxsIBAAMqsd63Tba8xwAEHgQ",
+            "big_photo_unique_id": "AgAD_gtrGwTwyVI",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.CYAN_DARK_CYAN",
+            "background_emoji_id": 5454365405130810498
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GRAY_LIGHT_GRAY",
+            "background_emoji_id": 5454365405130810498
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "HappyBrownie-95259",
+    "title": "Happy Brownie",
+    "collectible_id": 95259,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Unicorn",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 30,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBdqQya_mmn-uKjjZTllflSpAAIyfgACTt7pSbCMam3Ww3G1HgQ",
+                "file_unique_id": "AgADMn4AAk7e6Uk",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 65368,
+                "date": "2025-09-07 08:48:17",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "💩",
+                "set_name": "HappyBrownieSkins",
+                "custom_emoji_id": 5326032460931169842,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF2pDJr-aaf64qONlOWV-VKkAAjJ-AAJO3ulJsIxqbdbDcbUACAEAB20ABx4E",
+                        "file_unique_id": "AgADMn4AAk7e6Uk",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 8706
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Sumerian Bird",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 5,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgEAAxUAAWlhYBdi08X2PP6J4zcOBQ4q16fxAAIjAANUonFPegy_2Yh7Z2geBA",
+                "file_unique_id": "AgADIwADVKJxTw",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 3012,
+                "date": "2024-12-26 15:00:43",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "PatternsEmoji2",
+                "custom_emoji_id": 5724535083025563683,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAQADFQABaWFgF2LTxfY8_onjNw4FDirXp_EAAiMAA1SicU96DL_ZiHtnaAAIAQAHbQAHHgQ",
+                        "file_unique_id": "AgADIwADVKJxTw",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 2346
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Hunter Green",
+            "backdrop_id": 35,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 15,
+            "center_color": 9416312,
+            "edge_color": 4948571,
+            "pattern_color": 1853727,
+            "text_color": 14218718
+        }
+    ],
+    "number": 211848,
+    "total_upgraded_count": 264231,
+    "max_upgraded_count": 211848,
+    "value_currency": "RUB",
+    "value_amount": 49100,
+    "value_usd_amount": 560,
+    "can_upgrade": false,
+    "can_export_at": "2025-11-16 10:54:52",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #9:
+{
+    "_": "Gift",
+    "id": 6003366009149326420,
+    "regular_gift_id": 6003456431095808759,
+    "message_id": 15555,
+    "date": "2025-11-02 08:24:24",
+    "from_user": {
+        "_": "User",
+        "id": 7770098150,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "︎ ︎ ︎ ︎",
+        "status": "UserStatus.RECENTLY",
+        "username": "nixton4ik",
+        "usernames": [
+            {
+                "_": "Username",
+                "username": "nixton4ik",
+                "editable": true,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "baristaboychik",
+                "editable": false,
+                "active": true
+            }
+        ],
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5296296856152718775
+        },
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.BLUE_DARK_BLUE",
+            "background_emoji_id": 6028346797368283073
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.BLUE_LIGHT_BLUE",
+            "background_emoji_id": 5197646177532665886
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "FaithAmulet-51063",
+    "title": "Faith Amulet",
+    "collectible_id": 51063,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Silver Gold",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 25,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBfNOSB-v2dfGwIT1OJ1DISGAAKPjQACjySxSWIdHB_kR2vuHgQ",
+                "file_unique_id": "AgADj40AAo8ksUk",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 52406,
+                "date": "2025-09-02 01:10:24",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "FaithAmuletSkins",
+                "custom_emoji_id": 5310065632245484943,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF805IH6_Z18bAhPU4nUMhIYAAo-NAAKPJLFJYh0cH-RHa-4ACAEAB20ABx4E",
+                        "file_unique_id": "AgADj40AAo8ksUk",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 6718
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Lemon",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 5,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBf8Uu7Vos1ybfMnf71aX4i_AAKsYgACmWeBS8FSdcVBomL1HgQ",
+                "file_unique_id": "AgADrGIAAplngUs",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 715,
+                "date": "2024-12-28 14:15:33",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "PatternsEmoji5",
+                "custom_emoji_id": 5440743731667952300,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF_xS7tWizXJt8yd_vVpfiL8AAqxiAAKZZ4FLwVJ1xUGiYvUACAEAB20ABx4E",
+                        "file_unique_id": "AgADrGIAAplngUs",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 1072
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Chestnut",
+            "backdrop_id": 58,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 10,
+            "center_color": 12480340,
+            "edge_color": 10045496,
+            "pattern_color": 6296840,
+            "text_color": 16697017
+        }
+    ],
+    "number": 132358,
+    "total_upgraded_count": 172784,
+    "max_upgraded_count": 132358,
+    "value_currency": "RUB",
+    "value_amount": 57600,
+    "value_usd_amount": 657,
+    "can_upgrade": false,
+    "can_export_at": "2025-11-16 08:24:24",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #10:
+{
+    "_": "Gift",
+    "id": 6003407704691836027,
+    "regular_gift_id": 6005564615793050414,
+    "message_id": 15517,
+    "date": "2025-11-01 14:25:29",
+    "from_user": {
+        "_": "User",
+        "id": 1056148947,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": false,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "енaзва",
+        "status": "UserStatus.RECENTLY",
+        "username": "enazva",
+        "usernames": [
+            {
+                "_": "Username",
+                "username": "enazva",
+                "editable": true,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "enazv",
+                "editable": false,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "ahexy",
+                "editable": false,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "nocyo",
+                "editable": false,
+                "active": true
+            },
+            {
+                "_": "Username",
+                "username": "irler",
+                "editable": false,
+                "active": true
+            }
+        ],
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5458719058859951103,
+            "gift_id": 5784919737637012274,
+            "title": "Money Pot #13790",
+            "name": "MoneyPot-13790",
+            "pattern_custom_emoji_id": 5312231485468602152,
+            "center_color": 11636862,
+            "edge_color": 8151894,
+            "pattern_color": 4862502,
+            "text_color": 15455432
+        },
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADAgtrG9ON8z4AEAIAA9ON8z4ABOFn4od1-vvgAAQeBA",
+            "small_photo_unique_id": "AgADAgtrG9ON8z4",
+            "big_file_id": "AQADAgADAgtrG9ON8z4AEAMAA9ON8z4ABOFn4od1-vvgAAQeBA",
+            "big_photo_unique_id": "AgADAgtrG9ON8z4",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.BLUE_DARK_BLUE",
+            "background_emoji_id": 5264892613630111886
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GRAY",
+            "background_emoji_id": 5434033386433830171
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": false
+    },
+    "owner": {
+        "_": "Chat",
+        "id": 765764130,
+        "type": "ChatType.PRIVATE",
+        "is_restricted": false,
+        "is_support": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "is_business_bot": false,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "username": "shellrelayer",
+        "first_name": "Gift Relayer",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "small_photo_unique_id": "AgADAQtrGyKipC0",
+            "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+            "big_photo_unique_id": "AgADAQtrGyKipC0",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GREEN",
+            "background_emoji_id": 5258165702707125574
+        },
+        "paid_message_star_count": 1
+    },
+    "transfer_price": 25,
+    "name": "InstantRamen-58813",
+    "title": "Instant Ramen",
+    "collectible_id": 58813,
+    "attributes": [
+        {
+            "_": "GiftAttribute",
+            "name": "Giant Crab",
+            "type": "GiftAttributeType.MODEL",
+            "rarity": 15,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgIAAxUAAWlhYBee3kwFIO8FJg0Q_QJ6VhOVAALZhgACNekISv1eFg2XfqO-HgQ",
+                "file_unique_id": "AgAD2YYAAjXpCEo",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 38273,
+                "date": "2025-09-09 22:12:50",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🍽",
+                "set_name": "InstantRamenSkins",
+                "custom_emoji_id": 5334770172462925529,
+                "needs_repainting": false,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAgADFQABaWFgF57eTAUg7wUmDRD9AnpWE5UAAtmGAAI16QhK_V4WDZd-o74ACAEAB20ABx4E",
+                        "file_unique_id": "AgAD2YYAAjXpCEo",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 7238
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Magic Vial",
+            "type": "GiftAttributeType.SYMBOL",
+            "rarity": 4,
+            "sticker": {
+                "_": "Sticker",
+                "file_id": "CAACAgEAAxUAAWlhYBfQ5Q9DuIvlB2zgv3zkzyN_AAIXAAP2kAlNkhdXB80XCnYeBA",
+                "file_unique_id": "AgADFwAD9pAJTQ",
+                "type": "StickerType.CUSTOM_EMOJI",
+                "file_name": "AnimatedSticker.tgs",
+                "mime_type": "application/x-tgsticker",
+                "file_size": 1415,
+                "date": "2025-02-03 16:26:49",
+                "width": 512,
+                "height": 512,
+                "is_animated": true,
+                "is_video": false,
+                "emoji": "🎁",
+                "set_name": "PatternsEmoji7",
+                "custom_emoji_id": 5551127401947201559,
+                "needs_repainting": true,
+                "thumbs": [
+                    {
+                        "_": "Thumbnail",
+                        "file_id": "AAMCAQADFQABaWFgF9DlD0O4i-UHbOC_fOTPI38AAhcAA_aQCU2SF1cHzRcKdgAIAQAHbQAHHgQ",
+                        "file_unique_id": "AgADFwAD9pAJTQ",
+                        "width": 128,
+                        "height": 128,
+                        "file_size": 2024
+                    }
+                ]
+            }
+        },
+        {
+            "_": "GiftAttribute",
+            "name": "Roman Silver",
+            "backdrop_id": 43,
+            "type": "GiftAttributeType.BACKDROP",
+            "rarity": 15,
+            "center_color": 10725557,
+            "edge_color": 8159370,
+            "pattern_color": 4146512,
+            "text_color": 14344162
+        }
+    ],
+    "number": 362552,
+    "total_upgraded_count": 457382,
+    "max_upgraded_count": 362552,
+    "value_currency": "RUB",
+    "value_amount": 39700,
+    "value_usd_amount": 453,
+    "can_upgrade": false,
+    "can_export_at": "2025-11-15 14:25:29",
+    "can_send_purchase_offer": false,
+    "is_name_hidden": true,
+    "is_saved": true,
+    "is_upgraded": true,
+    "is_refunded": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false,
+    "is_theme_available": false
+}
+==================================================
+Gift #11:
+{
+    "_": "Gift",
+    "id": 5170233102089322756,
+    "sticker": {
+        "_": "Sticker",
+        "file_id": "CAACAgIAAxUAAWlhYBez2SGrji-YUgdbDzKXgQABHAACrVQAApo_6Up7z5A0L_7Irx4E",
+        "file_unique_id": "AgADrVQAApo_6Uo",
+        "type": "StickerType.CUSTOM_EMOJI",
+        "file_name": "AnimatedSticker.tgs",
+        "mime_type": "application/x-tgsticker",
+        "file_size": 51240,
+        "date": "2024-09-07 17:07:10",
+        "width": 512,
+        "height": 512,
+        "is_animated": true,
+        "is_video": false,
+        "emoji": "🧸",
+        "set_name": "RestrictedEmoji",
+        "custom_emoji_id": 5397915559037785261,
+        "needs_repainting": false,
+        "thumbs": [
+            {
+                "_": "Thumbnail",
+                "file_id": "AAMCAgADFQABaWFgF7PZIauOL5hSB1sPMpeBAAEcAAKtVAACmj_pSnvPkDQv_sivAAgBAAdtAAceBA",
+                "file_unique_id": "AgADrVQAApo_6Uo",
+                "width": 128,
+                "height": 128,
+                "file_size": 5282
+            }
+        ]
+    },
+    "caption": "⚡ Поздравляем! Вы выиграли подарок!",
+    "message_id": 11129,
+    "date": "2025-05-26 18:12:05",
+    "from_user": {
+        "_": "User",
+        "id": 7705662880,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_bot": true,
+        "is_restricted": false,
+        "is_support": false,
+        "is_premium": false,
+        "is_contact_require_premium": false,
+        "is_close_friend": false,
+        "is_stories_hidden": false,
+        "is_stories_unavailable": true,
+        "verification_status": {
+            "_": "VerificationStatus",
+            "is_verified": false,
+            "is_scam": false,
+            "is_fake": false
+        },
+        "is_min": false,
+        "first_name": "Shell Game",
+        "username": "shellgiftbot",
+        "dc_id": 2,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADAgADvf8xG566KEgAEAIAA6AVS8sBAAN5Ss6UEIfReQAEHgQ",
+            "small_photo_unique_id": "AgADvf8xG566KEg",
+            "big_file_id": "AQADAgADvf8xG566KEgAEAMAA6AVS8sBAAN5Ss6UEIfReQAEHgQ",
+            "big_photo_unique_id": "AgADvf8xG566KEg",
+            "has_animation": false,
+            "is_personal": false
+        },
+        "added_to_attachment_menu": false,
+        "inline_need_location": false,
+        "can_be_edited": false,
+        "can_be_added_to_attachment_menu": false,
+        "can_join_groups": false,
+        "can_read_all_group_messages": false,
+        "can_connect_to_business": false,
+        "has_main_web_app": true
+    },
+    "price": 15,
+    "convert_price": 13,
+    "can_upgrade": false,
+    "is_limited": false,
+    "is_name_hidden": false,
+    "is_saved": false,
+    "is_sold_out": false,
+    "is_refunded": false,
+    "is_for_birthday": false,
+    "is_premium": false,
+    "is_pinned": false,
+    "is_upgrade_separate": false
+}
+==================================================

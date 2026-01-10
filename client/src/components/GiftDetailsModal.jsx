@@ -12,6 +12,34 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
   // Determine if this is a regular gift or NFT
   const isRegularGift = gift.is_regular_gift || false
 
+  // Withdrawal Lock Check
+  const [timeLeft, setTimeLeft] = useState('')
+  const [isLocked, setIsLocked] = useState(false)
+
+  useState(() => {
+    if (gift.unlock_at) {
+      const updateTimer = () => {
+        const now = new Date()
+        const unlockDate = new Date(gift.unlock_at)
+        const diff = unlockDate - now
+
+        if (diff > 0) {
+          setIsLocked(true)
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+          setTimeLeft(`${days}d ${hours}h`)
+        } else {
+          setIsLocked(false)
+          setTimeLeft('')
+        }
+      }
+
+      updateTimer()
+      const interval = setInterval(updateTimer, 60000) // Update every minute
+      return () => clearInterval(interval)
+    }
+  }, [gift.unlock_at])
+
   // Lottie URL for preview modal - animation for ALL gifts
   const getLottieUrl = () => {
     if (isRegularGift) {
@@ -70,6 +98,24 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
             className={`gift-modal-image-container ${isRegularGift ? 'gift-modal-regular-bg' : ''}`}
             style={!isRegularGift ? { background: '#000' } : {}}
           >
+            {isLocked && (
+              <div style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                background: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(4px)',
+                padding: '4px 8px',
+                borderRadius: 8,
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 'bold',
+                zIndex: 10,
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                {timeLeft}
+              </div>
+            )}
             <LottieAnimation
               animationData={getLottieUrl()}
               width={isRegularGift ? 200 : 240}
@@ -128,10 +174,12 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
           {isInventory ? (
             <>
               <button
-                className="gift-modal-action-btn gift-modal-btn-buy"
-                onClick={() => onWithdraw && onWithdraw(gift)}
+                className={`gift-modal-action-btn gift-modal-btn-buy ${isLocked ? 'disabled' : ''}`}
+                onClick={() => !isLocked && onWithdraw && onWithdraw(gift)}
+                disabled={isLocked}
+                style={isLocked ? { background: '#333', color: '#888', cursor: 'not-allowed' } : {}}
               >
-                Вывести
+                {isLocked ? 'Вывод заблокирован' : 'Вывести'}
               </button>
               <button className="gift-modal-action-btn gift-modal-btn-sell" onClick={handleSell}>
                 Продать
@@ -152,7 +200,7 @@ function GiftDetailsModal({ gift, onClose, onPurchase, onSell, onWithdraw, isInv
           )}
         </div>
       </div>
-    </div>
+    </div >
   )
 }
 

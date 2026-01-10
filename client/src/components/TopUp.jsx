@@ -10,12 +10,12 @@ function TopUp({ onNavigateBack }) {
   const [isEditing, setIsEditing] = useState(false)
   const [returnTab, setReturnTab] = useState('home')
   const [walletAddress, setWalletAddress] = useState(null)
-  
+
   // Определяем мобильную платформу и safe area
-  const isMobile = window.Telegram?.WebApp?.platform === 'android' || 
-                   window.Telegram?.WebApp?.platform === 'ios'
-  const safeAreaTopValue = window.Telegram?.WebApp?.safeAreaInset?.top || 
-                           window.Telegram?.WebApp?.contentSafeAreaInset?.top || 0
+  const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
+    window.Telegram?.WebApp?.platform === 'ios'
+  const safeAreaTopValue = window.Telegram?.WebApp?.safeAreaInset?.top ||
+    window.Telegram?.WebApp?.contentSafeAreaInset?.top || 0
   const topPadding = isMobile ? (safeAreaTopValue + 10) : 10
 
   const presetAmounts = [50, 100, 250, 500, 1000, 2500]
@@ -23,21 +23,21 @@ function TopUp({ onNavigateBack }) {
   useEffect(() => {
     const savedTab = localStorage.getItem('previousTab') || 'home'
     setReturnTab(savedTab)
-    
+
     // Показываем нативную кнопку "Назад" от Telegram
     const tg = window.Telegram?.WebApp
     if (tg?.BackButton) {
       tg.BackButton.show()
-      
+
       // Обработчик клика на кнопку назад
       const handleBackClick = () => {
         if (onNavigateBack) {
           onNavigateBack(savedTab)
         }
       }
-      
+
       tg.BackButton.onClick(handleBackClick)
-      
+
       // Скрываем кнопку при размонтировании компонента
       return () => {
         tg.BackButton.hide()
@@ -113,7 +113,7 @@ function TopUp({ onNavigateBack }) {
   const disconnectWallet = async () => {
     try {
       setLoading(true)
-      
+
       // Отключаем через TON Connect
       if (window.tonConnectUI) {
         await window.tonConnectUI.disconnect()
@@ -159,13 +159,13 @@ function TopUp({ onNavigateBack }) {
 
       // Подключаем кошелек
       const connectedWallet = await tonConnectUI.connectWallet()
-      
+
       if (connectedWallet) {
         const address = connectedWallet.account.address
         // Сохраняем на сервер
         await saveWalletToServer(address)
         setError('')
-        
+
         console.log('Wallet connected:', address)
       }
     } catch (err) {
@@ -258,7 +258,7 @@ function TopUp({ onNavigateBack }) {
       })
 
       const paymentData = await paymentResponse.json()
-      
+
       if (!paymentData.success) {
         setError(paymentData.message || 'Ошибка создания платежа')
         return
@@ -274,7 +274,7 @@ function TopUp({ onNavigateBack }) {
 
       // Отправляем транзакцию через TON Connect
       const tonConnectUI = window.tonConnectUI
-      
+
       if (!tonConnectUI) {
         setError('TON Connect не инициализирован')
         return
@@ -282,7 +282,7 @@ function TopUp({ onNavigateBack }) {
 
       // Отправляем через TON Connect UI (поддерживает все кошельки)
       // Без payload - backend найдет по точной сумме + времени
-      
+
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 600,
         messages: [
@@ -299,9 +299,9 @@ function TopUp({ onNavigateBack }) {
         amount: Math.floor(tonAmount * 1e9),
         note: 'Matching by amount + time (no payload)'
       })
-      
+
       const result = await tonConnectUI.sendTransaction(transaction)
-      
+
       if (result) {
         console.log('Transaction sent:', result)
         // Возвращаемся назад после отправки
@@ -312,7 +312,7 @@ function TopUp({ onNavigateBack }) {
 
     } catch (err) {
       console.error('Error creating TON transaction:', err)
-      
+
       // Показываем более детальную ошибку
       let errorMessage = 'Ошибка создания транзакции'
       if (err.message) {
@@ -324,9 +324,9 @@ function TopUp({ onNavigateBack }) {
           errorMessage = `Ошибка: ${err.message}`
         }
       }
-      
+
       setError(errorMessage)
-      
+
       // Выводим ошибку в консоль
       console.error('TON payment error:', errorMessage)
     } finally {
@@ -342,23 +342,22 @@ function TopUp({ onNavigateBack }) {
     }
   }
 
-  // Если выбрана оплата CryptoBot - показываем CryptoBotPayment компонент
-  if (paymentMethod === 'cryptobot') {
-    return <CryptoBotPayment onNavigateBack={onNavigateBack} />
-  }
+  const isCrypto = paymentMethod === 'cryptobot'
+
+  // const handleTopUp logic...
 
   return (
     <div className="topup-page">
       <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
         {/* Табы выбора метода оплаты */}
         <div className="payment-tabs">
-          <button 
+          <button
             className={`payment-tab ${paymentMethod === 'stars' ? 'active' : ''}`}
             onClick={() => setPaymentMethod('stars')}
           >
             ⭐️ Звезды
           </button>
-          <button 
+          <button
             className={`payment-tab ${paymentMethod === 'cryptobot' ? 'active' : ''}`}
             onClick={() => setPaymentMethod('cryptobot')}
           >
@@ -366,49 +365,53 @@ function TopUp({ onNavigateBack }) {
           </button>
         </div>
 
-        <div className="topup-body">
+        {paymentMethod === 'cryptobot' ? (
+          <CryptoBotPayment onNavigateBack={onNavigateBack} isEmbedded={true} />
+        ) : (
+          <div className="topup-body">
 
 
-          <div className="amount-display" onClick={() => setIsEditing(true)}>
-            {isEditing ? (
-              <input
-                type="number"
-                className="amount-input"
-                value={amount}
-                onChange={(e) => setAmount(Math.max(1, Math.min(2500, parseInt(e.target.value) || 0)))}
-                onBlur={() => setIsEditing(false)}
-                autoFocus
-                min="1"
-                max="2500"
-              />
-            ) : (
-              <div className="amount-number">{amount}</div>
-            )}
-            <div className="amount-label">Stars</div>
+            <div className="amount-display" onClick={() => setIsEditing(true)}>
+              {isEditing ? (
+                <input
+                  type="number"
+                  className="amount-input"
+                  value={amount}
+                  onChange={(e) => setAmount(Math.max(1, Math.min(2500, parseInt(e.target.value) || 0)))}
+                  onBlur={() => setIsEditing(false)}
+                  autoFocus
+                  min="1"
+                  max="2500"
+                />
+              ) : (
+                <div className="amount-number">{amount}</div>
+              )}
+              <div className="amount-label">Stars</div>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
+            <div className="preset-amounts">
+              {presetAmounts.map(preset => (
+                <button
+                  key={preset}
+                  className="preset-btn"
+                  onClick={() => setAmount(prev => Math.min(2500, prev + preset))}
+                >
+                  + {preset}
+                </button>
+              ))}
+            </div>
+
+            <button
+              className="topup-btn"
+              onClick={handleTopUp}
+              disabled={loading || (paymentMethod === 'ton' && !walletAddress)}
+            >
+              {loading ? 'Создание...' : 'Пополнить'}
+            </button>
           </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="preset-amounts">
-            {presetAmounts.map(preset => (
-              <button
-                key={preset}
-                className="preset-btn"
-                onClick={() => setAmount(prev => Math.min(2500, prev + preset))}
-              >
-                + {preset}
-              </button>
-            ))}
-          </div>
-
-          <button 
-            className="topup-btn" 
-            onClick={handleTopUp}
-            disabled={loading || (paymentMethod === 'ton' && !walletAddress)}
-          >
-            {loading ? 'Создание...' : 'Пополнить'}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   )

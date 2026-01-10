@@ -5,6 +5,7 @@ import Settings from './Settings'
 import GiftDetailsModal from './GiftDetailsModal'
 import PromoCodeModal from './PromoCodeModal'
 import ActionStatusModal from './ActionStatusModal'
+import PaymentModal from './PaymentModal'
 import starStaticIcon from '../assets/star_static.svg'
 import giftIcon from '../assets/gift.svg'
 import supIcon from '../assets/sup.svg'
@@ -79,6 +80,8 @@ function Profile() {
   const [showPromoCodeModal, setShowPromoCodeModal] = useState(false)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorData, setErrorData] = useState(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentData, setPaymentData] = useState(null)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -650,11 +653,26 @@ function Profile() {
 
         loadInventory()
         setShowGiftDetails(false)
+      } else if (
+        data.requires_payment === true ||
+        data.requires_payment === 'true' ||
+        data.requires_payment ||
+        (data.message && typeof data.message === 'string' && data.message.includes("Required fee:"))
+      ) {
+        // Show Payment Modal
+        setPaymentData({
+          ...data.payment_data,
+          originalGift: gift // Save gift object to retry withdrawal
+        })
+        setShowPaymentModal(true)
+        setShowGiftDetails(false) // Close details modal
       } else {
         setErrorData({
           gift: gift,
           error: data.error || data.message || 'Ошибка вывода NFT',
-          type: 'nft'
+          type: 'nft',
+          lottieSrc: `https://nft.fragment.com/gift/${gift.slug}.lottie.json`,
+          title: 'Ошибка отправки'
         })
         setShowErrorModal(true)
       }
@@ -774,6 +792,15 @@ function Profile() {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+    // Confirmation
+    const price = gift.sell_price || '?'
+    const confirmMessage = `Вы уверены, что хотите продать NFT ${gift.title} за ${price} ⭐?`
+    const confirmed = tg?.showConfirm
+      ? await new Promise(resolve => tg.showConfirm(confirmMessage, resolve))
+      : window.confirm(confirmMessage)
+
+    if (!confirmed) return
 
     try {
       const response = await fetch(`${apiUrl}/api/inventory/sell-nft`, {
@@ -1752,6 +1779,22 @@ function Profile() {
           isInventory={true}
         />
       )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        invoiceUrl={paymentData?.invoice_url}
+        amount={paymentData?.amount}
+        giftTitle={paymentData?.gift_title}
+        giftSlug={paymentData?.gift_slug}
+        onCheckPayment={async () => {
+          if (paymentData?.originalGift) {
+            await handleWithdrawNFT(paymentData.originalGift)
+          }
+        }}
+        lottieSrc={paymentData?.originalGift ? `https://nft.fragment.com/gift/${paymentData.originalGift.slug}.lottie.json` : null}
+      />
 
       {/* Action Status Modal for Errors */}
       <ActionStatusModal

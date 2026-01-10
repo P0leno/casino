@@ -1,0 +1,219 @@
+
+==================================================
+📥 NEW MESSAGE FROM 821315597 (Chat: 821315597)
+==================================================
+{
+    "_": "Message",
+    "id": 16356,
+    "from_user": {
+        "_": "User",
+        "id": 821315597,
+        "is_self": false,
+        "is_contact": false,
+        "is_mutual_contact": false,
+        "is_deleted": false,
+        "is_frozen": false,
+        "is_bot": false,
+        "is_verified": false,
+        "is_restricted": false,
+        "is_scam": false,
+        "is_fake": false,
+        "is_support": false,
+        "is_premium": true,
+        "is_contacts_only": false,
+        "is_bot_business": false,
+        "first_name": "xinatory",
+        "status": "UserStatus.RECENTLY",
+        "username": "xinatory",
+        "emoji_status": {
+            "_": "EmojiStatus",
+            "custom_emoji_id": 5195033767969839232
+        },
+        "dc_id": 5,
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADBwtrGw1I9DAAEAIAAw1I9DAABITDDLJw9F65AAQeBA",
+            "small_photo_unique_id": "AgADBwtrGw1I9DA",
+            "big_file_id": "AQADBQADBwtrGw1I9DAAEAMAAw1I9DAABITDDLJw9F65AAQeBA",
+            "big_photo_unique_id": "AgADBwtrGw1I9DA",
+            "has_animation": true,
+            "is_personal": false,
+            "minithumbnail": {
+                "_": "StrippedThumbnail",
+                "data": "b'\\x01\\x08\\x08\\x95\\x10\"m\\x00\\x06=q\\xc5\\x14QLg'"
+            }
+        },
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.VIOLET_DARK_VIOLET",
+            "background_emoji_id": 5424912684078348533
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GRAY_LIGHT_GRAY",
+            "background_emoji_id": 5240147597640876449
+        }
+    },
+    "date": "2026-01-01 22:02:59",
+    "chat": {
+        "_": "Chat",
+        "id": 821315597,
+        "type": "ChatType.PRIVATE",
+        "is_verified": false,
+        "is_restricted": false,
+        "is_scam": false,
+        "is_fake": false,
+        "is_support": false,
+        "username": "xinatory",
+        "first_name": "xinatory",
+        "photo": {
+            "_": "ChatPhoto",
+            "small_file_id": "AQADBQADBwtrGw1I9DAAEAIAAw1I9DAABITDDLJw9F65AAQeBA",
+            "small_photo_unique_id": "AgADBwtrGw1I9DA",
+            "big_file_id": "AQADBQADBwtrGw1I9DAAEAMAAw1I9DAABITDDLJw9F65AAQeBA",
+            "big_photo_unique_id": "AgADBwtrGw1I9DA",
+            "has_animation": true,
+            "is_personal": false,
+            "minithumbnail": {
+                "_": "StrippedThumbnail",
+                "data": "b'\\x01\\x08\\x08\\x95\\x10\"m\\x00\\x06=q\\xc5\\x14QLg'"
+            }
+        },
+        "dc_id": 5,
+        "reply_color": {
+            "_": "ChatColor",
+            "color": "ReplyColor.VIOLET_DARK_VIOLET",
+            "background_emoji_id": 5424912684078348533
+        },
+        "profile_color": {
+            "_": "ChatColor",
+            "color": "ProfileColor.GRAY_LIGHT_GRAY",
+            "background_emoji_id": 5240147597640876449
+        }
+    },
+    "service": "MessageServiceType.GIFT",
+    "gift": {
+        "_": "Gift",
+        "id": 6012655718467896001,
+        "date": "2026-01-01 22:02:59",
+        "owner": {
+            "_": "Chat",
+            "id": 765764130,
+            "type": "ChatType.PRIVATE",
+            "is_verified": false,
+            "is_restricted": false,
+            "is_scam": false,
+            "is_fake": false,
+            "is_support": false,
+            "username": "shellrelayer",
+            "first_name": "Gift Relayer",
+            "photo": {
+                "_": "ChatPhoto",
+                "small_file_id": "AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA",
+                "small_photo_unique_id": "AgADAQtrGyKipC0",
+                "big_file_id": "AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA",
+                "big_photo_unique_id": "AgADAQtrGyKipC0",
+                "has_animation": false,
+                "is_personal": false,
+                "minithumbnail": {
+                    "_": "StrippedThumbnail",
+                    "data": "b'\\x01\\x08\\x08\\xa5\\xe4\\r\\xb9\\xe6\\x8a(\\xa8\\xb9\\x17?'"
+                }
+            },
+            "dc_id": 5
+        },
+        "transfer_price": 25,
+        "upgrade_message_id": 16356,
+        "name": "InstantRamen-261958",
+        "title": "Instant Ramen",
+        "collectible_id": 261958,
+        "attributes": [
+            {
+                "_": "GiftAttribute",
+                "name": "Classic Ramen",
+                "type": "GiftAttributeType.MODEL",
+                "rarity": 25,
+                "sticker": {
+                    "_": "Sticker",
+                    "file_id": "CAACAgIAAxUAAWlWxOKT9KAbEWRipleTongotQABiwACuH0AAhLwyElamP-SSOVDZB4E",
+                    "file_unique_id": "AgADuH0AAhLwyEk",
+                    "file_name": "AnimatedSticker.tgs",
+                    "mime_type": "application/x-tgsticker",
+                    "file_size": 42789,
+                    "date": "2025-09-04 08:27:24",
+                    "width": 512,
+                    "height": 512,
+                    "is_animated": true,
+                    "is_video": false,
+                    "needs_repainting": false,
+                    "emoji": "🍽",
+                    "set_name": "InstantRamenSkins",
+                    "thumbs": [
+                        {
+                            "_": "Thumbnail",
+                            "file_id": "AAMCAgADFQABaVbE4pP0oBsRZGKmV5OieCi1AAGLAAK4fQACEvDISVqY_5JI5UNkAAgBAAdtAAceBA",
+                            "file_unique_id": "AgADuH0AAhLwyEk",
+                            "width": 128,
+                            "height": 128,
+                            "file_size": 8034
+                        }
+                    ]
+                }
+            },
+            {
+                "_": "GiftAttribute",
+                "name": "Thunderbird",
+                "type": "GiftAttributeType.SYMBOL",
+                "rarity": 5,
+                "sticker": {
+                    "_": "Sticker",
+                    "file_id": "CAACAgEAAxUAAWlWxOIn2jOQBCnPaMXJGt5NeMagAAIjAAPHK_hMQ4M0eEINPSceBA",
+                    "file_unique_id": "AgADIwADxyv4TA",
+                    "file_name": "AnimatedSticker.tgs",
+                    "mime_type": "application/x-tgsticker",
+                    "file_size": 2488,
+                    "date": "2025-02-01 20:43:39",
+                    "width": 512,
+                    "height": 512,
+                    "is_animated": true,
+                    "is_video": false,
+                    "needs_repainting": true,
+                    "emoji": "🎁",
+                    "set_name": "PatternsEmoji2",
+                    "thumbs": [
+                        {
+                            "_": "Thumbnail",
+                            "file_id": "AAMCAQADFQABaVbE4ifaM5AEKc9oxcka3k14xqAAAiMAA8cr-ExDgzR4Qg09JwAIAQAHbQAHHgQ",
+                            "file_unique_id": "AgADIwADxyv4TA",
+                            "width": 128,
+                            "height": 128,
+                            "file_size": 2946
+                        }
+                    ]
+                }
+            },
+            {
+                "_": "GiftAttribute",
+                "name": "Feldgrau",
+                "type": "GiftAttributeType.BACKDROP",
+                "rarity": 12,
+                "center_color": 9015944,
+                "edge_color": 6187875,
+                "pattern_color": 1844767,
+                "text_color": 14608865
+            }
+        ],
+        "available_amount": 359307,
+        "total_amount": 457382,
+        "can_export_at": "2026-01-15 22:02:58",
+        "is_saved": false,
+        "is_upgraded": false,
+        "is_refunded": false,
+        "is_transferred": false
+    }
+}
+
+RAW DICT:
+{'_client': <pyrogram.client.Client object at 0x1027a3e50>, 'id': 16356, 'message_thread_id': None, 'business_connection_id': None, 'from_user': pyrogram.types.User(id=821315597, is_self=False, is_contact=False, is_mutual_contact=False, is_deleted=False, is_frozen=False, is_bot=False, is_verified=False, is_restricted=False, is_scam=False, is_fake=False, is_support=False, is_premium=True, is_contacts_only=False, is_bot_business=False, first_name='xinatory', status=pyrogram.enums.UserStatus.RECENTLY, username='xinatory', emoji_status=pyrogram.types.EmojiStatus(custom_emoji_id=5195033767969839232), dc_id=5, photo=pyrogram.types.ChatPhoto(small_file_id='AQADBQADBwtrGw1I9DAAEAIAAw1I9DAABITDDLJw9F65AAQeBA', small_photo_unique_id='AgADBwtrGw1I9DA', big_file_id='AQADBQADBwtrGw1I9DAAEAMAAw1I9DAABITDDLJw9F65AAQeBA', big_photo_unique_id='AgADBwtrGw1I9DA', has_animation=True, is_personal=False, minithumbnail=pyrogram.types.StrippedThumbnail(data=b'\x01\x08\x08\x95\x10"m\x00\x06=q\xc5\x14QLg')), reply_color=pyrogram.types.ChatColor(color=pyrogram.enums.ReplyColor.VIOLET_DARK_VIOLET, background_emoji_id=5424912684078348533), profile_color=pyrogram.types.ChatColor(color=pyrogram.enums.ProfileColor.GRAY_LIGHT_GRAY, background_emoji_id=5240147597640876449)), 'sender_chat': None, 'sender_business_bot': None, 'date': datetime.datetime(2026, 1, 1, 22, 2, 59), 'chat': pyrogram.types.Chat(id=821315597, type=pyrogram.enums.ChatType.PRIVATE, is_verified=False, is_restricted=False, is_scam=False, is_fake=False, is_support=False, username='xinatory', first_name='xinatory', photo=pyrogram.types.ChatPhoto(small_file_id='AQADBQADBwtrGw1I9DAAEAIAAw1I9DAABITDDLJw9F65AAQeBA', small_photo_unique_id='AgADBwtrGw1I9DA', big_file_id='AQADBQADBwtrGw1I9DAAEAMAAw1I9DAABITDDLJw9F65AAQeBA', big_photo_unique_id='AgADBwtrGw1I9DA', has_animation=True, is_personal=False, minithumbnail=pyrogram.types.StrippedThumbnail(data=b'\x01\x08\x08\x95\x10"m\x00\x06=q\xc5\x14QLg')), dc_id=5, reply_color=pyrogram.types.ChatColor(color=pyrogram.enums.ReplyColor.VIOLET_DARK_VIOLET, background_emoji_id=5424912684078348533), profile_color=pyrogram.types.ChatColor(color=pyrogram.enums.ProfileColor.GRAY_LIGHT_GRAY, background_emoji_id=5240147597640876449)), 'forward_origin': None, 'external_reply': None, 'is_topic_message': None, 'reply_to_chat_id': None, 'reply_to_message_id': None, 'reply_to_story_id': None, 'reply_to_story_user_id': None, 'reply_to_story_chat_id': None, 'reply_to_top_message_id': None, 'reply_to_message': None, 'reply_to_story': None, 'mentioned': None, 'empty': None, 'service': pyrogram.enums.MessageServiceType.GIFT, 'scheduled': None, 'from_scheduled': None, 'media': None, 'edit_date': None, 'edit_hide': None, 'media_group_id': None, 'author_signature': None, 'has_protected_content': None, 'has_media_spoiler': None, 'text': None, 'entities': None, 'caption_entities': None, 'quote': None, 'effect_id': None, 'invert_media': None, 'audio': None, 'document': None, 'photo': None, 'paid_media': None, 'todo': None, 'sticker': None, 'animation': None, 'game': None, 'gifted_premium': None, 'giveaway': None, 'giveaway_result': None, 'boosts_applied': None, 'chat_theme_updated': None, 'chat_wallpaper_updated': None, 'contact_registered': None, 'gift_code': None, 'gift': pyrogram.types.Gift(id=6012655718467896001, date=datetime.datetime(2026, 1, 1, 22, 2, 59), owner=pyrogram.types.Chat(id=765764130, type=pyrogram.enums.ChatType.PRIVATE, is_verified=False, is_restricted=False, is_scam=False, is_fake=False, is_support=False, username='shellrelayer', first_name='Gift Relayer', photo=pyrogram.types.ChatPhoto(small_file_id='AQADBQADAQtrGyKipC0AEAIAAyKipC0ABHA1awJlqBuzAAQeBA', small_photo_unique_id='AgADAQtrGyKipC0', big_file_id='AQADBQADAQtrGyKipC0AEAMAAyKipC0ABHA1awJlqBuzAAQeBA', big_photo_unique_id='AgADAQtrGyKipC0', has_animation=False, is_personal=False, minithumbnail=pyrogram.types.StrippedThumbnail(data=b'\x01\x08\x08\xa5\xe4\r\xb9\xe6\x8a(\xa8\xb9\x17?')), dc_id=5), transfer_price=25, upgrade_message_id=16356, name='InstantRamen-261958', title='Instant Ramen', collectible_id=261958, attributes=pyrogram.types.List([pyrogram.types.GiftAttribute(name='Classic Ramen', type=pyrogram.enums.GiftAttributeType.MODEL, rarity=25, sticker=pyrogram.types.Sticker(file_id='CAACAgIAAxUAAWlWxOKT9KAbEWRipleTongotQABiwACuH0AAhLwyElamP-SSOVDZB4E', file_unique_id='AgADuH0AAhLwyEk', file_name='AnimatedSticker.tgs', mime_type='application/x-tgsticker', file_size=42789, date=datetime.datetime(2025, 9, 4, 8, 27, 24), width=512, height=512, is_animated=True, is_video=False, needs_repainting=False, emoji='🍽', set_name='InstantRamenSkins', thumbs=[pyrogram.types.Thumbnail(file_id='AAMCAgADFQABaVbE4pP0oBsRZGKmV5OieCi1AAGLAAK4fQACEvDISVqY_5JI5UNkAAgBAAdtAAceBA', file_unique_id='AgADuH0AAhLwyEk', width=128, height=128, file_size=8034)])),pyrogram.types.GiftAttribute(name='Thunderbird', type=pyrogram.enums.GiftAttributeType.SYMBOL, rarity=5, sticker=pyrogram.types.Sticker(file_id='CAACAgEAAxUAAWlWxOIn2jOQBCnPaMXJGt5NeMagAAIjAAPHK_hMQ4M0eEINPSceBA', file_unique_id='AgADIwADxyv4TA', file_name='AnimatedSticker.tgs', mime_type='application/x-tgsticker', file_size=2488, date=datetime.datetime(2025, 2, 1, 20, 43, 39), width=512, height=512, is_animated=True, is_video=False, needs_repainting=True, emoji='🎁', set_name='PatternsEmoji2', thumbs=[pyrogram.types.Thumbnail(file_id='AAMCAQADFQABaVbE4ifaM5AEKc9oxcka3k14xqAAAiMAA8cr-ExDgzR4Qg09JwAIAQAHbQAHHgQ', file_unique_id='AgADIwADxyv4TA', width=128, height=128, file_size=2946)])),pyrogram.types.GiftAttribute(name='Feldgrau', type=pyrogram.enums.GiftAttributeType.BACKDROP, rarity=12, center_color=9015944, edge_color=6187875, pattern_color=1844767, text_color=14608865)]), available_amount=359307, total_amount=457382, can_export_at=datetime.datetime(2026, 1, 15, 22, 2, 58), is_saved=False, is_upgraded=False, is_refunded=False, is_transferred=False, raw=pyrogram.raw.types.StarGiftUnique(id=6012655718467896001, title='Instant Ramen', slug='InstantRamen-261958', num=261958, attributes=pyrogram.raw.core.List([pyrogram.raw.types.StarGiftAttributeModel(name='Classic Ramen', document=pyrogram.raw.types.Document(id=5316763320210980280, access_hash=7224870327099037786, file_reference=b'\x00iV\xc4\xe2\x93\xf4\xa0\x1b\x11db\xa6W\x93\xa2x(\xb5\x00\x8b', date=1756963644, mime_type='application/x-tgsticker', size=42789, dc_id=2, attributes=pyrogram.raw.core.List([pyrogram.raw.types.DocumentAttributeImageSize(w=512, h=512),pyrogram.raw.types.DocumentAttributeCustomEmoji(alt='🍽', stickerset=pyrogram.raw.types.InputStickerSetID(id=669159254791290921, access_hash=7120988641782711378), free=False, text_color=False),pyrogram.raw.types.DocumentAttributeFilename(file_name='AnimatedSticker.tgs')]), thumbs=pyrogram.raw.core.List([pyrogram.raw.types.PhotoPathSize(type='j', bytes=b'\x17\x00\xb0\x02\xdci\x83G\x01QJ\x02fWOnVF\x06lehZzmJ\x00CGOKQTCN\x84S\x87]\x81EEMCS\x81C\x89D\x8aE\x82JCS\x83]\x86I\x91I\x97O\x87I\x85U\x93_\x82A\x8cA\x8cA\x84E\x81K\x88O\x8cF\x9aH\xa6O\x83B\x82J\x8bI\x84\x81\x88\x84\x8c\x84\x85\x80\x99X\xa2Z\x8bC\x8b\x87\x93\x88\x8b\x81\x90O\x9bR\x83\x81\x96\x82\x97\x81\x8dO\x81m\xa1s\x9dE\x9d\x96\xad\xa4\x9e\x9a\x95\x92\xaa\xb2\x8b\x90\xa0\x97\xac\xa7\x84\x86\x86\x90\x85\x98\x80\x80F\x8cD\x8c\x87\x81\x8fC\x96A\x89\x82\x81\x98\x88\x93\x8fI\xa9o\xb8S\x8b\x95X\x9db\xaaB\x82E\x9cB\x9c\x8b\x80\x99L\xa3P\x8bD\x96\x98\x8e\x9cN\x88s\x8e|\x9bH\x8aN\xb8[\x87\x07`\xafu\xa8H\x07\x86\x07B\x82D\x8aH\x8eY\x94F\x04\x99I\x05\x99'),pyrogram.raw.types.PhotoSize(type='m', w=128, h=128, size=8034)]), video_thumbs=[]), rarity_permille=25),pyrogram.raw.types.StarGiftAttributePattern(name='Thunderbird', document=pyrogram.raw.types.Document(id=5546231074805252131, access_hash=2827430720194249539, file_reference=b"\x00iV\xc4\xe2'\xda3\x90\x04)\xcfh\xc5\xc9\x1a\xdeMx\xc6\xa0", date=1738431819, mime_type='application/x-tgsticker', size=2488, dc_id=1, attributes=pyrogram.raw.core.List([pyrogram.raw.types.DocumentAttributeImageSize(w=512, h=512),pyrogram.raw.types.DocumentAttributeCustomEmoji(alt='🎁', stickerset=pyrogram.raw.types.InputStickerSetID(id=328917524764688484, access_hash=-3987967612544445976), free=False, text_color=True),pyrogram.raw.types.DocumentAttributeFilename(file_name='AnimatedSticker.tgs')]), thumbs=pyrogram.raw.core.List([pyrogram.raw.types.PhotoPathSize(type='j', bytes=b'\x19\x06\xa6\x01\xdce\x8f\x84qRqL\x80G\xa5K\xad\x81\x81YJZLBH\x8ca\x86gNOF\x07JH\x07[AA\x92Y\x94[\x81B\x94[\x95Z\x9b\x9d\xb5\xbc\x89\x07\xb8\x9bC\xb0L\x86\t^\x82B\x98X\x9bV\x89\x02\x88\x01L\xb0s\x87\x05J\x87\x90\xa3\x84\xabk\x9cSnceL\x88\x82\xb1\x80\xb2E\x82J\x80P\x80\xf3\xcc\x19\x04\x9c\x07\xdc^\x81wRG\x03iPR\\jeF\x05CHMyP|\x80\x81G\x02MH\x02QaMnKiq\x81IC]\x84Y\x91\x8a\xa0\x96\xb1\xa0\x9e\x91\x87\x08\x95\x8a\x01\xae\x90\x91E\x86\t\xa2\x89\x05\x82\x82\x8dR\x8eS\x8dP\xa4Y\xb9V\xa8\x84\xa6\xa1\xb3\xa9\x81\x81\x83B\x85C\x9fR\x96y\x9eH\x05\x82H\x87K\x8dO\x94J\xaaO\xbeX\x9cM\xb4_\x87\x08n\x80\x80\x82\x96\x82\x97\x81\x85\x86\x9d\x83\xa0M\x8fH\x01\x9fJ\x01\xa2F\x81M\x81S\x82\x80\x80I\xa4N\xb2T\xb2z\x8b\x07L\x00\x8b\x06'),pyrogram.raw.types.PhotoSize(type='m', w=128, h=128, size=2946)]), video_thumbs=[]), rarity_permille=5),pyrogram.raw.types.StarGiftAttributeBackdrop(name='Feldgrau', backdrop_id=68, center_color=9015944, edge_color=6187875, pattern_color=1844767, text_color=14608865, rarity_permille=12)]), availability_issued=359307, availability_total=457382, owner_id=pyrogram.raw.types.PeerUser(user_id=765764130))), 'screenshot_taken': None, 'paid_message_price_changed': None, 'todo_tasks_added': None, 'todo_tasks_completed': None, 'todo_tasks_incompleted': None, 'invoice': None, 'story': None, 'video': None, 'alternative_videos': None, 'voice': None, 'video_note': None, 'web_page_preview': None, 'caption': None, 'contact': None, 'location': None, 'venue': None, 'poll': None, 'dice': None, 'new_chat_members': None, 'chat_joined_by_request': None, 'left_chat_member': None, 'new_chat_title': None, 'new_chat_photo': None, 'delete_chat_photo': None, 'group_chat_created': None, 'supergroup_chat_created': None, 'channel_chat_created': None, 'migrate_to_chat_id': None, 'migrate_from_chat_id': None, 'pinned_message': None, 'game_high_score': None, 'views': None, 'forwards': None, 'via_bot': None, 'outgoing': None, 'matches': None, 'command': None, 'reply_markup': None, 'bot_allowed': None, 'chats_shared': None, 'forum_topic_created': None, 'forum_topic_closed': None, 'forum_topic_reopened': None, 'forum_topic_edited': None, 'general_topic_hidden': None, 'general_topic_unhidden': None, 'giveaway_launched': None, 'video_chat_scheduled': None, 'video_chat_started': None, 'video_chat_ended': None, 'video_chat_members_invited': None, 'web_app_data': None, 'successful_payment': None, 'payment_refunded': None, 'reactions': None, 'chat_join_type': None, 'raw': pyrogram.raw.types.MessageService(id=16356, peer_id=pyrogram.raw.types.PeerUser(user_id=821315597), date=1767294179, action=pyrogram.raw.types.MessageActionStarGiftUnique(gift=pyrogram.raw.types.StarGiftUnique(id=6012655718467896001, title='Instant Ramen', slug='InstantRamen-261958', num=261958, attributes=pyrogram.raw.core.List([pyrogram.raw.types.StarGiftAttributeModel(name='Classic Ramen', document=pyrogram.raw.types.Document(id=5316763320210980280, access_hash=7224870327099037786, file_reference=b'\x00iV\xc4\xe2\x93\xf4\xa0\x1b\x11db\xa6W\x93\xa2x(\xb5\x00\x8b', date=1756963644, mime_type='application/x-tgsticker', size=42789, dc_id=2, attributes=pyrogram.raw.core.List([pyrogram.raw.types.DocumentAttributeImageSize(w=512, h=512),pyrogram.raw.types.DocumentAttributeCustomEmoji(alt='🍽', stickerset=pyrogram.raw.types.InputStickerSetID(id=669159254791290921, access_hash=7120988641782711378), free=False, text_color=False),pyrogram.raw.types.DocumentAttributeFilename(file_name='AnimatedSticker.tgs')]), thumbs=pyrogram.raw.core.List([pyrogram.raw.types.PhotoPathSize(type='j', bytes=b'\x17\x00\xb0\x02\xdci\x83G\x01QJ\x02fWOnVF\x06lehZzmJ\x00CGOKQTCN\x84S\x87]\x81EEMCS\x81C\x89D\x8aE\x82JCS\x83]\x86I\x91I\x97O\x87I\x85U\x93_\x82A\x8cA\x8cA\x84E\x81K\x88O\x8cF\x9aH\xa6O\x83B\x82J\x8bI\x84\x81\x88\x84\x8c\x84\x85\x80\x99X\xa2Z\x8bC\x8b\x87\x93\x88\x8b\x81\x90O\x9bR\x83\x81\x96\x82\x97\x81\x8dO\x81m\xa1s\x9dE\x9d\x96\xad\xa4\x9e\x9a\x95\x92\xaa\xb2\x8b\x90\xa0\x97\xac\xa7\x84\x86\x86\x90\x85\x98\x80\x80F\x8cD\x8c\x87\x81\x8fC\x96A\x89\x82\x81\x98\x88\x93\x8fI\xa9o\xb8S\x8b\x95X\x9db\xaaB\x82E\x9cB\x9c\x8b\x80\x99L\xa3P\x8bD\x96\x98\x8e\x9cN\x88s\x8e|\x9bH\x8aN\xb8[\x87\x07`\xafu\xa8H\x07\x86\x07B\x82D\x8aH\x8eY\x94F\x04\x99I\x05\x99'),pyrogram.raw.types.PhotoSize(type='m', w=128, h=128, size=8034)]), video_thumbs=[]), rarity_permille=25),pyrogram.raw.types.StarGiftAttributePattern(name='Thunderbird', document=pyrogram.raw.types.Document(id=5546231074805252131, access_hash=2827430720194249539, file_reference=b"\x00iV\xc4\xe2'\xda3\x90\x04)\xcfh\xc5\xc9\x1a\xdeMx\xc6\xa0", date=1738431819, mime_type='application/x-tgsticker', size=2488, dc_id=1, attributes=pyrogram.raw.core.List([pyrogram.raw.types.DocumentAttributeImageSize(w=512, h=512),pyrogram.raw.types.DocumentAttributeCustomEmoji(alt='🎁', stickerset=pyrogram.raw.types.InputStickerSetID(id=328917524764688484, access_hash=-3987967612544445976), free=False, text_color=True),pyrogram.raw.types.DocumentAttributeFilename(file_name='AnimatedSticker.tgs')]), thumbs=pyrogram.raw.core.List([pyrogram.raw.types.PhotoPathSize(type='j', bytes=b'\x19\x06\xa6\x01\xdce\x8f\x84qRqL\x80G\xa5K\xad\x81\x81YJZLBH\x8ca\x86gNOF\x07JH\x07[AA\x92Y\x94[\x81B\x94[\x95Z\x9b\x9d\xb5\xbc\x89\x07\xb8\x9bC\xb0L\x86\t^\x82B\x98X\x9bV\x89\x02\x88\x01L\xb0s\x87\x05J\x87\x90\xa3\x84\xabk\x9cSnceL\x88\x82\xb1\x80\xb2E\x82J\x80P\x80\xf3\xcc\x19\x04\x9c\x07\xdc^\x81wRG\x03iPR\\jeF\x05CHMyP|\x80\x81G\x02MH\x02QaMnKiq\x81IC]\x84Y\x91\x8a\xa0\x96\xb1\xa0\x9e\x91\x87\x08\x95\x8a\x01\xae\x90\x91E\x86\t\xa2\x89\x05\x82\x82\x8dR\x8eS\x8dP\xa4Y\xb9V\xa8\x84\xa6\xa1\xb3\xa9\x81\x81\x83B\x85C\x9fR\x96y\x9eH\x05\x82H\x87K\x8dO\x94J\xaaO\xbeX\x9cM\xb4_\x87\x08n\x80\x80\x82\x96\x82\x97\x81\x85\x86\x9d\x83\xa0M\x8fH\x01\x9fJ\x01\xa2F\x81M\x81S\x82\x80\x80I\xa4N\xb2T\xb2z\x8b\x07L\x00\x8b\x06'),pyrogram.raw.types.PhotoSize(type='m', w=128, h=128, size=2946)]), video_thumbs=[]), rarity_permille=5),pyrogram.raw.types.StarGiftAttributeBackdrop(name='Feldgrau', backdrop_id=68, center_color=9015944, edge_color=6187875, pattern_color=1844767, text_color=14608865, rarity_permille=12)]), availability_issued=359307, availability_total=457382, owner_id=pyrogram.raw.types.PeerUser(user_id=765764130)), upgrade=False, transferred=False, saved=False, refunded=False, can_export_at=1768503778, transfer_stars=25, can_transfer_at=1764090195, can_resell_at=1764090195), out=False, mentioned=False, media_unread=False, reactions_are_possible=True, silent=False, post=False, legacy=False, reply_to=pyrogram.raw.types.MessageReplyHeader(reply_to_scheduled=False, forum_topic=False, quote=False, reply_to_msg_id=16355, quote_entities=[]))}
+--------------------------------------------------
+

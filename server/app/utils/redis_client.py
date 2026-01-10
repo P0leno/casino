@@ -194,8 +194,86 @@ class RedisCache:
                 "total_commands": info.get("total_commands_processed"),
                 "keys": redis_client.dbsize()
             }
+
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+    @staticmethod
+    def hset(key: str, field: str, value: Any) -> bool:
+        """Сохранить поле в хэше"""
+        if not redis_client:
+            return False
+        
+        try:
+            redis_client.hset(key, field, json.dumps(value, ensure_ascii=False))
+            # logger.debug(f"[REDIS] HSET: {key} -> {field}") # Too noisy
+            return True
+        except Exception as e:
+            logger.warning(f"[REDIS] HSet error for {key}.{field}: {e}")
+            return False
+
+    @staticmethod
+    def hget(key: str, field: str) -> Optional[Any]:
+        """Получить поле из хэша"""
+        if not redis_client:
+            return None
+        
+        try:
+            value = redis_client.hget(key, field)
+            return json.loads(value) if value else None
+        except Exception as e:
+            logger.warning(f"[REDIS] HGet error for {key}.{field}: {e}")
+            return None
+
+    @staticmethod
+    def hvals(key: str) -> list:
+        """Получить все значения из хэша"""
+        if not redis_client:
+            return []
+        
+        try:
+            values = redis_client.hvals(key)
+            return [json.loads(v) for v in values] if values else []
+        except Exception as e:
+            logger.warning(f"[REDIS] HVals error for {key}: {e}")
+            return []
+
+    @staticmethod
+    def hdel(key: str, field: str) -> bool:
+        """Удалить поле из хэша"""
+        if not redis_client:
+            return False
+        
+        try:
+            redis_client.hdel(key, field)
+            return True
+        except Exception as e:
+            logger.warning(f"[REDIS] HDel error for {key}.{field}: {e}")
+            return False
+
+    @staticmethod
+    def hlen(key: str) -> int:
+        """Количество полей в хэше"""
+        if not redis_client:
+            return 0
+        
+        try:
+            return redis_client.hlen(key)
+        except Exception as e:
+            logger.warning(f"[REDIS] HLen error for {key}: {e}")
+            return 0
+    
+    @staticmethod
+    def expire(key: str, ttl: int) -> bool:
+        """Установить TTL для ключа"""
+        if not redis_client:
+            return False
+        try:
+            redis_client.expire(key, ttl)
+            return True
+        except Exception as e:
+            logger.warning(f"[REDIS] Expire error for {key}: {e}")
+            return False
 
 
 # Экспортируем для удобства

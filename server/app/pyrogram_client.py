@@ -109,6 +109,38 @@ async def reconnect_pyrogram():
     return None
 
 
+
 def get_pyrogram():
     """Возвращает глобальный Pyrogram клиент"""
     return pyrogram_app
+
+import asyncio
+from random import uniform
+
+async def keep_alive_loop():
+    """
+    Фоновая задача для поддержания соединения активным.
+    Отправляет запросы каждые 50-70 секунд (ping).
+    """
+    global pyrogram_app
+    print("✅ Pyrogram Keep-Alive Loop запущен")
+    
+    while True:
+        try:
+            # Случайная задержка чтобы не спамить ровно
+            delay = uniform(50, 70)
+            await asyncio.sleep(delay)
+            
+            if pyrogram_app and pyrogram_app.is_connected:
+                # Просто запрашиваем свой профиль как пинг
+                me = await pyrogram_app.get_me()
+                # print(f"[Keep-Alive] Ping success: {me.username}")
+            else:
+                print("⚠️ [Keep-Alive] Pyrogram не подключен, пытаюсь переподключить...")
+                await reconnect_pyrogram()
+                
+        except Exception as e:
+            print(f"⚠️ [Keep-Alive] Ошибка пинга: {e}")
+            # Не переподключаем сразу, может быть временная сетевая ошибка
+            await asyncio.sleep(5)
+

@@ -163,25 +163,18 @@ async def parse_gifts(send_log=True):
             await send_log_to_channel("⚠️ <b>Gift Parser</b>\nНет credentials для парсинга подарков")
         return
     
-    # Импортируем pyrogram только здесь, чтобы избежать конфликта с event loop при импорте модуля
-    try:
-        from pyrogram import Client
-    except Exception as e:
-        print(f"⚠️  Не удалось импортировать pyrogram: {e}")
+    # Use global Pyrogram client to avoid session conflicts
+    from app.pyrogram_client import get_pyrogram
+    app = get_pyrogram()
+
+    if not app or not app.is_connected:
+        print("⚠️  Global Pyrogram Client is not connected. Skipping gift parse.")
+        if send_log:
+             await send_log_to_channel("⚠️ <b>Gift Parser</b>\nGlobal Pyrogram Client disconnected")
         return
-    
-    # Используем no_updates=True для избежания ошибок с закрытой БД
-    app = Client(
-        "gift_parser",
-        api_id=int(API_ID),
-        api_hash=API_HASH,
-        session_string=SESSION_STRING,
-        in_memory=True,
-        no_updates=True  # Отключаем обновления для избежания ошибок с БД
-    )
-    
+
     try:
-        await app.start()
+        # app is already started
         me = await app.get_me()
         
         conn = get_db_connection()
@@ -190,6 +183,9 @@ async def parse_gifts(send_log=True):
         gifts_count = 0
         skipped_count = 0
         
+        # Track seen gift IDs to identify deletions
+        seen_gift_ids = set()
+
         try:
             # Получаем подарки с аккаунта (с полной информацией: title, attributes, transfer_price)
             # exclude_unlimited=True - только LIMITED подарки
@@ -206,9 +202,11 @@ async def parse_gifts(send_log=True):
                     continue
                 
                 gifts_count += 1
+                gift_id_str = str(gift.id)
+                seen_gift_ids.add(gift_id_str)
             
                 # Извлекаем данные
-                gift_id = str(gift.id)
+                gift_id = gift_id_str
                 slug = getattr(gift, 'name', None)  # HappyBrownie-95259
                 title = gift.title
                 
@@ -233,7 +231,7 @@ async def parse_gifts(send_log=True):
                 rarity_symbol = attrs['rarity_symbol']
                 rarity_backdrop = attrs['rarity_backdrop']
             
-                available_amount = getattr(gift, 'available_amount', 0)
+                available_amount = getattr(gift, 'available_amount', 1)  # Default to 1 for owned unique gifts
                 total_amount = getattr(gift, 'total_amount', 0)
                 # Цена теперь обновляется через price_updater.py (каждый час с Tonnel)
             
@@ -242,6 +240,8 @@ async def parse_gifts(send_log=True):
                 cursor.execute("SELECT id, price FROM shop_gifts WHERE gift_id = ?", (gift_id,))
                 existing = cursor.fetchone()
             
+                msg_id = getattr(gift, 'message_id', None)
+                
                 if existing:
                     # Обновляем все кроме price
                     cursor.execute("""
@@ -251,14 +251,14 @@ async def parse_gifts(send_log=True):
                             center_color = ?, edge_color = ?, pattern_color = ?, text_color = ?,
                             available_amount = ?, total_amount = ?, transfer_price = ?,
                             rarity_model = ?, rarity_symbol = ?, rarity_backdrop = ?,
-                            updated_at = CURRENT_TIMESTAMP
+                            message_id = ?, updated_at = CURRENT_TIMESTAMP
                         WHERE gift_id = ?
                     """, (
                         slug, title, model_name, model_path, symbol_name, backdrop_name,
                         center_color, edge_color, pattern_color, text_color,
                         available_amount, total_amount, transfer_price,
                         rarity_model, rarity_symbol, rarity_backdrop,
-                        gift_id
+                        msg_id, gift_id
                     ))
                 else:
                     # Новый подарок - вставляем с price = 0 (будет обновлен price_updater)
@@ -267,36 +267,56 @@ async def parse_gifts(send_log=True):
                         (gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
                          center_color, edge_color, pattern_color, text_color,
                          available_amount, total_amount, price, transfer_price,
-                         rarity_model, rarity_symbol, rarity_backdrop, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                         rarity_model, rarity_symbol, rarity_backdrop, message_id, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, CURRENT_TIMESTAMP)
                     """, (
                         gift_id, slug, title, model_name, model_path, symbol_name, backdrop_name,
                         center_color, edge_color, pattern_color, text_color,
                         available_amount, total_amount, transfer_price,
-                        rarity_model, rarity_symbol, rarity_backdrop
+                        rarity_model, rarity_symbol, rarity_backdrop, msg_id
                     ))
         except (AttributeError, ConnectionError) as e:
             # Pyrogram connection lost during iteration
             print(f"⚠️  Pyrogram connection lost: {e}")
         
+        # --- DELETION LOGIC ---
+        # Удаляем подарки, которые есть в БД, но не найдены в Pyrogram (были проданы/переданы)
+        deleted_count = 0
+        if seen_gift_ids:
+            # Получаем все gift_id из БД
+            cursor.execute("SELECT gift_id FROM shop_gifts")
+            db_gift_ids = {row[0] for row in cursor.fetchall()}
+            
+            # Находим те, которых нет в текущем списке
+            missing_ids = db_gift_ids - seen_gift_ids
+            
+            if missing_ids:
+                print(f"🗑 Найдено {len(missing_ids)} удаленных подарков. Удаляем из БД...")
+                for missing_id in missing_ids:
+                    cursor.execute("DELETE FROM shop_gifts WHERE gift_id = ?", (missing_id,))
+                    deleted_count += 1
+        # -----------------------
+
         conn.commit()
         conn.close()
         
         total_received = gifts_count + skipped_count
-        print(f"📊 Получено из Telegram: {total_received}, обработано: {gifts_count}, пропущено: {skipped_count}")
+        print(f"📊 Получено: {total_received}, обработано: {gifts_count}, пропущено: {skipped_count}, удалено: {deleted_count}")
         
-        if gifts_count > 0:
+        if gifts_count > 0 or deleted_count > 0:
             if send_log:
-                print(f"✅ Обновлено подарков в магазине: {gifts_count}")
+                print(f"✅ Обновлено: {gifts_count}, Удалено: {deleted_count}")
                 if skipped_count > 0:
-                    print(f"⏭️  Пропущено подарков без transfer_price: {skipped_count}")
+                    print(f"⏭️  Пропущено (без transfer_price): {skipped_count}")
                 
-                message = f"✅ <b>Gift Parser</b>\nОбновлено подарков: <b>{gifts_count}</b>"
+                message = f"✅ <b>Gift Parser</b>\nОбновлено: <b>{gifts_count}</b>\nУдалено: <b>{deleted_count}</b>"
                 if skipped_count > 0:
-                    message += f"\nПропущено: {skipped_count} шт (без transfer_price + без backdrop)"
+                    message += f"\nПропущено: {skipped_count} шт"
                 await send_log_to_channel_with_button(message)
             else:
                 # При старте - краткий лог
+                if deleted_count > 0:
+                    print(f"🗑 Удалено устаревших подарков: {deleted_count}")
                 if skipped_count > 0:
                     print(f"⏭️  Пропущено подарков без transfer_price: {skipped_count}")
         else:
@@ -318,11 +338,7 @@ async def parse_gifts(send_log=True):
         return {"updated": 0, "skipped": 0}
     
     finally:
-        try:
-            if app.is_connected:
-                await app.stop()
-        except Exception as e:
-            print(f"⚠️  Ошибка при остановке Pyrogram: {e}")
+        pass # Do not stop the global client!
 
 async def force_parse_and_sync(search_tonnel_resale_func, update_gift_ton_price_func):
     """Обновление цен через Tonnel для существующих подарков"""
@@ -433,6 +449,9 @@ async def gift_parser_loop():
     """Фоновая задача - полная синхронизация раз в час (parse_gifts + Tonnel)"""
     global last_full_sync_time
     
+    # Lazy import to avoid circular dependencies
+    from app.tasks.price_updater import search_tonnel_resale, update_gift_ton_price
+
     # Инициализируем таблицу (если нужно)
     init_gifts_table()
     
@@ -441,9 +460,9 @@ async def gift_parser_loop():
     
     print("[GIFT_PARSER] 🔄 Цикл запущен: полная синхронизация каждый час")
     
-    # Первая синхронизация через 1 минуту после старта
-    print("[GIFT_PARSER] ⏳ Первая синхронизация через 1 минуту...")
-    await asyncio.sleep(60)  # 1 минута
+    # Первая синхронизация через 2 минуты после старта (чтобы дать серверу прогрузиться)
+    print("[GIFT_PARSER] ⏳ Первая синхронизация через 2 минуты...")
+    await asyncio.sleep(120)  # 2 минуты
     
     try:
         await full_sync_with_prices()

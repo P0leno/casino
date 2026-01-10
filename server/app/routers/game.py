@@ -4,16 +4,21 @@ from urllib.parse import parse_qs
 import json
 from app.utils.database import get_db_connection, DB_PATH
 import asyncio
+import sqlite3
 from datetime import datetime, timedelta
 import random
+import time
 from app.config import BOT_TOKEN, DB_PATH, LOG_BOT_TOKEN, LOGS_ID
+from app.utils.redis_client import redis_client
 
 from app.utils.validate import validate_init_data
 from app.utils.rate_limit import spin_rate_limiter
 from app.utils.balance import get_user_balance
 from app.utils.redis_models import RedisUser, RedisSettings
+from aiogram.types import LabeledPrice
+import uuid
 from app.pyrogram_client import get_pyrogram
-from app.utils.gift_sender import send_gift_async
+from app.utils.gift_sender import send_gift_async, transfer_nft_gift_async
 from app.utils.error_logger import send_error_log
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -40,7 +45,6 @@ class ManualWithdrawRequest(BaseModel):
 
 class WithdrawNFTGiftRequest(BaseModel):
     initData: str
-    slug: str
     slug: str
     messageId: int | None = None
 
@@ -814,12 +818,34 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         
         inventory = json.loads(result[0]) if result[0] else []
         
-        # Проверяем что подарок есть в инвентаре (игнорируем index, ищем по имени)
+        # Проверяем что подарок есть в инвентаре (поддержка mixed format)
         requested_gift = request.giftName
-        if requested_gift not in inventory:
+        found_item = None
+        found_idx = -1
+        
+        for i, item in enumerate(inventory):
+            if isinstance(item, dict):
+                if item.get('slug') == requested_gift:
+                    found_item = item
+                    found_idx = i
+                    break
+            elif item == requested_gift:
+                found_item = {"slug": item, "unlock_at": None}
+                found_idx = i
+                break
+                
+        if found_idx == -1:
             print(f"❌ Gift not in inventory: '{requested_gift}' not in {inventory}")
             conn.close()
             return {"success": False, "message": "Gift not found in inventory"}
+            
+        # Check lock
+        if found_item.get('unlock_at'):
+            from datetime import datetime
+            unlock_at = datetime.fromisoformat(found_item['unlock_at'])
+            if datetime.now() < unlock_at:
+                conn.close()
+                return {"success": False, "message": "Подарок временно заблокирован"}
         
         # Получаем gift_id
         cursor.execute("SELECT gift_id FROM gift_prices WHERE gift_name = ?", (request.giftName,))
@@ -831,8 +857,8 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         
         gift_id = gift_result[0]
         
-        # Удаляем подарок из инвентаря по имени (первое вхождение)
-        inventory.remove(requested_gift)
+        # Удаляем подарок из инвентаря (используем найденный индекс)
+        inventory.pop(found_idx)
         
         cursor.execute(
             "UPDATE users SET inventory = ? WHERE id = ?",
@@ -847,8 +873,8 @@ async def withdraw_gift(request: WithdrawGiftRequest):
         send_success, error_msg, is_peer_invalid = await send_gift_async(user_id, gift_id, pyrogram_app)
         
         if not send_success:
-            # Возвращаем подарок обратно в инвентарь
-            inventory.append(requested_gift)
+            # Возвращаем подарок обратно в инвентарь (тот же объект)
+            inventory.append(found_item)
             cursor.execute(
                 "UPDATE users SET inventory = ? WHERE id = ?",
                 (json.dumps(inventory), user_id)
@@ -1128,9 +1154,6 @@ async def withdraw_nft_gift(request: WithdrawNFTGiftRequest):
     """Вывод NFT подарка через Client.transfer_gift()"""
     
     # Check settings
-    if not RedisSettings.get_bool('withdraw_nft_enabled', True):
-         return {"success": False, "message": "Авто-выдача временно отключена"}
-
     is_valid = validate_init_data(request.initData, BOT_TOKEN)
     
     if not is_valid:
@@ -1179,74 +1202,173 @@ async def withdraw_nft_gift(request: WithdrawNFTGiftRequest):
                      found_message_id = getattr(gift, 'message_id', None)
                      break
             
+            
             if not gift_found or not found_message_id:
-                # Если не нашли автоматически - отправляем на ручной вывод
-                # Но вернем ошибку, чтобы фронт показал модалку
                 return {"success": False, "message": "Подарок не найден в хранилище бота", "error": f"Gift {request.slug} not found in bot inventory"}
             
+            # === ПРОВЕРКА КОМИССИИ НА ПЕРЕДАЧУ ===
+            transfer_price = getattr(gift, 'transfer_price', 0)
+            invoice_id_to_consume = None
+            
+            if transfer_price > 0:
+                # Проверяем, оплачена ли комиссия
+                conn = get_db_connection()
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    "SELECT id, status FROM nft_invoices WHERE user_id = ? AND slug = ? AND status = 'paid' ORDER BY created_at DESC LIMIT 1",
+                    (user_id, request.slug)
+                )
+                payment_record = cursor.fetchone()
+                if payment_record:
+                    invoice_id_to_consume = payment_record['id']
+                
+                if not payment_record:
+                    # === RATE LIMIT CHECK (5 requests / 8 minutes) ===
+                    rate_key = f"nft_invoice_limit:{user_id}"
+                    current_time = int(time.time())
+                    period = 8 * 60 # 8 minutes
+                    
+                    # Remove old timestamps
+                    redis_client.zremrangebyscore(rate_key, 0, current_time - period)
+                    
+                    # Check count
+                    count = redis_client.zcard(rate_key)
+                    if count >= 5:
+                         conn.close()
+                         return {
+                             "success": False, 
+                             "message": "Слишком много попыток создания счета. Подождите 8 минут."
+                         }
+
+                    # Add current attempt
+                    redis_client.zadd(rate_key, {str(current_time): current_time})
+                    redis_client.expire(rate_key, period)
+                    
+                    # Комиссия не оплачена. Генерируем ссылку на оплату.
+                    # from app.config import BOT_TOKEN (Already imported globally)
+                    temp_bot = Bot(token=BOT_TOKEN)
+                    
+                    try:
+                        # Проверяем старый инвойс чтобы не плодить (опционально, но лучше создать новый для простоты)
+                        invoice_id = str(uuid.uuid4())
+                        
+                        invoice_link = await temp_bot.create_invoice_link(
+                            title=f"Fee: {gift_title}",
+                            description=f"Transfer fee for NFT {gift_title}",
+                            payload=json.dumps({
+                                "t": "nft",
+                                "i": invoice_id
+                            }),
+                            provider_token="", # Empty for Stars
+                            currency="XTR",
+                            prices=[LabeledPrice(label="Transfer Fee", amount=transfer_price)]
+                        )
+                        
+                        # Сохраняем инвойс в БД
+                        cursor.execute(
+                            "INSERT INTO nft_invoices (id, user_id, slug, amount, status) VALUES (?, ?, ?, ?, 'pending')",
+                            (invoice_id, user_id, request.slug, transfer_price)
+                        )
+                        conn.commit()
+                        conn.close()
+                        await temp_bot.session.close()
+                        
+                        return {
+                            "success": False,
+                            "requires_payment": True,
+                            "message": f"Required fee: {transfer_price} Stars",
+                            "payment_data": {
+                                "amount": transfer_price,
+                                "currency": "XTR",
+                                "invoice_url": invoice_link,
+                                "gift_title": gift_title,
+                                "gift_slug": request.slug # To ensure match
+                            }
+                        }
+                        
+                    except Exception as inv_error:
+                        conn.close()
+                        await temp_bot.session.close()
+                        print(f"Error creating invoice: {inv_error}")
+                        return {"success": False, "message": "Ошибка создания инвойса Stars", "error": str(inv_error)}
+                
+                conn.close()
+                # Если оплачено - продолжаем вывод
+        
         except Exception as e:
             print(f"Error checking bot gifts: {e}")
             return {"success": False, "message": "Ошибка проверки хранилища", "error": str(e)}
         
+        # Check settings BEFORE transfer but AFTER payment
+        if not RedisSettings.get_bool('withdraw_nft_enabled', True):
+             return {"success": False, "message": "Авто-выдача временно отключена"}
+
         # Пробуем отправить подарок пользователю
-        try:
-            await pyrogram_app.transfer_gift(
-                message_id=found_message_id,
-                to_chat_id=user_id
-            )
-            
-            return {"success": True, "message": "Подарок успешно отправлен!"}
-            
-        except Exception as transfer_error:
-            error_msg = str(transfer_error)
-            print(f"Error transferring NFT gift: {error_msg}")
-            import traceback
-            traceback.print_exc()
-            
-            # Отправляем запрос администрации на ручную выдачу
-            if LOG_BOT_TOKEN and LOGS_ID:
+        success, error_msg, is_peer_invalid = await transfer_nft_gift_async(user_id, found_message_id, pyrogram_app)
+        
+        if success:
+            # Если был инвойс - помечаем как использованный
+            if invoice_id_to_consume:
                 try:
-                    log_bot = Bot(token=LOG_BOT_TOKEN)
-                    
-                    user_link = f"@{username}" if username else first_name
-                    user_mention = f'<a href="tg://user?id={user_id}">{user_link}</a>'
-                    
-                    text = f"""🎁 <b>Ошибка вывода NFT подарка</b>
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE nft_invoices SET status = 'completed' WHERE id = ?", (invoice_id_to_consume,))
+                    conn.commit()
+                    conn.close()
+                except Exception as e:
+                    print(f"Error marking invoice as completed: {e}")
 
-👤 Пользователь: {user_mention}
-🆔 ID: <code>{user_id}</code>
-🎁 Подарок: {gift_title}
-🔖 Slug: <code>{request.slug}</code>
-💬 Message ID: <code>{request.messageId}</code>
-
-❌ Ошибка: <code>{error_msg[:200]}</code>
-
-<i>Требуется ручная отправка подарка пользователю</i>"""
-                    
-                    await log_bot.send_message(LOGS_ID, text, parse_mode="HTML")
-                    await log_bot.session.close()
-                    
-                    # Уведомляем пользователя
-                    try:
-                        main_bot = Bot(token=BOT_TOKEN)
-                        await main_bot.send_message(
-                            user_id, 
-                            "⚠️ Возникла ошибка при автоматической отправке подарка.\n\n"
-                            "Ваш запрос отправлен администрации. Подарок будет отправлен вручную в течение 24 часов."
-                        )
-                        await main_bot.session.close()
-                    except Exception as notify_error:
-                        print(f"Failed to send notification to user {user_id}: {notify_error}")
-                    
-                except Exception as log_error:
-                    print(f"Failed to send log message: {log_error}")
+            # Also update local inventory (optional but good for consistency, though frontend reloads)
+            # Remove from DB inventory? 
+            # The game.py doesn't seem to update user inventory in DB?
+            # It should! Otherwise user still has it in list?
+            # Wait, existing code didn't show inventory update.
+            # Assuming 'transfer_gift' moves it?
+            # Telegram moves it from bot to user.
+            # But our DB still thinks user has it?
+            # We must remove it from our DB users.inventory!
             
-            return {
-                "success": False, 
-                "message": "Не удалось автоматически отправить подарок. Запрос отправлен администрации.",
-                "error": error_msg,
-                "needsManual": True
-            }
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
+                res = cursor.fetchone()
+                if res:
+                   inv = json.loads(res[0] or "[]")
+                   if request.slug in inv:
+                       inv.remove(request.slug)
+                       cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inv), user_id))
+                       conn.commit()
+                conn.close()
+                RedisUser.invalidate(user_id)
+            except Exception as e:
+                print(f"Error updating inventory after transfer: {e}")
+
+            return {"success": True, "message": "Подарок успешно отправлен!"}
+
+        else:
+             # Error handling
+             print(f"Error transferring NFT gift: {error_msg}")
+             
+             can_retry = True
+             need_admin = True # Ask for admin manual
+             
+             final_error = f"Ошибка передачи: {error_msg}"
+             if is_peer_invalid:
+                 final_error = "Бот не может найти вас. Напишите любое сообщение боту и попробуйте снова."
+             elif "balance" in error_msg.lower():
+                 can_retry = False
+                 final_error = "Техническая ошибка (баланс)."
+             
+             return {
+                 "success": False,
+                 "error": final_error,
+                 "canRetry": can_retry,
+                 "needAdmin": need_admin
+             }                
+
             
     except Exception as e:
         print(f"Error in withdraw_nft_gift: {e}")

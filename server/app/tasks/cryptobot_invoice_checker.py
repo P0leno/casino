@@ -84,74 +84,86 @@ async def check_pending_invoices():
         
         print(f"🔍 Checking {len(pending)} pending invoices...")
         
-        for db_id, user_id, invoice_id, amount_usdt, amount_stars_expected, expires_at in pending:
-            try:
-                # Проверяем истек ли срок
-                expires_dt = datetime.fromisoformat(expires_at)
-                if datetime.now() > expires_dt:
-                    print(f"⏰ Invoice {invoice_id} expired - deleting from DB")
-                    cursor.execute(
-                        "DELETE FROM cryptobot_invoices WHERE id = ?",
-                        (db_id,)
-                    )
-                    conn.commit()
-                    continue
+        # Init crypto client once for the loop
+        crypto = get_crypto()
+        try:
+            for db_id, user_id, invoice_id, amount_usdt, amount_stars_expected, expires_at in pending:
+                try:
+                    # Проверяем истек ли срок
+                    expires_dt = datetime.fromisoformat(expires_at)
+                    if datetime.now() > expires_dt:
+                        print(f"⏰ Invoice {invoice_id} expired - deleting from DB")
+                        cursor.execute(
+                            "DELETE FROM cryptobot_invoices WHERE id = ?",
+                            (db_id,)
+                        )
+                        conn.commit()
+                        continue
+                    
+                    # Получаем инвойс через API
+                    # crypto client is reused
+                    invoices = await crypto.get_invoices(invoice_ids=[invoice_id])
+                    
+                    # invoices это список, не объект с .items
+                    if not invoices or len(invoices) == 0:
+                        print(f"⚠️ Invoice {invoice_id} not found")
+                        continue
+                    
+                    invoice = invoices[0]
                 
-                # Получаем инвойс через API
-                crypto = get_crypto()
-                invoices = await crypto.get_invoices(invoice_ids=[invoice_id])
+                    # Проверяем статус
+                    if invoice.status == "paid":
+                        print(f"💰 Invoice {invoice_id} is PAID!")
+                        
+                        # Рассчитываем Stars по фактической сумме
+                        paid_amount = float(invoice.paid_amount) if invoice.paid_amount else amount_usdt
+                        stars_to_credit = calculate_stars_from_usdt(paid_amount)
+                        
+                        # Обновляем инвойс
+                        cursor.execute(
+                            """UPDATE cryptobot_invoices 
+                               SET status = 'paid', 
+                                   confirmed_at = ?,
+                                   amount_stars_actual = ?
+                               WHERE id = ?""",
+                            (datetime.now().isoformat(), stars_to_credit, db_id)
+                        )
+                        
+                        # Начисляем Stars пользователю
+                        cursor.execute(
+                            "UPDATE users SET balance = balance + ? WHERE id = ?",
+                            (stars_to_credit, user_id)
+                        )
+                        
+                        # Log to payments history
+                        cursor.execute("""
+                            INSERT INTO payments (user_id, amount, method, is_promo, type, date)
+                            VALUES (?, ?, ?, 0, 'income', ?)
+                        """, (user_id, stars_to_credit, 'cryptobot', datetime.now().isoformat()))
+                        
+                        conn.commit()
+                        
+                        print(f"✅ Payment confirmed! User {user_id} received {stars_to_credit} Stars ({paid_amount} USDT)")
+                        
+                        # Отправляем уведомление
+                        await notify_user(user_id, stars_to_credit, paid_amount)
+                        
+                    elif invoice.status in ["expired", "cancelled"]:
+                        print(f"❌ Invoice {invoice_id} status: {invoice.status} - deleting from DB")
+                        cursor.execute(
+                            "DELETE FROM cryptobot_invoices WHERE id = ?",
+                            (db_id,)
+                        )
+                        conn.commit()
                 
-                # invoices это список, не объект с .items
-                if not invoices or len(invoices) == 0:
-                    print(f"⚠️ Invoice {invoice_id} not found")
-                    continue
-                
-                invoice = invoices[0]
-                
-                # Проверяем статус
-                if invoice.status == "paid":
-                    print(f"💰 Invoice {invoice_id} is PAID!")
-                    
-                    # Рассчитываем Stars по фактической сумме
-                    paid_amount = float(invoice.paid_amount) if invoice.paid_amount else amount_usdt
-                    stars_to_credit = calculate_stars_from_usdt(paid_amount)
-                    
-                    # Обновляем инвойс
-                    cursor.execute(
-                        """UPDATE cryptobot_invoices 
-                           SET status = 'paid', 
-                               confirmed_at = ?,
-                               amount_stars_actual = ?
-                           WHERE id = ?""",
-                        (datetime.now().isoformat(), stars_to_credit, db_id)
-                    )
-                    
-                    # Начисляем Stars пользователю
-                    cursor.execute(
-                        "UPDATE users SET balance = balance + ? WHERE id = ?",
-                        (stars_to_credit, user_id)
-                    )
-                    
-                    conn.commit()
-                    
-                    print(f"✅ Payment confirmed! User {user_id} received {stars_to_credit} Stars ({paid_amount} USDT)")
-                    
-                    # Отправляем уведомление
-                    await notify_user(user_id, stars_to_credit, paid_amount)
-                    
-                elif invoice.status in ["expired", "cancelled"]:
-                    print(f"❌ Invoice {invoice_id} status: {invoice.status} - deleting from DB")
-                    cursor.execute(
-                        "DELETE FROM cryptobot_invoices WHERE id = ?",
-                        (db_id,)
-                    )
-                    conn.commit()
-                
-            except Exception as e:
-                print(f"Error checking invoice {invoice_id}: {e}")
-                import traceback
-                traceback.print_exc()
+                except Exception as e:
+                    print(f"Error checking invoice {invoice_id}: {e}")
+                    import traceback
+                    traceback.print_exc()
         
+        finally:
+            await crypto.close()
+
         conn.close()
         
     except Exception as e:

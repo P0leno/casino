@@ -185,6 +185,10 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('custom_promo_refs_required', '10', 'Рефералов для именного промокода')")
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('maintenance_mode', '0', 'Режим технических работ (0/1)')")
     
+    # Withdrawal Settings
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('withdraw_regular_enabled', '1', 'Авто-выдача обычных подарков (0/1)')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, description) VALUES ('withdraw_nft_enabled', '1', 'Авто-выдача NFT подарков (0/1)')")
+    
     print("✅ Таблица settings создана/проверена")
     
     # Таблица моделей подарков (для синхронизации с Telegram Gift API)
@@ -353,6 +357,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS shop_gifts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             gift_id TEXT UNIQUE NOT NULL,
+            message_id INTEGER,
             slug TEXT DEFAULT NULL,
             title TEXT NOT NULL,
             model_name TEXT,
@@ -391,6 +396,11 @@ def init_db():
             cursor.execute("ALTER TABLE shop_gifts ADD COLUMN ton_price REAL DEFAULT NULL")
             conn.commit()
             print("✅ Миграция завершена: ton_price добавлен")
+        if 'message_id' not in columns:
+            print("⚙️  Миграция: добавление поля message_id в shop_gifts...")
+            cursor.execute("ALTER TABLE shop_gifts ADD COLUMN message_id INTEGER")
+            conn.commit()
+            print("✅ Миграция завершена: message_id добавлен")
     except Exception as e:
         print(f"⚠️  Ошибка миграции shop_gifts: {e}")
     

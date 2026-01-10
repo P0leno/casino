@@ -60,7 +60,8 @@ def sync_shop_amounts():
             expected_available = stats['total'] - stats['owned']
             # Защита от отрицательных значений
             if expected_available < 0:
-                print(f"[SHOP_SYNC] ⚠️ Gift '{stats['title']}' has negative availability! Total: {stats['total']}, Owned: {stats['owned']}")
+                if stats['total'] > 0:
+                    print(f"[SHOP_SYNC] ⚠️ Gift '{stats['title']}' has negative availability! Total: {stats['total']}, Owned: {stats['owned']}")
                 expected_available = 0
             
             updates.append((expected_available, slug))

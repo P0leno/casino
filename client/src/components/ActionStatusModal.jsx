@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import './ActionStatusModal.css'
+import LottieAnimation from './LottieAnimation'
 
 function ActionStatusModal({
     isOpen,
@@ -13,7 +14,8 @@ function ActionStatusModal({
     helpText,
     helpLink,
     isError = false,
-    icon = '⚠️'
+    icon = '⚠️',
+    lottieSrc = null // URL for lottie json
 }) {
     const [isClosing, setIsClosing] = useState(false)
     const [render, setRender] = useState(isOpen)
@@ -58,7 +60,19 @@ function ActionStatusModal({
                 </button>
 
                 <div className="action-status-body">
-                    <div className="action-status-icon">{icon}</div>
+                    {lottieSrc ? (
+                        <div className="action-status-image-container">
+                            <LottieAnimation
+                                animationData={lottieSrc}
+                                width={160}
+                                height={160}
+                                loop={true}
+                                autoplay={true}
+                            />
+                        </div>
+                    ) : (
+                        <div className="action-status-icon">{icon}</div>
+                    )}
                     <h2 className="action-status-title">{title}</h2>
                     <p className="action-status-message">{message}</p>
 

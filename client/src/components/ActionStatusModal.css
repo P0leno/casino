@@ -43,7 +43,22 @@
     box-sizing: border-box;
     overflow: hidden;
     height: auto;
-    min-height: 200px;
+    min-height: 350px;
+    /* Increased from 200px */
+    padding-bottom: 40px;
+}
+
+.action-status-image-container {
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 40px auto 20px auto;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Important overrides to force full width on mobile */
