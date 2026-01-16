@@ -5,19 +5,20 @@ import BonusBalanceBar from './BonusBalanceBar'
 import freeSpinBanner from '../assets/freespin.svg'
 import bazminBanner from '../assets/bazmin.svg'
 import lapikBanner from '../assets/lapik.svg'
+import promikBanner from '../assets/promik.svg'
 
 function SpinSelection({ onNavigateToTopUp }) {
   useEffect(() => {
     const tg = window.Telegram?.WebApp
     if (tg) {
       tg.BackButton.show()
-      
+
       const handleBack = () => {
         window.history.back()
       }
-      
+
       tg.BackButton.onClick(handleBack)
-      
+
       return () => {
         tg.BackButton.hide()
         tg.BackButton.offClick(handleBack)
@@ -48,13 +49,20 @@ function SpinSelection({ onNavigateToTopUp }) {
         <div className="spin-banner-item" onClick={handleNavigateToFreeSpin}>
           <img src={freeSpinBanner} alt="Free Spin" className="spin-banner-image" />
         </div>
-        
+
         <div className="spin-banner-item" onClick={handleNavigateToPaidSpin}>
           <img src={bazminBanner} alt="Bazmin" className="spin-banner-image" />
         </div>
-        
+
         <div className="spin-banner-item" onClick={handleNavigateToLapikSpin}>
           <img src={lapikBanner} alt="Lapik" className="spin-banner-image" />
+        </div>
+
+        <div className="spin-banner-item" onClick={() => {
+          window.history.pushState({}, '', '/spins/promik')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+        }}>
+          <img src={promikBanner} alt="Promik" className="spin-banner-image" />
         </div>
       </div>
     </div>

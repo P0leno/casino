@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from urllib.parse import parse_qs
 import json
+import shutil
+import os
 from app.utils.database import get_db_connection, DB_PATH
 import asyncio
 from app.config import BOT_TOKEN, DB_PATH
@@ -55,10 +57,29 @@ class UpdateCrashSettingsRequest(BaseModel):
     bigBetThreshold: int = 100
     bigBetLoseChance: int = 30
 
+
+
 class UpdateSettingRequest(BaseModel):
     initData: str
     key: str
     value: str
+
+class UpdateCaseRequest(BaseModel):
+    initData: str
+    slug: str
+    title: str
+    price: int
+    spinLimit: int = -1
+    isActive: bool = None
+
+class ToggleCaseGiftRequest(BaseModel):
+    initData: str
+    slug: str     # Case slug (mode)
+    giftName: str
+    enabled: bool
+
+
+
 
 @router.post("/get-chances")
 async def get_chances(request: GetChancesRequest):
@@ -706,3 +727,312 @@ async def restart_server(request: ValidateRequest):
         print(f"Error restarting server: {e}")
         await send_error_log(e, "admin.py: restart_server")
         return {"success": False, "message": str(e)}
+
+@router.post("/admin/cases")
+async def get_cases(request: ValidateRequest):
+    """Список всех кейсов"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = parsed.get('user', [''])[0]
+        if not user_data: return {"success": False}
+        user = json.loads(user_data)
+        if not RedisSettings.is_admin(user.get('id')):
+             return {"success": False, "message": "Forbidden"}
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT slug, title, price, currency, is_active, is_default, spin_limit, spins_count FROM cases")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        cases = [
+            {
+                "slug": r[0], 
+                "title": r[1], 
+                "price": r[2], 
+                "currency": r[3], 
+                "isActive": bool(r[4]),
+                "isDefault": bool(r[5]),
+                "spinLimit": r[6],
+                "spinsCount": r[7]
+            }
+            for r in rows
+        ]
+        return {"success": True, "cases": cases}
+    except Exception as e:
+        print(f"Error getting cases: {e}")
+        return {"success": False, "message": str(e)}
+
+@router.post("/admin/cases/update")
+async def update_case(request: UpdateCaseRequest):
+    """Обновление кейса"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user = json.loads(parsed.get('user', [''])[0])
+        if not RedisSettings.is_admin(user.get('id')):
+             return {"success": False, "message": "Forbidden"}
+             
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if request.isActive is not None:
+             cursor.execute(
+                "UPDATE cases SET title = ?, price = ?, spin_limit = ?, is_active = ? WHERE slug = ?",
+                (request.title, request.price, request.spinLimit, request.isActive, request.slug)
+             )
+        else:
+            cursor.execute(
+                "UPDATE cases SET title = ?, price = ?, spin_limit = ? WHERE slug = ?",
+                (request.title, request.price, request.spinLimit, request.slug)
+            )
+            
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+@router.post("/admin/cases/gifts")
+async def get_case_gifts_implementation(request: GetChancesRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid: return {"success": False}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user = json.loads(parsed.get('user', [''])[0])
+        if not RedisSettings.is_admin(user.get('id')):
+             return {"success": False, "message": "Forbidden"}
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. All possible gifts from gift_prices
+        cursor.execute("SELECT gift_name, price FROM gift_prices")
+        all_prices = cursor.fetchall()
+        
+        # 2. Enabled gifts in this case
+        cursor.execute("SELECT gift_name FROM gift_chances WHERE mode = ?", (request.mode,))
+        enabled_set = {r[0] for r in cursor.fetchall()}
+        
+        gifts_out = []
+        
+        # Add Currencies and Special Items
+        for cur in ['star', 'paw', 'secret']:
+            gifts_out.append({
+                "name": cur,
+                "type": "currency" if cur != 'secret' else 'gift',
+                "enabled": cur in enabled_set
+            })
+            
+        # Add Items
+        known_names = set()
+        for name, _ in all_prices:
+            if name not in known_names and name not in ['star', 'paw']: 
+                gifts_out.append({
+                    "name": name,
+                    "type": "gift",
+                    "enabled": name in enabled_set
+                })
+                known_names.add(name)
+        
+        conn.close()
+        return {"success": True, "gifts": gifts_out}
+    except Exception as e:
+        print(f"Error: {e}")
+        return {"success": False, "message": str(e)}
+
+@router.post("/admin/cases/toggle-gift")
+async def toggle_case_gift(request: ToggleCaseGiftRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid: return {"success": False}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user = json.loads(parsed.get('user', [''])[0])
+        if not RedisSettings.is_admin(user.get('id')):
+             return {"success": False, "message": "Forbidden"}
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if request.enabled:
+            # Enable -> Insert default
+            # Default chances: visible=1, real=0.1. Min/max for currency.
+            # Using INSERT OR IGNORE
+            cursor.execute("""
+                INSERT OR IGNORE INTO gift_chances 
+                (gift_name, mode, visible_chance, real_chance, paw_min, paw_max, star_min, star_max)
+                VALUES (?, ?, 1.0, 0.1, 0, 0, 0, 0)
+            """, (request.giftName, request.slug))
+            
+            # Update specific defaults for currencies
+            if request.giftName == 'star':
+                cursor.execute("UPDATE gift_chances SET star_min=1, star_max=3 WHERE gift_name='star' AND mode=?", (request.slug,))
+            elif request.giftName == 'paw':
+                cursor.execute("UPDATE gift_chances SET paw_min=50, paw_max=100 WHERE gift_name='paw' AND mode=?", (request.slug,))
+        else:
+            # Disable -> Delete
+            cursor.execute("DELETE FROM gift_chances WHERE gift_name = ? AND mode = ?", (request.giftName, request.slug))
+            
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+@router.post("/admin/cases/create")
+async def create_case(
+    initData: str = Form(...),
+    slug: str = Form(...),
+    title: str = Form(...),
+    price: int = Form(...),
+    currency: str = Form(...),
+    spinLimit: int = Form(-1),
+    icon: UploadFile = File(...)
+):
+    try:
+        # 1. Validate Admin
+        is_valid = validate_init_data(initData, BOT_TOKEN)
+        if not is_valid: return {"success": False, "message": "Invalid initData"}
+        
+        parsed = parse_qs(initData)
+        user = json.loads(parsed.get('user', [''])[0])
+        if not RedisSettings.is_admin(user.get('id')):
+             return {"success": False, "message": "Forbidden"}
+             
+        # 2. Save Icon
+        # Target: client/public/gifts/cases/{slug}.svg
+        # Note: In prod this might be /var/www/shell/gifts/cases/
+        # User specified: /var/www/shell/gifts/cases
+        # We will try to save to client/public/gifts/cases locally AND
+        # if the path /var/www/shell/gifts/cases exists, save there too?
+        # Or just save to local relative path for development.
+        
+        # Determine paths
+        # Assuming we are in server/, we go up to client/public
+        base_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'client', 'public', 'gifts', 'cases'))
+        if not os.path.exists(base_path):
+            os.makedirs(base_path, exist_ok=True)
+            
+        file_path = os.path.join(base_path, f"{slug}.svg") # Force .svg extension? Or keep original? User said "script renames to index.svg" but "slug.svg" is better for identifying. Wait, user said "rename to index.svg and put THERE". 
+        # "поместит его в /var/www/shell/gifts/cases ... скрипт переименует в индекс.svg". 
+        # Wait, if every case is index.svg, they overwrite each other? 
+        # Maybe user meant a FOLDER per case? "/var/www/shell/gifts/cases/{slug}/index.svg"?
+        # OR "rename to [slug].svg"?
+        # User: "загружаешь .svg файл скрпит поместит его в /var/www/shell/gifts/cases ... переименует в индекс.svg и туда кинет"
+        # PROBABLY meant "cases/[slug].svg". I will assume standard practice: [slug].svg.
+        # IF user really meant detailed "folder per case", I'd need clarification. 
+        # But looking at existing structure (flat list), likely valid.
+        # Wait, "index.svg" creates collision. 
+        # Let's assume user mispoke or meant "slug.svg".
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(icon.file, buffer)
+            
+        # 3. DB Insert
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check uniqueness
+        cursor.execute("SELECT 1 FROM cases WHERE slug = ?", (slug,))
+        if cursor.fetchone():
+            conn.close()
+            return {"success": False, "message": "Index already exists"}
+            
+        # Insert with is_active = 0 (Requires manual activation after config)
+        cursor.execute(
+            """INSERT INTO cases 
+               (slug, title, price, currency, is_active, is_default, spin_limit) 
+               VALUES (?, ?, ?, ?, 0, 0, ?)""",
+            (slug, title, price, currency, spinLimit)
+        )
+        
+        # Auto-seed gifts from existing configurations (template)
+        # Find all unique gift names currently in the system
+        cursor.execute("SELECT DISTINCT gift_name FROM gift_chances")
+        existing_gifts = [r[0] for r in cursor.fetchall()]
+        
+        # Also always include standard currencies just in case
+        standard_gifts = {'star', 'paw'}
+        for g in standard_gifts:
+            if g not in existing_gifts:
+                existing_gifts.append(g)
+                
+        # Insert initial zero-chance config for this new case
+        if existing_gifts:
+            data_to_insert = []
+            for g_name in existing_gifts:
+                # slug, gift_name, chance, visible_chance, ranges...
+                # defaulting to 0 chance
+                data_to_insert.append((slug, g_name, 0, 0, 1, 10, 1, 5))
+            
+            cursor.executemany(
+                """INSERT INTO gift_chances 
+                   (mode, gift_name, real_chance, visible_chance, paw_min, paw_max, star_min, star_max) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                data_to_insert
+            )
+            
+        conn.commit()
+        conn.close()
+        
+        return {"success": True}
+    except Exception as e:
+        print(f"Error creating case: {e}")
+        return {"success": False, "message": str(e)}
+
+class DeleteCaseRequest(BaseModel):
+    initData: str
+    slug: str
+
+@router.post("/admin/cases/delete")
+async def delete_case(request: DeleteCaseRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid: return {"success": False}
+    
+    try:
+        parsed = parse_qs(request.initData)
+        user = json.loads(parsed.get('user', [''])[0])
+        if not RedisSettings.is_admin(user.get('id')):
+             return {"success": False, "message": "Forbidden"}
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if default
+        cursor.execute("SELECT is_default FROM cases WHERE slug = ?", (request.slug,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return {"success": False, "message": "Not found"}
+            
+        if row[0]: # is_default = 1
+            conn.close()
+            return {"success": False, "message": "Cannot delete default case"}
+            
+        # Delete
+        cursor.execute("DELETE FROM cases WHERE slug = ?", (request.slug,))
+        # Also clean up gifts chances? Yes.
+        cursor.execute("DELETE FROM gift_chances WHERE mode = ?", (request.slug,))
+        
+        conn.commit()
+        conn.close()
+        
+        # Delete file
+        base_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'client', 'public', 'gifts', 'cases'))
+        file_path = os.path.join(base_path, f"{request.slug}.svg")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+

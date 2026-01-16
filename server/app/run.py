@@ -27,7 +27,7 @@ apply_pyrogram_patches()
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
-from app.routers import auth, game, admin, payments, crash, tasks, shop, inventory, promocode, ban, cryptobot_payments
+from app.routers import auth, admin, payments, crash, tasks, shop, inventory, promocode, ban, cryptobot_payments, spins, nft
 from app.bot import start_bot, stop_bot
 from app.log_bot import start_log_bot, stop_log_bot
 from app.pyrogram_client import start_pyrogram, stop_pyrogram
@@ -63,6 +63,34 @@ cryptobot_checker_task = None
 redis_sync_task = None
 restart_monitor_task = None
 gift_ingestion_task = None
+
+app = FastAPI(title="Shelloch API", docs_url=None, redoc_url=None)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add rate limiting error handler
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Include routers
+app.include_router(auth.router)
+app.include_router(spins.router) # Replaces game
+app.include_router(nft.router)
+app.include_router(admin.router)
+app.include_router(payments.router)
+app.include_router(crash.router)
+app.include_router(tasks.router)
+app.include_router(shop.router)
+app.include_router(inventory.router)
+app.include_router(promocode.router)
+app.include_router(ban.router)
+app.include_router(cryptobot_payments.router)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -477,7 +505,7 @@ def create_app() -> FastAPI:
     app.middleware("http")(maintenance_middleware)
 
     app.include_router(auth.router)
-    app.include_router(game.router)
+    app.include_router(spins.router)
     app.include_router(admin.router)
     app.include_router(payments.router)
     app.include_router(crash.router)

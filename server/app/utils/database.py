@@ -52,6 +52,101 @@ def init_payments_table(conn):
     except Exception as e:
         print(f"[DB] Error creating payments table: {e}")
 
+
+def init_cases_table(conn):
+    """Создает таблицу cases и заполняет дефолтными данными. Автомиграция."""
+    try:
+        # 1. Создаем таблицу если нет
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS cases (
+            slug TEXT PRIMARY KEY,
+            title TEXT,
+            price INTEGER,
+            currency TEXT, -- 'star' or 'paw'
+            is_active BOOLEAN DEFAULT 1,
+            is_default BOOLEAN DEFAULT 0,
+            spin_limit INTEGER DEFAULT -1 -- -1 means unlimited
+        )
+        """)
+        
+        # 2. Проверяем и добавляем колонки если таблица старая
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(cases)")
+        columns = {row[1] for row in cursor.fetchall()}
+        
+        if 'is_default' not in columns:
+            cursor.execute("ALTER TABLE cases ADD COLUMN is_default BOOLEAN DEFAULT 0")
+            print("[DB] Added column is_default to cases")
+            
+
+        if 'spin_limit' not in columns:
+            cursor.execute("ALTER TABLE cases ADD COLUMN spin_limit INTEGER DEFAULT -1")
+            print("[DB] Added column spin_limit to cases")
+            
+        if 'spins_count' not in columns:
+            cursor.execute("ALTER TABLE cases ADD COLUMN spins_count INTEGER DEFAULT 0")
+            print("[DB] Added column spins_count to cases")
+            
+        conn.commit()
+        
+        # 3. Сидинг дефолтных
+        cursor.execute("SELECT count(*) FROM cases")
+        if cursor.fetchone()[0] == 0:
+            default_cases = [
+                ('free_spin', 'Free Spin', 0, 'star', 1, 1, -1, 0),
+                ('bazmin', 'Бомж Кейс', 10, 'star', 1, 1, -1, 0),
+                ('lapik', 'Кейс Лапика', 50, 'star', 1, 1, -1, 0),
+                ('nistart', 'Нистарт', 10, 'star', 1, 1, -1, 0),
+                ('promik', 'Промо Кейс', 0, 'star', 1, 1, -1, 0)
+            ]
+            cursor.executemany(
+                "INSERT INTO cases (slug, title, price, currency, is_active, is_default, spin_limit, spins_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                default_cases
+            )
+            conn.commit()
+            print("[DB] Seeded default cases")
+            
+        # 4. Проверяем и исправляем настройки Lapik кейса (Force Fix)
+        # Пользователь сообщает о проблеме с ценой/валютой
+        try:
+            conn.execute("UPDATE cases SET price = 10, currency = 'paw' WHERE slug = 'lapik'")
+            conn.commit()
+            # print("[DB] Enforced Lapik case settings") # Optional log
+        except Exception as e:
+            print(f"[DB] Error enforcing Lapik settings: {e}")
+
+    except Exception as e:
+        print(f"[DB] Error creating/migrating cases table: {e}")
+
+
+def init_case_spins_table(conn):
+    """Создает таблицу для трекинга прокрутов лимитированных кейсов"""
+    try:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_case_spins (
+            user_id INTEGER,
+            case_slug TEXT,
+            count INTEGER DEFAULT 0,
+            updated_at TEXT,
+            PRIMARY KEY (user_id, case_slug)
+        )
+        """)
+    except Exception as e:
+        print(f"[DB] Error creating user_case_spins table: {e}")
+
+def init_nft_cache_table(conn):
+    """Создает таблицу для кэширования NFT подарков пользователя (TTL 1 час)"""
+    try:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_nft_cache (
+            user_id INTEGER PRIMARY KEY,
+            gifts_data TEXT,
+            updated_at TEXT
+        )
+        """)
+    except Exception as e:
+        print(f"[DB] Error creating user_nft_cache table: {e}")
+
 def get_db_connection(timeout: int = SQLITE_TIMEOUT) -> sqlite3.Connection:
     """
     Получить оптимизированное соединение с БД
@@ -74,6 +169,9 @@ def get_db_connection(timeout: int = SQLITE_TIMEOUT) -> sqlite3.Connection:
     # HACK: Проверяем наличие таблиц (быстрый фикс для удаленных серверов)
     init_sold_gifts_table(conn)
     init_payments_table(conn)
+    init_cases_table(conn) # Auto-migrate cases
+    init_case_spins_table(conn)
+    init_nft_cache_table(conn)
     
     return conn
 

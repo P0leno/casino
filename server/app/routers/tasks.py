@@ -11,6 +11,7 @@ from app.utils.balance import get_user_balance
 from app.utils.redis_models import RedisUser
 from app.utils.database import get_db_connection, DB_PATH
 from app.utils.error_logger import send_error_log
+from app.utils.task_cleanup import remove_task_history
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -151,8 +152,8 @@ async def check_user_subscription(user_id: int, channel_identifier: str) -> bool
                 if data.get("ok"):
                     member = data.get("result", {})
                     status = member.get("status")
-                    # Даже если пользователь в бан-листе, он когда-то был участником
-                    return status in ["member", "administrator", "creator", "restricted", "left", "kicked"]
+                    # Проверяем только активное участие
+                    return status in ["member", "administrator", "creator", "restricted"]
                 
                 return False
     except Exception as e:
@@ -328,6 +329,9 @@ async def delete_task(request: DeleteTaskRequest):
         cursor.execute("DELETE FROM tasks WHERE id = ?", (request.taskId,))
         conn.commit()
         conn.close()
+        
+        # Удаляем из истории выполнения у всех пользователей
+        await remove_task_history(request.taskId)
         
         return {"success": True, "message": "Task deleted"}
     except Exception as e:
@@ -507,6 +511,9 @@ async def complete_task(request: CompleteTaskRequest):
                 await send_message_to_logs(f"✅ <b>Задание завершено и удалено!</b>\n\n{task_info}")
             except:
                 pass
+                
+            # Удаляем из истории выполнения у всех пользователей (включая текущего)
+            await remove_task_history(request.taskId)
 
         conn.commit()
         conn.close()

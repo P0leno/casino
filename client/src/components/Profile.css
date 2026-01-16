@@ -1122,3 +1122,293 @@
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
+
+/* Admin Cases Styles */
+
+.cases-list-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.case-item-admin {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.case-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.case-slug-badge {
+  font-weight: 600;
+  color: #0FBCE0;
+  text-transform: uppercase;
+}
+
+.case-currency-badge {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.case-inputs-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.admin-input-group.compact {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-input-group.compact label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.case-actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-action-button.secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+/* Gifts Toggle List */
+.gifts-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.gift-toggle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.gift-toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mini-gift-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.gift-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.currency-badge {
+  font-size: 10px;
+  background: gold;
+  color: black;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+/* Header & Back Btn */
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #0FBCE0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.case-item-admin input.admin-input {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch.small {
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch.small .toggle-slider:before {
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+}
+
+.toggle-switch.small input:checked+.toggle-slider:before {
+  transform: translateX(16px);
+}
+
+/* Admin Cases - New Features */
+.admin-actions-header {
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-case-form {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.add-case-form h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.case-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.delete-case-btn {
+  background: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  font-size: 14px;
+}
+
+.delete-case-btn:hover {
+  background: rgba(255, 59, 48, 0.4);
+}
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-content.add-case-modal {
+  background: #1c1c1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.add-case-form-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+}
+
+.inputs-row-2 {
+  display: flex;
+  gap: 12px;
+}
+
+.inputs-row-2 .input-group {
+  flex: 1;
+}
+
+.modal-actions {
+  margin-top: 10px;
+}
+
+.case-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.case-limit-badge {
+  font-size: 11px;
+  background: rgba(255, 179, 64, 0.2);
+  color: #ffb340;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-mono: monospace;
+}
+
+/* Update inputs to look good in modal */
+.add-case-modal .admin-input {
+  width: 100%;
+  box-sizing: border-box;
+}

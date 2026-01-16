@@ -11,6 +11,7 @@ import giftIcon from '../assets/gift.svg'
 import supIcon from '../assets/sup.svg'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
+import secretIcon from '../assets/secret.svg'
 import { useBalance } from '../contexts/BalanceContext'
 
 const giftAnimations = {
@@ -26,7 +27,8 @@ const giftAnimations = {
   rocket: '/gifts/rocket.json',
   rose: '/gifts/rose.json',
   paw: pawAnim,
-  star: starAnim
+  star: starAnim,
+  secret: secretIcon
 }
 
 function Profile() {
@@ -82,6 +84,14 @@ function Profile() {
   const [errorData, setErrorData] = useState(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentData, setPaymentData] = useState(null)
+  const [cases, setCases] = useState([])
+  const [adminView, setAdminView] = useState('list') // list, chances, gifts
+  const [caseGifts, setCaseGifts] = useState([])
+
+  // Add Case functionality
+  const [isAddingCase, setIsAddingCase] = useState(false)
+  const [newCaseData, setNewCaseData] = useState({ slug: '', title: '', price: '0', currency: 'star', spinLimit: '-1' })
+  const [newCaseIcon, setNewCaseIcon] = useState(null) // For toggling gifts logic
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -102,7 +112,15 @@ function Profile() {
     }
 
     loadInventory().finally(() => setLoading(false))
+    loadInventory().finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (showChancesPanel) {
+      loadCases()
+      setAdminView('list')
+    }
+  }, [showChancesPanel])
 
 
 
@@ -257,6 +275,212 @@ function Profile() {
       }
     } catch (error) {
       console.error('Error loading crash settings:', error)
+    }
+  }
+
+  const loadCases = async () => {
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/admin/cases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setCases(data.cases)
+      }
+    } catch (error) {
+      console.error('Error loading cases:', error)
+    }
+  }
+
+  const handleUpdateCase = async (slug, title, price, spinLimit) => {
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/admin/cases/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, slug, title, price: parseInt(price), spinLimit: parseInt(spinLimit) })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        alert('Кейс обновлен')
+        loadCases()
+      } else {
+        alert('Ошибка: ' + data.message)
+      }
+    } catch (error) {
+      alert('Ошибка соединения')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCreateCase = async () => {
+    if (!newCaseIcon || !newCaseData.slug || !newCaseData.title) {
+      alert('Заполните все поля и выберите иконку')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const formData = new FormData()
+      formData.append('initData', initData)
+      formData.append('slug', newCaseData.slug)
+      formData.append('title', newCaseData.title)
+      formData.append('price', newCaseData.price)
+      formData.append('currency', newCaseData.currency)
+      formData.append('spinLimit', newCaseData.spinLimit)
+      formData.append('icon', newCaseIcon)
+
+      const response = await fetch(`${apiUrl}/api/admin/cases/create`, {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        alert('Кейс создан')
+        setIsAddingCase(false)
+        setNewCaseData({ slug: '', title: '', price: 0, currency: 'star', spinLimit: -1 })
+        // Assuming data.cases contains the updated list, otherwise loadCases() is needed
+        setCases(data.cases) // Changed from updated.data.cases to data.cases, assuming data contains the new list
+        setNewCaseIcon(null)
+
+        // Auto-redirect to Chances configuration
+        setSelectedSpinMode(newCaseData.slug);
+        setAdminView('chances');
+        loadChances(newCaseData.slug); // Should load default seeded chances
+
+      } else {
+        alert('Ошибка: ' + data.message)
+      }
+    } catch (e) {
+      alert('Error creating case: ' + e.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteCase = async (slug) => {
+    if (!window.confirm(`Удалить кейс ${slug}? Это действие необратимо.`)) return
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/admin/cases/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, slug })
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert('Кейс удален')
+        loadCases()
+      } else {
+        alert('Ошибка: ' + data.message)
+      }
+    } catch (e) {
+      alert('Ошибка соединения')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  // Helper to toggle active status
+  const handleToggleCaseActive = async (item) => {
+    // Toggle logic
+    const newStatus = !item.isActive;
+    // Use existing update logic but passing isActive
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/admin/cases/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData,
+          slug: item.slug,
+          title: item.title,
+          price: item.price,
+          spinLimit: item.spinLimit,
+          isActive: newStatus
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        loadCases()
+      } else {
+        alert('Ошибка: ' + data.message)
+      }
+    } catch (error) {
+      alert('Ошибка соединения')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const loadCaseGifts = async (mode) => {
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/admin/cases/gifts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, mode })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setCaseGifts(data.gifts)
+      }
+    } catch (error) {
+      console.error('Error loading case gifts:', error)
+    }
+  }
+
+  const handleToggleCaseGift = async (slug, giftName, enabled) => {
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+
+      const response = await fetch(`${apiUrl}/api/admin/cases/toggle-gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, slug, giftName, enabled })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        loadCaseGifts(slug) // Reload status
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -1127,175 +1351,338 @@ function Profile() {
       {showChancesPanel && isAdmin && (
         <>
           <div className="overlay-backdrop" onClick={() => setShowChancesPanel(false)} />
-          <div className="overlay-sheet chances-panel-sheet">
+          <div className="overlay-sheet admin-panel-sheet">
             <button className="close-panel-btn" onClick={() => setShowChancesPanel(false)}>✕</button>
 
             <div className="sheet-content">
-              <h2 className="admin-panel-title">Управление шансами</h2>
 
-              <div className="spin-mode-selector">
-                <label className="spin-mode-label">Режим спина:</label>
-                <select
-                  value={selectedSpinMode}
-                  onChange={(e) => {
-                    setSelectedSpinMode(e.target.value);
-                    loadChances(e.target.value);
-                    setEditingGift(null);
-                  }}
-                  className="spin-mode-dropdown"
-                  disabled={actionLoading}
-                >
-                  <option value="free_spin">Фри спин</option>
-                  <option value="bazmin">Бомж кейс (Bazmin)</option>
-                  <option value="lapik">Лапик (Lapik)</option>
-                  <option value="nistart">Нистарт (Nistart)</option>
-                  <option value="promik">Промик (Promik)</option>
-                </select>
-              </div>
-
-              <div className="chances-list">
-                {chances.map((chance) => (
-                  <div key={chance.name} className="chance-item">
-                    <div className="chance-icon">
-                      <LottieAnimation animationData={giftAnimations[chance.name]} width={50} height={50} />
-                    </div>
-                    <div className="chance-details">
-                      <div className="chance-row">
-                        <span className="chance-label">Видимый шанс:</span>
-                        {editingGift === chance.name ? (
-                          <input
-                            type="number"
-                            className="chance-input"
-                            defaultValue={chance.visible}
-                            id={`visible-${chance.name}`}
-                            disabled={actionLoading}
-                          />
-                        ) : (
-                          <span className="chance-value">{chance.visible}%</span>
-                        )}
-                      </div>
-                      <div className="chance-row">
-                        <span className="chance-label">Реальный шанс:</span>
-                        {editingGift === chance.name ? (
-                          <input
-                            type="number"
-                            className="chance-input"
-                            defaultValue={chance.real}
-                            id={`real-${chance.name}`}
-                            disabled={actionLoading}
-                          />
-                        ) : (
-                          <span className="chance-value">{chance.real}%</span>
-                        )}
-                      </div>
-                      {chance.name === 'paw' && (
-                        <div className="chance-row">
-                          <span className="chance-label">Лапок (диапазон):</span>
-                          {editingGift === chance.name ? (
-                            <div className="paw-range-inputs">
-                              <input
-                                type="number"
-                                className="chance-input paw-range-input"
-                                defaultValue={chance.pawMin || 1}
-                                id={`pawMin-${chance.name}`}
-                                min="0"
-                                max="100"
-                                placeholder="От"
-                                disabled={actionLoading}
-                              />
-                              <span className="range-separator">-</span>
-                              <input
-                                type="number"
-                                className="chance-input paw-range-input"
-                                defaultValue={chance.pawMax || 5}
-                                id={`pawMax-${chance.name}`}
-                                min="0"
-                                max="100"
-                                placeholder="До"
-                                disabled={actionLoading}
-                              />
-                            </div>
-                          ) : (
-                            <span className="chance-value">{chance.pawMin || 0}-{chance.pawMax || 0}</span>
-                          )}
-                        </div>
-                      )}
-                      {chance.name === 'star' && (
-                        <div className="chance-row">
-                          <span className="chance-label">Звезд (диапазон):</span>
-                          {editingGift === chance.name ? (
-                            <div className="paw-range-inputs">
-                              <input
-                                type="number"
-                                className="chance-input paw-range-input"
-                                defaultValue={chance.starMin || 1}
-                                id={`starMin-${chance.name}`}
-                                min="1"
-                                max="100"
-                                placeholder="От"
-                                disabled={actionLoading}
-                              />
-                              <span className="range-separator">-</span>
-                              <input
-                                type="number"
-                                className="chance-input paw-range-input"
-                                defaultValue={chance.starMax || 5}
-                                id={`starMax-${chance.name}`}
-                                min="1"
-                                max="100"
-                                placeholder="До"
-                                disabled={actionLoading}
-                              />
-                            </div>
-                          ) : (
-                            <span className="chance-value">{chance.starMin || 1}-{chance.starMax || 5}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="chance-actions">
-                      {editingGift === chance.name ? (
-                        <>
-                          <button
-                            className="chance-btn save-btn"
-                            onClick={() => {
-                              const visible = parseFloat(document.getElementById(`visible-${chance.name}`).value)
-                              const real = parseFloat(document.getElementById(`real-${chance.name}`).value)
-                              let pawMin = 0, pawMax = 0, starMin = 1, starMax = 5
-                              if (chance.name === 'paw') {
-                                pawMin = parseInt(document.getElementById(`pawMin-${chance.name}`).value) || 0
-                                pawMax = parseInt(document.getElementById(`pawMax-${chance.name}`).value) || 0
-                              }
-                              if (chance.name === 'star') {
-                                starMin = parseInt(document.getElementById(`starMin-${chance.name}`).value) || 1
-                                starMax = parseInt(document.getElementById(`starMax-${chance.name}`).value) || 5
-                              }
-                              handleUpdateChance(chance.name, visible, real, selectedSpinMode, pawMin, pawMax, starMin, starMax)
-                            }}
-                            disabled={actionLoading}
-                          >
-                            ✓
-                          </button>
-                          <button
-                            className="chance-btn cancel-btn"
-                            onClick={() => setEditingGift(null)}
-                            disabled={actionLoading}
-                          >
-                            ✕
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          className="chance-btn edit-btn"
-                          onClick={() => setEditingGift(chance.name)}
-                        >
-                          ✎
-                        </button>
-                      )}
-                    </div>
+              {adminView === 'list' && (
+                <>
+                  <h2 className="admin-panel-title">Управление кейсами</h2>
+                  <div className="admin-actions-header">
+                    <button className="admin-action-button add-case-button" onClick={() => setIsAddingCase(true)}>+ Новый кейс</button>
                   </div>
-                ))}
-              </div>
+
+                  {isAddingCase && (
+                    <div className="modal-overlay">
+                      <div className="modal-content add-case-modal">
+                        <div className="modal-header">
+                          <h3>Создание Кейса</h3>
+                          <button className="modal-close" onClick={() => setIsAddingCase(false)}>✕</button>
+                        </div>
+                        <div className="add-case-form-body">
+                          <div className="input-group">
+                            <label>Slug (уникальный ID)</label>
+                            <input className="admin-input" placeholder="mega_case_1" value={newCaseData.slug} onChange={e => setNewCaseData({ ...newCaseData, slug: e.target.value })} />
+                          </div>
+                          <div className="input-group">
+                            <label>Название (для пользователей)</label>
+                            <input className="admin-input" placeholder="Мега Кейс" value={newCaseData.title} onChange={e => setNewCaseData({ ...newCaseData, title: e.target.value })} />
+                          </div>
+                          <div className="inputs-row-2">
+                            <div className="input-group">
+                              <label>Цена</label>
+                              <input className="admin-input" type="number" placeholder="0" value={newCaseData.price} onChange={e => setNewCaseData({ ...newCaseData, price: e.target.value })} />
+                            </div>
+                            <div className="input-group">
+                              <label>Валюта</label>
+                              <select className="admin-input" value={newCaseData.currency} onChange={e => setNewCaseData({ ...newCaseData, currency: e.target.value })}>
+                                <option value="star">Stars ⭐️</option>
+                                <option value="paw">Paws 🐾</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="inputs-row-2">
+                            <div className="input-group">
+                              <label>Лимит прокрутов (-1 = ∞)</label>
+                              <input className="admin-input" type="number" placeholder="-1" value={newCaseData.spinLimit} onChange={e => setNewCaseData({ ...newCaseData, spinLimit: e.target.value })} />
+                            </div>
+                            <div className="input-group">
+                              <label>Иконка (.svg)</label>
+                              <input type="file" className="admin-input" accept=".svg" onChange={e => setNewCaseIcon(e.target.files[0])} />
+                            </div>
+                          </div>
+                          <div className="modal-actions">
+                            <button className="admin-action-button" onClick={handleCreateCase} disabled={actionLoading}>Создать Кейс</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="cases-list-admin">
+                    {cases.map(item => (
+                      <div key={item.slug} className="case-item-admin">
+                        <div className="case-header">
+                          <div className="case-header-left">
+                            <span className="case-slug-badge">{item.slug}</span>
+                            {item.spinLimit > -1 && (
+                              <span className="case-limit-badge">
+                                {item.spinsCount || 0} / {item.spinLimit}
+                              </span>
+                            )}
+                          </div>
+                          <div className="case-header-right">
+                            <label className="toggle-switch small">
+                              <input
+                                type="checkbox"
+                                checked={item.isActive}
+                                onChange={() => handleToggleCaseActive(item)}
+                              />
+                              <span className="toggle-slider"></span>
+                            </label>
+
+                            <span className="case-currency-badge">{item.currency}</span>
+                            {!item.isDefault && (
+                              <button className="delete-case-btn" onClick={() => handleDeleteCase(item.slug)}>🗑️</button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="case-inputs-row">
+                          <div className="admin-input-group compact" style={{ flex: 2 }}>
+                            <label>Название</label>
+                            <input
+                              className="admin-input"
+                              defaultValue={item.title}
+                              onBlur={(e) => handleUpdateCase(item.slug, e.target.value, item.price, item.spinLimit)}
+                            />
+                          </div>
+                          <div className="admin-input-group compact" style={{ flex: 1 }}>
+                            <label>Цена</label>
+                            <input
+                              className="admin-input"
+                              type="number"
+                              defaultValue={item.price}
+                              onBlur={(e) => handleUpdateCase(item.slug, item.title, e.target.value, item.spinLimit)}
+                            />
+                          </div>
+                          <div className="admin-input-group compact" style={{ flex: 1 }}>
+                            <label>Лимит</label>
+                            <input
+                              className="admin-input"
+                              type="number"
+                              defaultValue={item.spinLimit}
+                              onBlur={(e) => handleUpdateCase(item.slug, item.title, item.price, e.target.value)}
+                            />
+                          </div>
+
+                          {/* Moved Actions Here */}
+                          <div className="case-actions-inline" style={{ display: 'flex', gap: '5px', alignItems: 'flex-end' }}>
+                            <button
+                              className="admin-action-button secondary-btn small-btn"
+                              title="Шансы"
+                              onClick={() => {
+                                setSelectedSpinMode(item.slug);
+                                setAdminView('chances');
+                                loadChances(item.slug);
+                              }}>
+                              🎲
+                            </button>
+                            <button
+                              className="admin-action-button secondary-btn small-btn"
+                              title="Наполнение"
+                              onClick={() => {
+                                setSelectedSpinMode(item.slug);
+                                setAdminView('gifts');
+                                loadCaseGifts(item.slug);
+                              }}>
+                              🎁
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {adminView === 'chances' && (
+                <>
+                  <div className="panel-header-row">
+                    <button className="back-btn" onClick={() => setAdminView('list')}>← Назад</button>
+                    <h2 className="admin-panel-title">Шансы: {cases.find(c => c.slug === selectedSpinMode)?.title}</h2>
+                  </div>
+
+                  <div className="chances-list">
+                    {chances.map(chance => (
+                      <div key={chance.name} className="chance-item">
+                        <div className="chance-info">
+                          <div className="gift-icon-preview">
+                            <img
+                              src={chance.name === 'secret' ? secretIcon : `/gifts/${chance.name}.png`}
+                              onError={(e) => e.target.src = giftIcon}
+                              alt={chance.name}
+                            />
+                          </div>
+                          <div className="chance-details">
+                            <span className="chance-name">{chance.name}</span>
+                            <div className="chance-values">
+                              {editingGift === chance.name ? (
+                                <>
+                                  <input
+                                    id={`visible-${chance.name}`}
+                                    className="chance-input"
+                                    type="number"
+                                    defaultValue={chance.visible} // Отображаемый %
+                                    step="0.01"
+                                    placeholder="Vis%"
+                                  />
+                                  <input
+                                    id={`real-${chance.name}`}
+                                    className="chance-input"
+                                    type="number"
+                                    defaultValue={chance.real} // Реальный %
+                                    step="0.001"
+                                    placeholder="Real%"
+                                  />
+                                </>
+                              ) : (
+                                <span>Vis: {chance.visible}% | Real: {chance.real}%</span>
+                              )}
+                            </div>
+
+                            {/* Диапазоны для валют */}
+                            {chance.name === 'paw' && (
+                              <div className="chance-row">
+                                <span className="chance-label">Лапок (диапазон):</span>
+                                {editingGift === chance.name ? (
+                                  <div className="paw-range-inputs">
+                                    <input
+                                      type="number"
+                                      className="chance-input paw-range-input"
+                                      defaultValue={chance.pawMin || 0}
+                                      id={`pawMin-${chance.name}`}
+                                      min="0"
+                                      max="100"
+                                      placeholder="От"
+                                      disabled={actionLoading}
+                                    />
+                                    <span className="range-separator">-</span>
+                                    <input
+                                      type="number"
+                                      className="chance-input paw-range-input"
+                                      defaultValue={chance.pawMax || 5}
+                                      id={`pawMax-${chance.name}`}
+                                      min="0"
+                                      max="100"
+                                      placeholder="До"
+                                      disabled={actionLoading}
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="chance-value">{chance.pawMin || 0}-{chance.pawMax || 0}</span>
+                                )}
+                              </div>
+                            )}
+                            {chance.name === 'star' && (
+                              <div className="chance-row">
+                                <span className="chance-label">Звезд (диапазон):</span>
+                                {editingGift === chance.name ? (
+                                  <div className="paw-range-inputs">
+                                    <input
+                                      type="number"
+                                      className="chance-input paw-range-input"
+                                      defaultValue={chance.starMin || 1}
+                                      id={`starMin-${chance.name}`}
+                                      min="1"
+                                      max="100"
+                                      placeholder="От"
+                                      disabled={actionLoading}
+                                    />
+                                    <span className="range-separator">-</span>
+                                    <input
+                                      type="number"
+                                      className="chance-input paw-range-input"
+                                      defaultValue={chance.starMax || 5}
+                                      id={`starMax-${chance.name}`}
+                                      min="1"
+                                      max="100"
+                                      placeholder="До"
+                                      disabled={actionLoading}
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="chance-value">{chance.starMin || 1}-{chance.starMax || 5}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="chance-actions">
+                            {editingGift === chance.name ? (
+                              <>
+                                <button
+                                  className="chance-btn save-btn"
+                                  onClick={() => {
+                                    const visible = parseFloat(document.getElementById(`visible-${chance.name}`).value)
+                                    const real = parseFloat(document.getElementById(`real-${chance.name}`).value)
+                                    let pawMin = 0, pawMax = 0, starMin = 1, starMax = 5
+                                    if (chance.name === 'paw') {
+                                      pawMin = parseInt(document.getElementById(`pawMin-${chance.name}`).value) || 0
+                                      pawMax = parseInt(document.getElementById(`pawMax-${chance.name}`).value) || 0
+                                    }
+                                    if (chance.name === 'star') {
+                                      starMin = parseInt(document.getElementById(`starMin-${chance.name}`).value) || 1
+                                      starMax = parseInt(document.getElementById(`starMax-${chance.name}`).value) || 5
+                                    }
+                                    handleUpdateChance(chance.name, visible, real, selectedSpinMode, pawMin, pawMax, starMin, starMax)
+                                  }}
+                                  disabled={actionLoading}
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  className="chance-btn cancel-btn"
+                                  onClick={() => setEditingGift(null)}
+                                  disabled={actionLoading}
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="chance-btn edit-btn"
+                                onClick={() => setEditingGift(chance.name)}
+                              >
+                                ✎
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {adminView === 'gifts' && (
+                <>
+                  <div className="panel-header-row">
+                    <button className="back-btn" onClick={() => setAdminView('list')}>← Назад</button>
+                    <h2 className="admin-panel-title">Наполнение: {cases.find(c => c.slug === selectedSpinMode)?.title}</h2>
+                  </div>
+
+                  <div className="gifts-toggle-list">
+                    {caseGifts.map(gift => (
+                      <div key={gift.name} className="gift-toggle-item">
+                        <div className="gift-toggle-info">
+                          <img src={`/gifts/${gift.name}.png`} onError={(e) => e.target.src = giftIcon} alt={gift.name} className="mini-gift-icon" />
+                          <span className="gift-name">{gift.name}</span>
+                          {gift.type === 'currency' && <span className="currency-badge">Val</span>}
+                        </div>
+                        <label className="toggle-switch small">
+                          <input
+                            type="checkbox"
+                            checked={gift.enabled}
+                            onChange={(e) => handleToggleCaseGift(selectedSpinMode, gift.name, e.target.checked)}
+                          />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
             </div>
           </div>
         </>

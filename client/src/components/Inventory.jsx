@@ -287,6 +287,7 @@ function Inventory({ onNavigateToTopUp }) {
       })
       const data = await response.json()
       if (data.success) {
+        const msg = `Продано! + ${data.newBalance - (data.oldBalance || 0)} ⭐`
         if (tg?.showAlert) tg.showAlert(msg)
         else alert(msg)
         loadInventory()

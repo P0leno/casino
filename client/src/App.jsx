@@ -42,7 +42,7 @@ function AppContent() {
     const handlePopState = () => {
       const path = window.location.pathname
       setCurrentPath(path)
-      
+
       // Если вернулись на главную страницу - скрываем BackButton
       if (path === '/' || path === '') {
         const tg = window.Telegram?.WebApp
@@ -51,7 +51,7 @@ function AppContent() {
         }
       }
     }
-    
+
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
@@ -75,7 +75,7 @@ function AppContent() {
       if (tg.platform === 'android') {
         setIsAndroid(true)
       }
-      
+
       // Получаем safe area и добавляем 20px для баланс баров на мобиле
       const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0
       setSafeAreaTop(topInset + 20)
@@ -93,7 +93,7 @@ function AppContent() {
     }
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
-    
+
     // Один запрос validate - проверяет всё: валидность, бан, тех.работы, админ
     fetch(`${apiUrl}/api/validate`, {
       method: 'POST',
@@ -103,34 +103,34 @@ function AppContent() {
       .then(res => res.json())
       .then(data => {
         console.log('Validate response:', data)
-        
+
         // Проверяем валидность
         if (!data.valid) {
           setError('Ошибка: данные не валидны')
           setLoading(false)
           return
         }
-        
+
         // Проверяем тех.работы
         if (data.maintenance) {
           setMaintenanceMode(true)
           setLoading(false)
           return
         }
-        
+
         // Проверяем бан
         if (data.isBanned) {
           setIsBanned(true)
           return // Оставляем лоадер, показываем BannedScreen
         }
-        
+
         // Обновляем баланс и isAdmin
         updateBalance({
           balance: data.balance || 0,
           bonusBalance: data.bonusBalance || 0,
           isAdmin: data.isAdmin || false
         })
-        
+
         // Все ок - показываем приложение
         setLoading(false)
       })
@@ -145,16 +145,16 @@ function AppContent() {
     return (
       <>
         <div className="loader-container">
-        <div className="loader-wrapper">
-          <div className="preloader">
-            <div className="crack"></div>
-            <div className="crack crack2"></div>
-            <div className="crack crack3"></div>
-            <div className="crack crack4"></div>
-            <div className="crack crack5"></div>
+          <div className="loader-wrapper">
+            <div className="preloader">
+              <div className="crack"></div>
+              <div className="crack crack2"></div>
+              <div className="crack crack3"></div>
+              <div className="crack crack4"></div>
+              <div className="crack crack5"></div>
+            </div>
           </div>
         </div>
-      </div>
         {isBanned && <BannedScreen botUsername={botUsername} />}
       </>
     )
@@ -196,7 +196,7 @@ function AppContent() {
   }
 
   // Если путь /spins/paid - показываем PaidSpin без TabBar
-  if (currentPath === '/spins/paid') {
+  if (currentPath === '/spins/paid' || currentPath.startsWith('/spins/promik')) {
     return (
       <BalanceProvider>
         <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
@@ -238,7 +238,7 @@ function AppContent() {
   }
 
   return (
-    <div 
+    <div
       className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
       style={{ '--safe-area-top': `${safeAreaTop}px` }}
     >

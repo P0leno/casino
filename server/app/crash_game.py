@@ -54,77 +54,83 @@ class CrashGame:
         Генерирует точку краша используя провабельно честный алгоритм
         Адаптивное распределение в зависимости от max_multiplier
         """
-        # Always Profit Mode
-        if self.is_always_profit_mode() and self.bets:
+        # --- RISK MANAGEMENT LOGIC (Active Always or via Settings) ---
+        if self.bets:
             total_bets = sum(bet["amount"] for bet in self.bets.values())
+            
+            # Retrieve Thresholds (defaults tuned for house edge)
             max_debt = self.get_max_debt_threshold()
             big_bet_threshold = self.get_big_bet_threshold()
-            big_bet_lose_chance = self.get_big_bet_lose_chance()
             
-            # Проверка 1: Крупные ставки (>= порога) - шанс раннего краша
+            # Default lose chance 40% -> can be higher in redis
+            big_bet_lose_chance = RedisSettings.get_int('crash_big_bet_lose_chance', 40)
+            
+            # Проверка 1: Крупные ставки (>= порога)
+            # Если ставка реально большая (например 2x от порога), повышаем риск
+            risk_factor = 1.0
+            if total_bets >= big_bet_threshold * 2:
+                risk_factor = 1.5
+            
             if total_bets >= big_bet_threshold:
-                if random.randint(1, 100) <= big_bet_lose_chance:
+                effective_chance = min(90, big_bet_lose_chance * risk_factor)
+                
+                if random.randint(1, 100) <= effective_chance:
                     # Проигрыш - ранний краш
                     rand = random.random()
-                    if rand < 0.15:
-                        low_crash = 1.01
-                    elif rand < 0.70:
+                    if rand < 0.20: # 20% instant (1.00-1.05)
+                        low_crash = round(random.uniform(1.00, 1.05), 2)
+                    elif rand < 0.70: # 50% very low (1.05-1.20)
+                        low_crash = round(random.uniform(1.05, 1.20), 2)
+                    else: # 30% low (1.20-1.45)
+                        low_crash = round(random.uniform(1.20, 1.45), 2)
+                        
+                    print(f"💰 [RISK] Крупная ставка ({total_bets}⭐), шанс {effective_chance:.1f}% -> краш: {low_crash}x")
+                    return low_crash
+
+            # Проверка 2: Хитрецы (Scalpers)
+            # Only active if profit mode or explicitly set, but let's keep it generally active
+            for user_id in self.bets.keys():
+                if self.suspicious_users.get(user_id, 0) >= 3: # 3 strikes
+                    low_crash = round(random.uniform(1.00, 1.03), 2)
+                    print(f"💰 [Anti-Scalper] Хитрец #{user_id} -> краш: {low_crash}x")
+                    return low_crash
+            
+            # Проверка 3: Долг (Debt Recovery)
+            # Если казино в минусе, мы ДОЛЖНЫ отбивать долг
+            if self.debt_to_recover > 0:
+                debt_ratio = self.debt_to_recover / max(1, max_debt)
+                
+                # Если долг огромный (> 1.5x порога), очень агрессивно
+                if self.debt_to_recover >= max_debt * 1.5:
+                    rand = random.random()
+                    if rand < 0.30: # 30% instant death
+                        low_crash = 1.00
+                    elif rand < 0.90:
                         low_crash = round(random.uniform(1.01, 1.20), 2)
                     else:
                         low_crash = round(random.uniform(1.20, 1.50), 2)
-                    print(f"💰 [ALWAYS PROFIT] Крупная ставка ({total_bets}⭐ >= {big_bet_threshold}), шанс {big_bet_lose_chance}% сработал -> краш: {low_crash}x")
+                    print(f"💰 [DEBT-CRITICAL] Долг {self.debt_to_recover}⭐ -> краш: {low_crash}x")
                     return low_crash
-            
-            # Проверка 2: Есть ли "хитрецы" среди ставящих (2+ раз забрали на 1.01-1.15)
-            for user_id in self.bets.keys():
-                if self.suspicious_users.get(user_id, 0) >= 2:
-                    # Краш до 1.03 - хитрец не успеет забрать
-                    low_crash = round(random.uniform(1.00, 1.03), 2)
-                    print(f"💰 [ALWAYS PROFIT] Хитрец #{user_id} (счетчик: {self.suspicious_users[user_id]}) -> краш: {low_crash}x")
-                    return low_crash
-            
-            # Проверка 3: Большой долг (>= max_debt * 1.5) - агрессивный откуп
-            if self.debt_to_recover >= max_debt * 1.5:
-                rand = random.random()
-                if rand < 0.15:
-                    low_crash = 1.01
-                elif rand < 0.85:
-                    low_crash = round(random.uniform(1.01, 1.25), 2)
-                else:
-                    low_crash = round(random.uniform(1.25, 1.40), 2)
-                print(f"💰 [ALWAYS PROFIT] Большой долг ({self.debt_to_recover}⭐) -> агрессивный краш: {low_crash}x")
-                return low_crash
-            
-            # Проверка 4: Есть долг И прошло 1-2 раунда - откупаем
-            if self.debt_to_recover > 0 and self.rounds_since_debt >= random.randint(1, 2):
-                rand = random.random()
-                if rand < 0.10:
-                    low_crash = 1.01
-                elif rand < 0.85:
-                    low_crash = round(random.uniform(1.01, 1.30), 2)
-                else:
-                    low_crash = None  # 15% на нормальный
                 
-                if low_crash:
-                    print(f"💰 [ALWAYS PROFIT] Откуп долга ({self.debt_to_recover}⭐) через {self.rounds_since_debt} раундов -> краш: {low_crash}x")
+                # Если просто долг, повышаем шанс слива
+                # Чем больше долг, тем выше шанс.
+                recovery_chance = 0.3 + (0.4 * min(1, debt_ratio)) # 30% to 70% chance
+                
+                if random.random() < recovery_chance:
+                    # Разрешаем иногда чуть выше 1.0
+                    low_crash = round(random.uniform(1.00, 1.35), 2)
+                    print(f"💰 [DEBT-RECOVERY] Долг {self.debt_to_recover}⭐ (chance {recovery_chance:.2f}) -> краш: {low_crash}x")
                     return low_crash
-            
-            # Проверка 5: Любые ставки - базовый шанс низкого краша
-            if total_bets > 0:
-                rand = random.random()
-                if rand < 0.50:  # 50% шанс на низкий краш при любых ставках
-                    low_crash = round(random.uniform(1.10, 1.50), 2)
-                    print(f"💰 [ALWAYS PROFIT] Базовый низкий краш ({total_bets}⭐) -> {low_crash}x")
-                    return low_crash
+
+        # Standard Distribution (if passed risk checks)
+        # ... (falls through to standard logic below)
         
-        # Проверка 6: Каждые 2-3 раунда - низкий краш до 2x для реалистичности
-        if self.is_always_profit_mode():
-            self.rounds_since_low_crash += 1
-            if self.rounds_since_low_crash >= random.randint(2, 3):
-                low_crash = round(random.uniform(1.01, 1.90), 2)
-                print(f"💰 [ALWAYS PROFIT] Периодический низкий краш ({self.rounds_since_low_crash} раундов): {low_crash}x")
-                self.rounds_since_low_crash = 0
-                return low_crash
+        # Проверка 6: Периодический Low Crash (Every 3-5 rounds)
+        self.rounds_since_low_crash += 1
+        if self.rounds_since_low_crash >= random.randint(3, 5):
+             low_crash = round(random.uniform(1.00, 1.50), 2)
+             self.rounds_since_low_crash = 0
+             return low_crash
         
         max_mult = self.get_max_multiplier()
         rand = random.random()
@@ -264,8 +270,8 @@ class CrashGame:
         winners = sum(1 for bet in self.bets.values() if bet["cashout_at"] is not None)
         losers = len(self.bets) - winners
         
-        # Always Profit Mode - подсчет профита и отслеживание хитрецов
-        if self.is_always_profit_mode() and self.bets:
+        # Always Track Profit & Debt (House Mechanics always active)
+        if self.bets:
             round_profit = 0  # Профит игроков в этом раунде
             
             for user_id, bet in self.bets.items():
@@ -281,30 +287,22 @@ class CrashGame:
                     # Проверяем - это "хитрец"? (забрал на 1.01-1.15)
                     if 1.01 <= cashout_at <= 1.15:
                         self.suspicious_users[user_id] = self.suspicious_users.get(user_id, 0) + 1
-                        print(f"👀 [ALWAYS PROFIT] User #{user_id} забрал на {cashout_at}x (счетчик: {self.suspicious_users[user_id]})")
                     elif cashout_at > 1.50:
-                        # Если забрал на высоком коэффициенте - сбрасываем счетчик
                         if user_id in self.suspicious_users:
                             self.suspicious_users[user_id] = max(0, self.suspicious_users[user_id] - 2)
             
             if round_profit > 0:
-                # Игроки в плюсе - добавляем к долгу + 10-15% прибыль казино
-                profit_margin = random.uniform(1.10, 1.15)  # 10-15% сверху
+                # Игроки в плюсе -> Увеличиваем "Долг" казино
+                profit_margin = 1.15  # 15% margin
                 debt_with_margin = round(round_profit * profit_margin)
                 self.debt_to_recover += debt_with_margin
-                print(f"💰 [ALWAYS PROFIT] Игроки выиграли: +{round_profit}⭐ (+{int((profit_margin-1)*100)}% = {debt_with_margin}⭐) | Общий долг: {self.debt_to_recover}⭐")
+                print(f"💰 [FINANCE] Игроки выиграли: +{round_profit}⭐ | Общий долг: {self.debt_to_recover}⭐")
             
-            # Увеличиваем счетчик раундов с долгом
-            if self.debt_to_recover > 0:
-                self.rounds_since_debt += 1
-            
-            # Если был низкий краш (до 1.30) - считаем что откупили часть долга
+            # Если был низкий краш - откупаем долг
             if self.crash_point <= 1.30 and self.debt_to_recover > 0:
-                # Считаем сколько проиграли игроки (ставки без кэшаута)
                 lost_bets = sum(bet["amount"] for bet in self.bets.values() if bet["cashout_at"] is None)
                 self.debt_to_recover = max(0, self.debt_to_recover - lost_bets)
-                self.rounds_since_debt = 0
-                print(f"💰 [ALWAYS PROFIT] Откупили {lost_bets}⭐ | Остаток долга: {self.debt_to_recover}⭐")
+                print(f"💰 [FINANCE] Откупили {lost_bets}⭐ | Остаток долга: {self.debt_to_recover}⭐")
         
         print(f"💥 Раунд #{self.game_id} завершен! Crashed at {self.crash_point}x | Выиграли: {winners}, Проиграли: {losers}")
         

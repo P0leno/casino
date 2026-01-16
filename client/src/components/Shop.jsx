@@ -48,7 +48,8 @@ function Shop({ onNavigateToTopUp }) {
   const tg = window.Telegram?.WebApp
   const safeAreaTop = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
   // Отступ = safe area + 20px (отступ баланс баров) + 50px (высота баланс бара) + 10px (gap)
-  const contentPadding = isMobile ? (safeAreaTop + 80) : 50
+  // Adjusted for "5px from status bar" request
+  const contentPadding = isMobile ? (safeAreaTop + 60) : 60
 
   console.log('Shop - safeAreaTop:', safeAreaTop, 'contentPadding:', contentPadding, 'isMobile:', isMobile)
 
@@ -192,7 +193,7 @@ function Shop({ onNavigateToTopUp }) {
     <div className="shop-page">
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
       <BonusBalanceBar />
-      <div className="shop-content">
+      <div className="shop-content" style={{ paddingTop: contentPadding }}>
 
 
         {/* Панель управления (Фильтр и Сортировка) */}

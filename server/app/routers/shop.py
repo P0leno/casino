@@ -56,11 +56,16 @@ class BuyGiftRequest(BaseModel):
 
 class GetShopGiftsRequest(BaseModel):
     initData: str
+    limit: int = 10
+    offset: int = 0
+    filter_model: Optional[str] = None
+    filter_backdrop: Optional[str] = None
+    sort_order: Optional[str] = 'price_asc' # price_asc, price_desc
 
 @router.post("/shop/gifts", response_model=List[ShopGift])
 async def get_shop_gifts(request: GetShopGiftsRequest):
     """
-    Получить список подарков для магазина (исключая те, что в инвентаре)
+    Получить список подарков для магазина с пагинацией и фильтрацией.
     """
     # Проверяем initData
     user_data = verify_init_data(request.initData)
@@ -77,40 +82,49 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
             detail=f"Слишком частые запросы. Попробуйте через {remaining_time} секунд"
         )
     
+    # Simple pagination wrapper around db query
+    # Note: shop_cache logic was fetching ALL gifts then caching.
+    # With pagination and filtering, caching efficiently is harder.
+    # User said "filters on server".
+    # Strategy:
+    # 1. Fetch RAW list from DB with LIMIT/OFFSET/WHERE.
+    # 2. Filter out user inventory items (client side or server side? 
+    #    Server side is better but complex if inventory is JSON blob).
+    #    Current logic: "get_shop_gifts... excluding inventory".
+    #    The current implementation fetched user inventory first.
+    
     try:
-        # Получаем инвентарь пользователя
+        all_gifts = get_cached_shop_gifts()
+        gifts = []
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        # 1. Get Inventory to exclude
         cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
         user_result = cursor.fetchone()
-        conn.close()
-        
         inventory_slugs = []
         if user_result and user_result[0]:
             try:
-                raw_inv = json.loads(user_result[0])
-                # Support mixed format (strings and objects)
-                for item in raw_inv:
-                    if isinstance(item, dict):
-                        inventory_slugs.append(item.get('slug'))
-                    else:
-                        inventory_slugs.append(item)
-            except:
+                inventory_slugs = json.loads(user_result[0])
+            except json.JSONDecodeError:
                 inventory_slugs = []
-        
-        # Получаем подарки с ценами из кэша (ton_price из SQLite, stars_price пересчитана)
-        all_gifts = get_cached_shop_gifts()
-        
-        # Получаем список уже проданных подарков (для глобальной уникальности)
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT slug FROM sold_gifts")
-        sold_slugs = {row[0] for row in cursor.fetchall()}
-        conn.close()
 
-        # Фильтруем: убираем те, что в инвентаре ИЛИ уже проданы кому-то ещё
-        gifts = []
-        print(f"[DEBUG_SHOP] User {user_id} Inventory: {len(inventory_slugs)} items")
+        # 2. Get Sold Gifts (Global) to exclude if unique per user/global? 
+        # Actually, sold_gifts table tracks specific purchases. 
+        # If the gift is "unique" and sold to *anyone*, it might be removed from cache already.
+        # But if we want to be sure, check if we need to filter `sold_gifts`.
+        # For now, let's assume `all_gifts` (from cache) correctly reflects availability.
+        # However, we must filter items the USER already owns if "one per user".
+        # Assuming all items are one-per-user or we just hide what they have.
+        
+        # NOTE: logic below refers to `sold_slugs` but it's not defined in this snippet. 
+        # I need to check where `sold_slugs` comes from or if I should remove that check.
+        # Looking at subsequent lines (113), `sold_slugs` is used.
+        
+        cursor.execute("SELECT slug FROM sold_gifts")
+        sold_rows = cursor.fetchall()
+        sold_slugs = {row[0] for row in sold_rows}
+
         print(f"[DEBUG_SHOP] Global Sold: {len(sold_slugs)} items")
         
         for gift in all_gifts:
