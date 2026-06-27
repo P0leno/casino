@@ -2,7 +2,7 @@
   width: 100%;
   min-height: calc(100vh - 70px);
   padding-bottom: 70px;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 .shop-content {
@@ -13,7 +13,7 @@
 .shop-title {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   text-align: center;
   margin: 0 0 20px 0;
 }
@@ -36,21 +36,25 @@
   align-items: center;
   justify-content: center;
   gap: .375rem;
-  background: #ffffff14;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 1.25rem;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   padding: .5rem 1rem;
-  color: #fff;
-  transition: background .2s ease, border-color .2s ease;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
   cursor: pointer;
   min-width: 0;
   font-size: 14px;
   flex: 1;
-  /* Растягиваем кнопки */
+  position: relative;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
 }
 
 .shop-control-btn:active {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg-strong);
+  filter: brightness(1.2);
+  transform: scale(0.97);
 }
 
 /* Иконки внутри кнопок */
@@ -70,26 +74,24 @@
 
 .shop-item-card {
   position: relative;
-  background: transparent;
-  /* Будет задан инлайн через radial-gradient */
-  backdrop-filter: blur(1.25rem);
-  -webkit-backdrop-filter: blur(1.25rem);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  /* Из примера */
-  border-radius: 2rem;
-  /* Из примера .GeR6E */
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
   padding: 0.55rem;
-  /* Из примера */
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 1.2s cubic-bezier(.19, 1, .22, 1), border-color .2s ease, box-shadow .2s ease;
+  transition: all 0.3s ease;
   isolation: isolate;
   user-select: none;
   contain: content;
   transform: translateZ(0);
+  will-change: transform;
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
 }
 
 .shop-item-card::after {
@@ -97,26 +99,17 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset .5px .5px .25px #ffffff26, inset -.25px -.25px .25px .25px #ffffff1a;
+  box-shadow: inset .5px .5px .25px rgba(255,255,255,0.15), inset -.25px -.25px .25px .25px rgba(255,255,255,0.1);
   pointer-events: none;
   z-index: 2;
 }
 
-/* Убираем hover эффект */
 .shop-item-card:active {
-  /* transform removed */
+  transform: scale(0.97);
 }
 
 /* Стили для кнопки цены (из примера ._18Bed) */
 .shop-item-price {
-  --button-bg: linear-gradient(135deg, rgba(38, 171, 255, 0.85) 0%, rgba(0, 157, 255, 0.85) 50%, rgba(0, 144, 234, 0.85) 100%);
-  --button-text: rgba(255, 255, 255, 0.9);
-  --button-pressed: linear-gradient(135deg, rgba(12, 139, 217, 0.85) 0%, rgba(0, 133, 216, 0.85) 50%, rgba(0, 129, 209, 0.85) 100%);
-  --highlight-color: rgba(255, 255, 255, 0.4);
-  --shadow-color: rgba(0, 0, 0, 0.15);
-  --border-color: rgba(255, 255, 255, 0.15);
-  --backdrop-blur: none;
-
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -124,21 +117,21 @@
   gap: .5rem;
   width: 100%;
   padding: .5rem 1rem;
-  border: none;
-  border-radius: 2rem;
-  background: var(--button-bg);
-  color: var(--button-text);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, rgba(0, 144, 234, 0.85) 100%);
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all .2s ease;
+  transition: all 0.2s ease;
   outline: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   isolation: isolate;
-  box-shadow: none;
-  text-shadow: none;
-  backdrop-filter: var(--backdrop-blur, none);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  will-change: transform;
 }
 
 .shop-item-price::before,
@@ -151,29 +144,27 @@
 }
 
 .shop-item-price::after {
-  box-shadow: 0 0 0 .25px var(--border-color, rgba(255, 255, 255, .15)), inset .25px .25px .5px 0 var(--highlight-color, rgba(255, 255, 255, .4)), inset -.25px -.25px .5px 0 var(--shadow-color, rgba(0, 0, 0, .15));
+  box-shadow: inset 0.25px 0.25px 0.5px 0 rgba(255, 255, 255, 0.4), inset -0.25px -0.25px 0.5px 0 rgba(0, 0, 0, 0.15);
 }
 
 .shop-item-price:active {
-  background: var(--button-pressed);
-  /* transform removed */
+  filter: brightness(0.9);
+  transform: scale(0.97);
 }
 
 .shop-item-price:hover {
-  /* transform removed */
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight), 0 0 20px rgba(38, 171, 255, 0.3);
 }
 
 .shop-item-image {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 2rem;
-  /* Закругление как у плашки */
+  border-radius: var(--glass-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
-  /* background удален, так как он теперь на карточке */
 }
 
 .price-star-icon {
@@ -183,27 +174,24 @@
   filter: brightness(0) invert(1);
 }
 
-/* Убираем hover эффект */
-.shop-item-price:active {
-  /* transform removed */
-}
 
 .back-button {
   margin-bottom: 16px;
   padding: 10px 20px;
-  background: transparent;
-  backdrop-filter: blur(1.25rem);
-  border: 1px solid rgba(15, 188, 224, 0.3);
-  border-radius: 20px;
-  color: #0FBCE0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--accent-blue);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
+  will-change: transform;
 }
 
 .back-button:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* Адаптив для маленьких экранов */

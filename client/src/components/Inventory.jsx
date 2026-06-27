@@ -6,7 +6,7 @@ import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import { useBalance } from '../contexts/BalanceContext'
 import GiftDetailsModal from './GiftDetailsModal'
-import starStaticIcon from '../assets/star_static.svg'
+import Icon from './Icons'
 import ActionStatusModal from './ActionStatusModal'
 import PaymentModal from './PaymentModal'
 
@@ -356,9 +356,8 @@ function Inventory({ onNavigateToTopUp }) {
         {loading ? (
           <div className="loading-spinner"></div>
         ) : inventory.length === 0 ? (
-          <div className="empty-inventory">
-            {/* Empty UI */}
-            <div className="empty-icon">🎁</div>
+          <div className="empty-inventory glass-card">
+            <div className="empty-icon"><Icon name="gift" size="xl" /></div>
             <h3>Инвентарь пуст</h3>
             <p>У вас пока нет подарков.</p>
           </div>
@@ -371,7 +370,7 @@ function Inventory({ onNavigateToTopUp }) {
               return (
                 <div
                   key={`${gift.slug || gift.name} -${index} `}
-                  className={isRegular ? 'gift-card-inventory-regular' : 'gift-card-inventory'}
+                  className={`gift-card-inventory glass-hover ${isRegular ? 'gift-card-inventory-regular' : ''}`}
                   onClick={() => handleViewGift(gift)}
                 >
                   {/* Image rendering (already fixed to be stretched) */}

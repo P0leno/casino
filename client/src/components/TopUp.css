@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #1c1c1e;
+  background: var(--bg-primary);
   z-index: 1000;
   animation: fadeIn 0.2s ease;
 }
@@ -19,7 +19,7 @@
 }
 
 .topup-content {
-  background: #1c1c1e;
+  background: var(--bg-primary);
   width: 100%;
   height: 100%;
   display: flex;
@@ -32,26 +32,27 @@
   gap: 8px;
   padding: 16px;
   padding-top: max(16px, env(safe-area-inset-top, 16px));
-  background: #1c1c1e;
+  background: var(--bg-primary);
 }
 
 .payment-tab {
   flex: 1;
   padding: 12px;
-  background: #2c2c2e;
+  background: var(--glass-bg-strong);
   border: 2px solid transparent;
-  border-radius: 12px;
-  color: #8e8e93;
+  border-radius: var(--glass-radius);
+  color: var(--text-secondary);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 .payment-tab.active {
-  background: #3a3a3c;
-  border-color: #ffd60a;
-  color: #ffffff;
+  background: var(--glass-bg-strong);
+  border-color: var(--accent-yellow);
+  color: var(--text-primary);
 }
 
 .payment-tab:active {
@@ -91,7 +92,7 @@
 .amount-number {
   font-size: 80px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   line-height: 1;
   margin-bottom: 8px;
   cursor: pointer;
@@ -100,7 +101,7 @@
 .amount-input {
   font-size: 80px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   line-height: 1;
   margin-bottom: 8px;
   background: transparent;
@@ -119,7 +120,7 @@
 
 .amount-label {
   font-size: 32px;
-  color: #8e8e93;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -127,36 +128,42 @@
   padding: 16px;
   display: flex;
   gap: 8px;
-  background: #1c1c1e;
+  background: var(--bg-primary);
 }
 
 .preset-btn {
   flex: 1;
-  background: #3a3a3c;
-  border: none;
-  color: #ffffff;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
   padding: 14px 8px;
-  border-radius: 12px;
+  border-radius: var(--glass-radius);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  will-change: transform;
 }
 
 .preset-btn:active {
-  background: #48484a;
+  filter: brightness(1.2);
   transform: scale(0.97);
 }
 
 .error-message {
-  background: rgba(255, 59, 48, 0.9);
-  color: #ffffff;
+  background: var(--glass-bg-strong);
+  color: var(--accent-red);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--glass-radius);
   margin: 0 16px 15px 16px;
   font-size: 14px;
   text-align: center;
   animation: shake 0.3s ease;
+  border: 1px solid var(--accent-red);
+  opacity: 0.9;
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 @keyframes shake {
@@ -169,14 +176,17 @@
   margin: 16px;
   margin-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   padding: 16px;
-  background: #ffd60a;
-  color: #000000;
-  border: none;
-  border-radius: 12px;
+  background: var(--accent-yellow);
+  color: var(--bg-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  will-change: transform;
 }
 
 .topup-btn:active:not(:disabled) {
@@ -196,7 +206,7 @@
 }
 
 .wallet-info {
-  color: #8e8e93;
+  color: var(--text-secondary);
   font-size: 15px;
   margin-bottom: 16px;
 }
@@ -204,19 +214,22 @@
 .connect-wallet-btn {
   width: 100%;
   padding: 16px;
-  background: #0098ea;
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
+  background: var(--accent-blue);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  will-change: transform;
 }
 
 .connect-wallet-btn:active:not(:disabled) {
   transform: scale(0.97);
-  opacity: 0.8;
+  filter: brightness(1.1);
 }
 
 .connect-wallet-btn:disabled {
@@ -226,9 +239,11 @@
 
 .wallet-connected {
   padding: 16px;
-  background: #2c2c2e;
+  background: var(--glass-bg-strong);
   margin: 16px;
-  border-radius: 12px;
+  border-radius: var(--glass-radius);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border);
 }
 
 .wallet-header {
@@ -240,13 +255,13 @@
 }
 
 .wallet-label {
-  color: #8e8e93;
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 0 0 8px 0;
 }
 
 .wallet-address {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 16px;
   font-weight: 600;
   font-family: 'Courier New', monospace;
@@ -255,10 +270,11 @@
 
 .disconnect-wallet-btn {
   padding: 8px 16px;
-  background: #3a3a3c;
-  color: #ff453a;
-  border: 1px solid #ff453a;
-  border-radius: 8px;
+  background: var(--glass-bg-strong);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red);
+  opacity: 0.8;
+  border-radius: var(--glass-radius-sm);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -268,7 +284,7 @@
 
 .disconnect-wallet-btn:active:not(:disabled) {
   transform: scale(0.95);
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .disconnect-wallet-btn:disabled {
@@ -277,15 +293,15 @@
 }
 
 .payment-code-label {
-  color: #8e8e93;
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 16px 0 8px 0;
-  border-top: 1px solid #3a3a3c;
+  border-top: 1px solid var(--glass-border);
   padding-top: 16px;
 }
 
 .payment-code {
-  color: #ffd60a;
+  color: var(--accent-yellow);
   font-size: 18px;
   font-weight: 700;
   font-family: 'Courier New', monospace;
@@ -298,19 +314,19 @@
 }
 
 .ton-hint {
-  color: #8e8e93;
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 16px 0 0 0;
   padding-top: 16px;
-  border-top: 1px solid #3a3a3c;
+  border-top: 1px solid var(--glass-border);
   line-height: 1.4;
 }
 
 /* TON Payment styles */
 .payment-info {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   padding: 16px;
   margin-top: 20px;
 }
@@ -320,7 +336,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
+  opacity: 0.5;
 }
 
 .info-row:last-child {
@@ -328,11 +345,11 @@
 }
 
 .info-row span:first-child {
-  color: #8e8e93;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .info-row span:last-child {
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
 }

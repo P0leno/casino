@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './TopUp.css'
 import CryptoBotPayment from './CryptoBotPayment'
+import Icon from './Icons'
 
 function TopUp({ onNavigateBack }) {
   const [paymentMethod, setPaymentMethod] = useState('stars') // 'stars' или 'cryptobot'
@@ -350,12 +351,12 @@ function TopUp({ onNavigateBack }) {
     <div className="topup-page">
       <div className="topup-content" style={{ paddingTop: `${topPadding}px` }}>
         {/* Табы выбора метода оплаты */}
-        <div className="payment-tabs">
+        <div className="payment-tabs glass-section">
           <button
             className={`payment-tab ${paymentMethod === 'stars' ? 'active' : ''}`}
             onClick={() => setPaymentMethod('stars')}
           >
-            ⭐️ Звезды
+            <Icon name="star" size="md" /> Звезды
           </button>
           <button
             className={`payment-tab ${paymentMethod === 'cryptobot' ? 'active' : ''}`}
@@ -368,14 +369,14 @@ function TopUp({ onNavigateBack }) {
         {paymentMethod === 'cryptobot' ? (
           <CryptoBotPayment onNavigateBack={onNavigateBack} isEmbedded={true} />
         ) : (
-          <div className="topup-body">
+          <div className="topup-body glass-card">
 
 
             <div className="amount-display" onClick={() => setIsEditing(true)}>
               {isEditing ? (
                 <input
                   type="number"
-                  className="amount-input"
+                  className="amount-input glass-input"
                   value={amount}
                   onChange={(e) => setAmount(Math.max(1, Math.min(2500, parseInt(e.target.value) || 0)))}
                   onBlur={() => setIsEditing(false)}
@@ -395,7 +396,7 @@ function TopUp({ onNavigateBack }) {
               {presetAmounts.map(preset => (
                 <button
                   key={preset}
-                  className="preset-btn"
+                  className="preset-btn glass-button"
                   onClick={() => setAmount(prev => Math.min(2500, prev + preset))}
                 >
                   + {preset}
@@ -404,7 +405,7 @@ function TopUp({ onNavigateBack }) {
             </div>
 
             <button
-              className="topup-btn"
+              className="topup-btn glass-button"
               onClick={handleTopUp}
               disabled={loading || (paymentMethod === 'ton' && !walletAddress)}
             >

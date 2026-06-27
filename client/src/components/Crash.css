@@ -7,13 +7,14 @@
   padding-top: 70px;
   display: flex;
   flex-direction: column;
-  background: #000000;
+  background: var(--bg-primary);
 }
 
 /* Баннер отключения - в стиле плитки ставки */
 .crash-disconnected-tile {
-  background: rgba(255, 68, 68, 0.1) !important;
-  border: 1px solid rgba(255, 68, 68, 0.3) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--accent-red) !important;
+  opacity: 0.3;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -25,20 +26,20 @@
 .disconnected-title {
   font-size: 16px;
   font-weight: 600;
-  color: #ff4444;
+  color: var(--accent-red);
   margin: 0;
 }
 
 .disconnected-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   line-height: 1.5;
   text-align: center;
   margin: 0;
 }
 
 .disconnected-text a {
-  color: #ff4444;
+  color: var(--accent-red);
   text-decoration: underline;
   font-weight: 600;
   cursor: pointer;
@@ -54,7 +55,7 @@
   width: 100%;
   flex: 1;
   min-height: 50vh;
-  background: #000000;
+  background: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,13 +96,15 @@
 .grid-lines-horizontal .grid-line {
   width: 100%;
   height: 1px;
-  background: rgba(59, 130, 246, 0.4);
+  background: var(--accent-blue);
+  opacity: 0.4;
 }
 
 .grid-lines-vertical .grid-line {
   width: 1px;
   height: 100%;
-  background: rgba(59, 130, 246, 0.4);
+  background: var(--accent-blue);
+  opacity: 0.4;
 }
 
 /* Анимация сеточки при работе - интенсивность зависит от множителя */
@@ -148,12 +151,12 @@
   left: 10%;
   height: 4px;
   background: linear-gradient(90deg, 
-    rgba(139, 255, 101, 0) 0%, 
+    transparent 0%, 
     rgba(139, 255, 101, 0.5) 20%,
-    rgba(139, 255, 101, 1) 100%
+    var(--accent-green) 100%
   );
   border-radius: 2px;
-  box-shadow: 0 0 15px rgba(139, 255, 101, 0.8);
+  box-shadow: 0 0 15px var(--accent-green);
   z-index: 2;
   transform-origin: left center;
   transform: rotate(-20deg);
@@ -226,8 +229,8 @@
   transform: translate(-50%, -50%);
   font-size: 72px;
   font-weight: 900;
-  color: #ff4444;
-  text-shadow: 0 0 20px #ff4444, 0 0 40px #ff4444;
+  color: var(--accent-red);
+  text-shadow: 0 0 20px var(--accent-red), 0 0 40px var(--accent-red);
   z-index: 100;
   animation: crashAppear 0.3s ease-out forwards;
   white-space: nowrap;
@@ -253,8 +256,8 @@
   padding: 12px 20px;
   overflow-x: auto;
   scrollbar-width: none;
-  background: #000000;
-  min-height: 56px; /* Фиксированная высота для стабильности */
+  background: var(--bg-primary);
+  min-height: 56px;
 }
 
 .crash-history-row::-webkit-scrollbar {
@@ -272,20 +275,22 @@
 }
 
 .crash-history-item.low {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
 }
 
 .crash-history-item.high {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--glass-bg);
+  border: 1px solid var(--accent-green);
+  opacity: 0.3;
+  color: var(--accent-green);
 }
 
 .crash-history-item.mega {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--glass-bg);
+  color: var(--accent-yellow);
+  border: 1px solid var(--accent-yellow);
+  opacity: 0.3;
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }
 
@@ -293,7 +298,7 @@
 .crash-waiting-text {
   flex: 1;
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   padding: 8px;
@@ -302,12 +307,12 @@
 /* Countdown текст над историей */
 .crash-countdown-text {
   text-align: center;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
   padding: 8px 20px;
   background: transparent;
-  min-height: 38px; /* Фиксированная высота для стабильности */
+  min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,7 +331,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-secondary);
+  opacity: 0.3;
   font-size: 16px;
   font-weight: 500;
   padding: 40px 20px;
@@ -349,29 +355,32 @@
 .crash-button {
   width: 100%;
   padding: 18px;
-  border: none;
-  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
   font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #2563eb 100%);
+  color: var(--text-primary);
   font-family: var(--font-family, 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  will-change: transform;
 }
 
 .crash-button:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .crash-cashout-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  background: linear-gradient(135deg, var(--accent-green) 0%, #059669 100%) !important;
 }
 
 /* Убираем hover эффект для кнопок в краше */
 .crash-controls .spin-button-fixed:hover:not(.disabled) {
   transform: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
 }
 
 
@@ -454,13 +463,15 @@
 }
 
 .bet-amount-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-secondary);
+  opacity: 0.3;
 }
 
 .bet-amount-label {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
   flex-shrink: 0;
 }
 
@@ -472,25 +483,28 @@
 .bet-quick-buttons button {
   flex: 1;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  will-change: transform;
 }
 
 .bet-quick-buttons button:active {
   transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-strong);
 }
 
 .bet-range-hint {
   text-align: center;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
 }
 
 /* Кнопка Submit уже использует crash-button стили */
@@ -504,11 +518,11 @@
   justify-content: space-between;
   margin: 12px 20px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
 }
 
 .bet-tile-left {
@@ -522,7 +536,7 @@
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--glass-border);
 }
 
 .bet-tile-info {
@@ -534,20 +548,20 @@
 .bet-tile-name {
   font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .bet-tile-status {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   transition: color 0.3s ease;
 }
 
 .bet-tile-amount {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 4px;

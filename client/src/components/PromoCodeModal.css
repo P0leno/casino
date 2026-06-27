@@ -4,8 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm));
   z-index: 999;
   animation: fadeIn 0.3s ease;
 }
@@ -17,16 +17,15 @@
   right: 0;
   height: auto;
   max-height: 90vh;
-  background: #1a1a1a;
-  border-radius: 24px 24px 0 0;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--glass-radius-lg) var(--glass-radius-lg) 0 0;
   z-index: 1000;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   scrollbar-width: none;
-}
-
-.promo-modal-sheet::-webkit-scrollbar {
-  display: none;
+  border-top: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .promo-close-btn {
@@ -36,9 +35,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
   font-size: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -49,7 +48,7 @@
 }
 
 .promo-close-btn:active {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg-strong);
   transform: scale(0.95);
 }
 
@@ -58,10 +57,10 @@
   top: 16px;
   left: 16px;
   padding: 8px 16px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: rgba(15, 188, 224, 0.9);
+  border-radius: var(--glass-radius-lg);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--accent-blue);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -70,7 +69,7 @@
 }
 
 .promo-back-btn:active {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg-strong);
   transform: scale(0.95);
 }
 
@@ -95,7 +94,8 @@
 .promo-modal-title {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
   text-align: center;
   margin: 0;
 }
@@ -104,10 +104,10 @@
   width: 100%;
   max-width: 350px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
   font-size: 18px;
   text-align: center;
   font-weight: 600;
@@ -117,12 +117,13 @@
 
 .promo-input:focus {
   outline: none;
-  border-color: rgba(15, 188, 224, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-strong);
 }
 
 .promo-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-secondary);
+  opacity: 0.3;
   letter-spacing: normal;
 }
 
@@ -135,8 +136,8 @@
   width: 100%;
   max-width: 350px;
   padding: 16px 24px;
-  border: none;
-  border-radius: 32px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -144,16 +145,17 @@
   isolation: isolate;
   position: relative;
   height: 52px;
-  box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 .promo-button-primary {
-  background: linear-gradient(135deg, rgba(38, 171, 255, 0.85) 0%, rgba(0, 157, 255, 0.85) 50%, rgba(0, 144, 234, 0.85) 100%);
-  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, rgba(0, 157, 255, 0.85) 50%, rgba(0, 144, 234, 0.85) 100%);
+  color: var(--text-primary);
 }
 
 .promo-button-primary:active:not(:disabled) {
-  background: linear-gradient(135deg, rgba(12, 139, 217, 0.85) 0%, rgba(0, 133, 216, 0.85) 50%, rgba(0, 129, 209, 0.85) 100%);
+  filter: brightness(0.9);
   transform: translateY(1px);
 }
 
@@ -163,15 +165,16 @@
 }
 
 .promo-button-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.5);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
   cursor: not-allowed;
 }
 
 .promo-link-button {
   background: none;
   border: none;
-  color: rgba(15, 188, 224, 0.8);
+  color: var(--accent-blue);
+  opacity: 0.8;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -180,16 +183,16 @@
 }
 
 .promo-link-button:active {
-  color: rgba(15, 188, 224, 1);
+  color: var(--accent-blue);
   transform: scale(0.98);
 }
 
 .promo-rules-section {
   width: 100%;
   max-width: 350px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   overflow: hidden;
   margin: 10px 0;
 }
@@ -204,38 +207,32 @@
 }
 
 .promo-rules-header:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
 }
 
 .promo-rules-title {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .promo-rules-arrow {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  opacity: 0.5;
   transition: transform 0.3s ease;
-}
-
-.promo-rules-content {
-  padding: 0 20px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: expandRules 0.3s ease;
 }
 
 .promo-rule-item {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
 }
 
 .promo-rule-item strong {
-  color: rgba(15, 188, 224, 0.9);
+  color: var(--accent-blue);
   font-weight: 600;
 }
 
@@ -243,17 +240,17 @@
   width: 100%;
   max-width: 350px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px dashed rgba(15, 188, 224, 0.5);
-  border-radius: 16px;
+  background: var(--glass-bg);
+  border: 2px dashed var(--glass-border);
+  border-radius: var(--glass-radius);
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .promo-code-display:active {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(15, 188, 224, 0.8);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border-hover);
   transform: scale(0.98);
 }
 
@@ -261,7 +258,7 @@
   display: block;
   font-size: 24px;
   font-weight: 700;
-  color: rgba(15, 188, 224, 0.9);
+  color: var(--accent-blue);
   letter-spacing: 3px;
   margin-bottom: 8px;
 }
@@ -269,22 +266,14 @@
 .promo-code-hint {
   display: block;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.promo-invite-info {
-  width: 100%;
-  max-width: 350px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
+  color: var(--text-secondary);
+  opacity: 0.4;
 }
 
 .promo-invite-text {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  opacity: 0.5;
   margin: 0;
   text-align: center;
 }
@@ -292,14 +281,16 @@
 .promo-modal-subtitle {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
   text-align: center;
   margin: 0 0 16px 0;
 }
 
 .promo-hint-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
   text-align: center;
   margin: -10px 0 16px 0;
 }
@@ -337,24 +328,25 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
 }
 
 .promo-balance-text {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .promo-history-btn {
   flex: 1;
   padding: 12px 16px;
-  background: rgba(15, 188, 224, 0.15);
-  border: 1px solid rgba(15, 188, 224, 0.3);
-  border-radius: 16px;
-  color: rgba(15, 188, 224, 0.9);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--accent-blue);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -362,34 +354,16 @@
 }
 
 .promo-history-btn:active {
-  background: rgba(15, 188, 224, 0.25);
+  background: var(--glass-bg-strong);
   transform: scale(0.98);
-}
-
-/* История промокода */
-.promo-history-backdrop {
-  z-index: 1001 !important;
-}
-
-.promo-history-sheet {
-  height: auto;
-  max-height: 85vh;
-  z-index: 1002 !important;
 }
 
 .promo-history-empty {
   padding: 40px 20px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
   font-size: 14px;
-}
-
-.promo-history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  max-width: 400px;
 }
 
 .promo-history-item {
@@ -397,9 +371,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
 }
 
 .promo-history-avatar {
@@ -422,126 +396,68 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(15, 188, 224, 0.3) 0%, rgba(0, 157, 255, 0.3) 100%);
-  color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, rgba(0, 157, 255, 0.3) 100%);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 18px;
-}
-
-.promo-history-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .promo-history-username {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .promo-history-date {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 .promo-history-action {
   font-size: 13px;
-  color: rgba(15, 188, 224, 0.9);
+  color: var(--accent-blue);
   font-weight: 500;
   text-align: right;
 }
 
-.promo-history-topup {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
 .promo-history-topup-amount {
   font-size: 13px;
-  color: rgba(15, 188, 224, 0.9);
+  color: var(--accent-blue);
   font-weight: 500;
 }
 
 .promo-history-topup-income {
   font-size: 10px;
-  color: rgba(15, 188, 224, 0.6);
+  color: var(--accent-blue);
+  opacity: 0.6;
   font-weight: 400;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes expandRules {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 300px;
-  }
-}
-
-/* Кликабельный баланс */
-.promo-balance-clickable {
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.promo-balance-clickable:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.05);
-}
-
-.promo-balance-clickable:active {
-  transform: scale(0.95);
-}
-
-/* Диалог вывода средств */
-.promo-withdrawal-content {
-  padding: 32px 24px calc(15px + env(safe-area-inset-bottom));
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .promo-withdrawal-balance {
   text-align: center;
   font-size: 16px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
 }
-
-
 
 .promo-withdrawal-amount-display {
   text-align: center;
   font-size: 42px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
   margin-bottom: 8px;
-}
-
-.promo-withdrawal-input-wrapper {
-  position: relative;
 }
 
 .promo-withdrawal-input-label {
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
+  opacity: 0.8;
   margin-bottom: 12px;
   letter-spacing: 0.5px;
 }
@@ -549,10 +465,10 @@
 .promo-withdrawal-input {
   width: 100%;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
   font-size: 20px;
   font-weight: 700;
   text-align: center;
@@ -561,29 +477,30 @@
 }
 
 .promo-withdrawal-input:focus {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-strong);
 }
 
 .promo-withdrawal-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-secondary);
+  opacity: 0.3;
   font-weight: 500;
 }
 
 .promo-withdrawal-submit {
   width: 100%;
   padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(38, 171, 255, 0.55) 0%, rgba(0, 157, 255, 0.55) 50%, rgba(0, 144, 234, 0.55) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
-  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, rgba(0, 157, 255, 0.55) 50%, rgba(0, 144, 234, 0.55) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   position: relative;
 }
 
@@ -594,7 +511,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 16px;
+  border-radius: var(--glass-radius);
   padding: 1px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -604,20 +521,20 @@
 }
 
 .promo-withdrawal-submit:active:not(:disabled) {
-  background: linear-gradient(135deg, rgba(12, 139, 217, 0.55) 0%, rgba(0, 133, 216, 0.55) 50%, rgba(0, 129, 209, 0.55) 100%);
+  filter: brightness(0.9);
   transform: translateY(1px);
 }
 
 .promo-withdrawal-submit:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight), 0 0 20px rgba(0, 157, 255, 0.3);
 }
 
 .promo-withdrawal-submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(0, 78, 127, 0.55);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
 }
 
 /* Backdrop и Sheet для окна вывода - обновленный дизайн */
@@ -627,8 +544,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
   z-index: 1003 !important;
   animation: fadeIn 0.3s ease;
 }
@@ -640,12 +557,14 @@
   bottom: 0;
   height: auto;
   max-height: 60vh;
-  background: #1a1a1a;
-  border-radius: 32px 32px 0 0;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  border-radius: var(--glass-radius-lg) var(--glass-radius-lg) 0 0;
   z-index: 1004 !important;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow);
+  border-top: 1px solid var(--glass-border);
 }
 
 

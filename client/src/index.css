@@ -14,6 +14,8 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  accent-color: var(--accent, #6c5ce7);
+  caret-color: var(--accent, #6c5ce7);
   --font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-weight: 580;
   --font-letter-spacing: normal;
@@ -401,6 +403,11 @@ body {
   --user-opacity: 1;
   --user-animate-speed: 1;
   --user-accent: var(--accent);
+  --anim-speed: 0.25s;
+}
+
+:root {
+  --anim-speed: calc(0.25s * var(--user-animate-speed, 1));
 }
 
 .glass,
@@ -443,6 +450,25 @@ body {
 
 body {
   -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+
+body::-webkit-scrollbar {
+  width: 4px;
+}
+
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-hover);
 }
 
 /* ============================================
@@ -621,4 +647,74 @@ body {
   opacity: 1;
   transform: none;
   transition: none;
+}
+
+/* Анимированное свечение для акцентных элементов */
+@keyframes accentPulse {
+  0%, 100% { box-shadow: 0 0 8px var(--accent), 0 0 16px rgba(108, 92, 231, 0.1); }
+  50% { box-shadow: 0 0 16px var(--accent), 0 0 32px rgba(108, 92, 231, 0.2); }
+}
+
+.glass-glow {
+  animation: accentPulse 3s ease-in-out infinite;
+}
+
+/* Shimmer для загрузки */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.glass-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 25%,
+    var(--glass-bg-strong) 50%,
+    var(--glass-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Анимированный border-градиент */
+@keyframes borderGlow {
+  0%, 100% { border-color: var(--glass-border); }
+  50% { border-color: var(--accent); }
+}
+
+.glass-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* Плавное появление */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.glass-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* Акцентная иконка с мягким свечением */
+.color-accent {
+  color: var(--accent);
+}
+
+.color-accent svg {
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+/* Спиннер-прелоадер в стиле glass */
+.glass-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: glassSpin 0.8s linear infinite;
+}
+
+@keyframes glassSpin {
+  to { transform: rotate(360deg); }
 }

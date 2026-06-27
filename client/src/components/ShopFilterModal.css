@@ -4,8 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm));
   z-index: 1000;
   display: flex;
   align-items: flex-end;
@@ -23,17 +23,17 @@
 }
 
 .filter-modal {
-  background: #1a1a1a;
-  backdrop-filter: blur(1.25rem);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px 24px 0 0;
+  background: var(--glass-section);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border-hover);
+  border-radius: var(--glass-radius-lg) var(--glass-radius-lg) 0 0;
   width: 100%;
   height: auto;
   min-height: 40vh;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5), inset 1px 1px 0.5px rgba(255, 255, 255, 0.15);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
   overflow: hidden;
   animation: slideUp 0.3s ease;
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
@@ -51,7 +51,7 @@
 
 .filter-header {
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--glass-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -62,17 +62,17 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
   flex: 1;
   text-align: center;
 }
 
 .filter-back {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
   padding: 8px 16px;
-  border-radius: 12px;
+  border-radius: var(--glass-radius);
   font-size: 14px;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -86,7 +86,7 @@
 .filter-close {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 24px;
   cursor: pointer;
   width: 32px;
@@ -106,22 +106,23 @@
 .filter-search {
   margin: 16px 20px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(15, 188, 224, 0.3);
-  border-radius: 16px;
-  color: #ffffff;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
   font-size: 16px;
   outline: none;
   transition: all 0.3s ease;
 }
 
 .filter-search:focus {
-  border-color: #ffffff;
+  border-color: var(--glass-border-hover);
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
 }
 
 .filter-search::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
 }
 
 .filter-list {
@@ -146,10 +147,10 @@
 
 .filter-item {
   padding: 16px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -164,19 +165,17 @@
   position: relative;
 }
 
-/* Убираем hover эффект */
 .filter-item:active {
   transform: scale(0.95);
 }
 
 .filter-item.selected {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--glass-bg-strong);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
-/* Галочка для выбранных */
 .filter-item.selected::after {
   content: '✓';
   position: absolute;
@@ -184,8 +183,8 @@
   right: 6px;
   width: 18px;
   height: 18px;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border-radius: 50%;
   font-size: 12px;
   font-weight: bold;
@@ -199,7 +198,7 @@
   height: 32px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--glass-border);
 }
 
 /* Стили для списка подарков со стрелочками */
@@ -210,10 +209,10 @@
 
 .filter-item-list {
   padding: 14px 16px;
-  background: #ffffff14;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  color: rgba(255, 255, 255, 1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
+  color: var(--text-primary);
   font-size: 15px;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -227,15 +226,15 @@
 }
 
 .filter-item-list.selected {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--glass-bg-strong);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 .expand-arrow {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 18px;
   cursor: pointer;
   padding: 4px 8px;
@@ -250,24 +249,17 @@
 .models-section {
   margin-top: 8px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-}
-
-.models-toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  align-items: center;
+  background: var(--glass-bg);
+  border-radius: var(--glass-radius);
 }
 
 .select-all-models-short {
   flex: 1;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  color: #ffffff;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -281,10 +273,10 @@
 .model-search-icon {
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  color: #ffffff;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -301,25 +293,26 @@
 .model-search-input {
   flex: 1;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(15, 188, 224, 0.3);
-  border-radius: 10px;
-  color: #ffffff;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
 }
 
 .model-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
 }
 
 .model-search-close {
   width: 40px;
   height: 40px;
-  background: rgba(255, 0, 0, 0.1);
-  border: 1px solid rgba(255, 0, 0, 0.3);
-  border-radius: 10px;
-  color: #ff6b6b;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--accent-red);
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -341,9 +334,9 @@
 
 .model-item {
   padding: 10px 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   cursor: pointer;
   transition: transform 0.2s ease;
   display: flex;
@@ -357,8 +350,8 @@
 }
 
 .model-item.selected {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #ffffff;
+  background: var(--glass-bg-strong);
+  border-color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
 
@@ -368,26 +361,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
-  border-radius: 8px;
+  background: var(--glass-gradient);
+  border-radius: var(--glass-radius-sm);
   overflow: hidden;
 }
 
 .model-placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .model-name {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   text-align: center;
   word-break: break-word;
   line-height: 1.2;
 }
 
 .model-item.selected .model-name {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 /* Для маленьких экранов */
@@ -420,7 +413,7 @@
 
 .filter-actions {
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--glass-border);
   display: flex;
   gap: 12px;
 }
@@ -428,29 +421,26 @@
 .filter-btn {
   flex: 1;
   padding: 14px 20px;
-  border-radius: 16px;
+  border-radius: var(--glass-radius);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease;
   border: 1px solid;
-}
-
-/* Убираем hover эффекты */
-.filter-btn:active {
-  transform: scale(0.97);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  will-change: transform;
 }
 
 .filter-btn-clear {
-  background: rgba(255, 0, 0, 0.1);
-  border-color: rgba(255, 0, 0, 0.4);
-  color: #ff6b6b;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  color: var(--accent-red);
 }
 
 .filter-btn-apply {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #000000;
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg-primary);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
@@ -462,9 +452,9 @@
 }
 
 .accordion-section {
-  background: #ffffff14;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
   overflow: hidden;
   transition: all 0.3s ease;
   display: flex;
@@ -472,8 +462,8 @@
 }
 
 .accordion-section.expanded {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border-hover);
 }
 
 .accordion-header {
@@ -482,7 +472,7 @@
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 16px;
   user-select: none;
@@ -490,8 +480,7 @@
 
 .accordion-arrow {
   font-size: 1.2rem;
-  color: #fff;
-  /* Monochrome */
+  color: var(--text-primary);
   transition: transform 0.3s ease;
   opacity: 0.6;
 }
@@ -523,24 +512,17 @@
 .accordion-search {
   width: 100%;
   padding: 10px 12px 10px 36px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: #fff;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
 }
 
 .accordion-search::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.accordion-list {
-  max-height: 250px;
-  /* Limit height inside accordion */
-  overflow-y: auto;
-  padding-right: 4px;
-  /* for scrollbar */
+  color: var(--text-secondary);
+  opacity: 0.4;
 }
 
 .accordion-item {
@@ -548,7 +530,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
+  opacity: 0.5;
   cursor: pointer;
 }
 
@@ -566,15 +549,15 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--glass-border);
   position: relative;
   flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
 .checkbox-circle.checked {
-  background: #ffffff;
-  border-color: #ffffff;
+  background: var(--text-primary);
+  border-color: var(--text-primary);
 }
 
 .checkbox-circle.checked::after {
@@ -583,7 +566,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #000;
+  color: var(--bg-primary);
   font-size: 12px;
   font-weight: bold;
 }
@@ -592,12 +575,12 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
 .item-name {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -607,13 +590,13 @@
   gap: 8px;
   margin-bottom: 10px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .model-breadcrumbs button {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 0;
   text-decoration: underline;

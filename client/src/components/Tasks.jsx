@@ -5,9 +5,7 @@ import './PromoCodeModal.css'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import { useBalance } from '../contexts/BalanceContext'
-import LottieAnimation from './LottieAnimation'
-import starAnim from '../assets/star.json'
-import pawAnim from '../assets/paw.json'
+import Icon from './Icons'
 
 function Tasks({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
@@ -180,7 +178,7 @@ function Tasks({ onNavigateToTopUp }) {
       <BonusBalanceBar />
       <div className="home-content" style={{ paddingTop: `${contentPadding}px` }}>
         <div className="tasks-header">
-          <h2>Задания 📋</h2>
+          <h2><Icon name="tasks" size="lg" /> Задания</h2>
           <p>Выполняй задания и получай награды</p>
         </div>
 
@@ -193,23 +191,19 @@ function Tasks({ onNavigateToTopUp }) {
         ) : (
           <div className="tasks-list">
             {tasks.map(task => (
-              <div key={task.id} className={`task-card ${removingTaskId === task.id ? 'removing' : ''}`}>
+              <div key={task.id} className={`task-card glass ${removingTaskId === task.id ? 'removing' : ''}`}>
                 <div className="task-info">
                   <div className="task-title">{getTaskTitle(task)}</div>
                 </div>
                 <div className="task-right">
                   <div className="task-reward">
-                    <LottieAnimation
-                      animationData={task.currency === 'paws' ? pawAnim : starAnim}
-                      width={24}
-                      height={24}
-                    />
+                    <Icon name={task.currency === 'paws' ? 'paw' : 'star'} size="md" />
                     <span className="task-reward-amount">{task.award}</span>
                   </div>
                   <div className="task-actions">
                     {(task.type === 'subscribe' || task.type === 'open_url' || task.type === 'private_channel') && (
                       <button
-                        className="task-details-btn"
+                        className="task-details-btn glass-button"
                         onClick={() => {
                           setSelectedTask(task)
                           setShowDetailsModal(true)
@@ -219,7 +213,7 @@ function Tasks({ onNavigateToTopUp }) {
                       </button>
                     )}
                     <button
-                      className={`task-start-btn ${completingTask === task.id ? 'disabled' : ''}`}
+                      className={`task-start-btn glass-button ${completingTask === task.id ? 'disabled' : ''}`}
                       onClick={() => handleStartTask(task)}
                       disabled={completingTask === task.id}
                     >
@@ -237,7 +231,7 @@ function Tasks({ onNavigateToTopUp }) {
         <>
           <div className="promo-modal-backdrop" onClick={() => setShowDetailsModal(false)} />
           <div className="promo-modal-sheet task-details-modal">
-            <button className="promo-close-btn" onClick={() => setShowDetailsModal(false)}>×</button>
+            <button className="promo-close-btn" onClick={() => setShowDetailsModal(false)}><Icon name="close" size="md" /></button>
 
             <div className="promo-modal-content">
               <h2 className="promo-modal-title">Подробности задания</h2>
@@ -252,12 +246,8 @@ function Tasks({ onNavigateToTopUp }) {
               <div className="task-detail-section">
                 <div className="task-detail-label">Награда:</div>
                 <div className="task-detail-reward">
-                  <LottieAnimation
-                    animationData={selectedTask.currency === 'paws' ? pawAnim : starAnim}
-                    width={24}
-                    height={24}
-                  />
-                  <span>{selectedTask.award} {selectedTask.currency === 'paws' ? '🐾' : '⭐'}</span>
+                  <Icon name={selectedTask.currency === 'paws' ? 'paw' : 'star'} size="md" />
+                  <span>{selectedTask.award} {selectedTask.currency === 'paws' ? 'PAWS' : 'STARS'}</span>
                 </div>
               </div>
 

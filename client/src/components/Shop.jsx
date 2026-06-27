@@ -8,7 +8,7 @@ import ShopSortModal from './ShopSortModal'
 import ShopFilterModal from './ShopFilterModal'
 import { useBalance } from '../contexts/BalanceContext'
 import { useError } from './ErrorContext'
-import starStaticBlackIcon from '../assets/starstatic_black.svg'
+import Icon from './Icons'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
@@ -191,17 +191,17 @@ function Shop({ onNavigateToTopUp }) {
         {/* Панель управления (Фильтр и Сортировка) */}
         <div className="shop-controls">
           <button
-            className="shop-control-btn"
+            className="shop-control-btn glass-button"
             onClick={() => setShowFilterModal(true)}
           >
-            <span className="control-icon">🌪️</span> {/* Placeholder icon */}
+            <Icon name="search" size="sm" />
             Фильтр
           </button>
           <button
-            className="shop-control-btn"
+            className="shop-control-btn glass-button"
             onClick={() => setShowSortModal(true)}
           >
-            <span className="control-icon">⇅</span> {/* Placeholder icon */}
+            <Icon name="refresh" size="sm" />
             Сортировка
           </button>
 
@@ -227,7 +227,7 @@ function Shop({ onNavigateToTopUp }) {
             getDisplayedGifts().map(gift => (
               <div
                 key={gift.gift_id}
-                className="shop-item-card"
+                className="shop-item-card glass-hover"
                 onClick={() => handleGiftClick(gift)}
                 style={{
                   background: gift.center_color
@@ -255,9 +255,9 @@ function Shop({ onNavigateToTopUp }) {
                     )
                   )}
                 </div>
-                <button className="shop-item-price">
+                <button className="shop-item-price glass">
+                  <Icon name="star" size="sm" />
                   {gift.price}
-                  <img src={starStaticBlackIcon} alt="star" className="price-star-icon" />
                 </button>
               </div>
             ))

@@ -2,19 +2,14 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   animation: errmFadeIn 0.2s ease;
-}
-
-@keyframes errmFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .errm-sheet {
@@ -23,14 +18,13 @@
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
+  border-radius: var(--glass-radius);
   overflow: hidden;
   animation: errmScaleIn 0.25s ease;
-}
-
-@keyframes errmScaleIn {
-  from { transform: scale(0.92); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
 }
 
 .errm-header {
@@ -38,12 +32,8 @@
   align-items: center;
   gap: 10px;
   padding: 18px 20px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
-}
-
-.errm-icon {
-  font-size: 22px;
 }
 
 .errm-title {
@@ -51,26 +41,27 @@
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #ff6b6b;
+  color: var(--accent-red);
 }
 
 .errm-close {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .errm-close:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
 }
 
 .errm-body {
@@ -82,15 +73,15 @@
 .errm-message {
   margin: 0 0 12px;
   font-size: 14px;
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .errm-details {
   border: 1px solid rgba(255, 60, 60, 0.2);
-  border-radius: 10px;
+  border-radius: var(--glass-radius-sm);
   overflow: hidden;
-  background: rgba(255, 60, 60, 0.04);
+  background: var(--glass-bg);
 }
 
 .errm-details-header {
@@ -100,33 +91,34 @@
   padding: 8px 12px;
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.4;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid rgba(255, 60, 60, 0.1);
 }
 
 .errm-copy-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .errm-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
 }
 
 .errm-copy-btn.copied {
   background: rgba(0, 184, 148, 0.2);
   border-color: rgba(0, 184, 148, 0.3);
-  color: #00b894;
+  color: var(--accent-green);
 }
 
 .errm-code {
@@ -135,7 +127,7 @@
   font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
   font-size: 12px;
   line-height: 1.6;
-  color: #ff8a8a;
+  color: var(--accent-red);
   white-space: pre-wrap;
   word-break: break-all;
   user-select: text;
@@ -144,32 +136,30 @@
   overflow-y: auto;
 }
 
-.errm-code code {
-  font-family: inherit;
-}
-
 .errm-footer {
   display: flex;
   gap: 10px;
   padding: 12px 20px 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
 .errm-btn {
   flex: 1;
   padding: 12px;
-  border: none;
-  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  will-change: transform;
 }
 
 .errm-btn-primary {
-  background: var(--accent, #6c5ce7);
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-primary);
 }
 
 .errm-btn-primary:hover {
@@ -177,12 +167,11 @@
 }
 
 .errm-btn-secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
 }
 
 .errm-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
 }

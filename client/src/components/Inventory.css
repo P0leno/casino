@@ -4,6 +4,7 @@
   padding-bottom: 70px;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-primary);
 }
 
 
@@ -21,7 +22,7 @@
   justify-content: center;
   min-height: 300px;
   margin-top: 20px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 18px;
 }
 
@@ -46,12 +47,11 @@
   justify-items: stretch;
 }
 
-/* NFT подарки - с фоном */
 .gift-card-inventory {
   width: 100%;
   max-width: 170px;
   aspect-ratio: 1;
-  border-radius: 20px;
+  border-radius: var(--glass-radius);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -59,32 +59,34 @@
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
   transition: all 0.3s ease;
+  will-change: transform;
 }
 
 .platform-mobile .gift-card-inventory {
   max-width: none;
   padding: 14px;
-  border-radius: 16px;
-}
-
-.platform-mobile .gift-card-inventory {
-  max-width: none;
-  /* Убрали scale, карточки в нормальном размере */
+  border-radius: var(--glass-radius-sm);
 }
 
 .gift-card-inventory:hover {
-  /* transform removed */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight), 0 0 20px rgba(255, 255, 255, 0.08);
+  transform: scale(1.02);
 }
 
-/* Обычные подарки - серый фон */
+.gift-card-inventory:active {
+  transform: scale(0.97);
+}
+
 .gift-card-inventory-regular {
   width: 100%;
   max-width: 170px;
   aspect-ratio: 1;
-  border-radius: 20px;
+  border-radius: var(--glass-radius);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -92,25 +94,27 @@
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle, #363738, #0e0f0f);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border);
   transition: all 0.3s ease;
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  will-change: transform;
 }
 
 .platform-mobile .gift-card-inventory-regular {
   max-width: none;
   padding: 14px;
-  border-radius: 16px;
-}
-
-.platform-mobile .gift-card-inventory-regular {
-  max-width: none;
-  /* Убрали scale, карточки в нормальном размере */
+  border-radius: var(--glass-radius-sm);
 }
 
 .gift-card-inventory-regular:hover {
-  /* transform removed */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight), 0 0 20px rgba(255, 255, 255, 0.06);
+  transform: scale(1.02);
+}
+
+.gift-card-inventory-regular:active {
+  transform: scale(0.97);
 }
 
 .lottie-container {
@@ -142,29 +146,30 @@
   opacity: 1;
 }
 
-/* Кнопка просмотра на карточке */
 .gift-view-btn {
   width: 100%;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: none;
-  border-radius: 10px;
-  color: #ffffff;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: auto;
+  will-change: transform;
 }
 
 .gift-view-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--glass-bg-strong);
+  filter: brightness(1.2);
   transform: scale(1.02);
 }
 
 .gift-view-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .empty-inventory-container {
@@ -185,7 +190,7 @@
 
 .empty-text {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -196,7 +201,7 @@
   right: 0;
   text-align: center;
   padding: 16px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
@@ -205,11 +210,11 @@
 }
 
 .add-gifts-text:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .add-gifts-text:active {
-  color: rgba(255, 255, 255, 1);
+  color: var(--text-primary);
 }
 
 /* Bottom Sheet Overlay */
@@ -219,8 +224,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm));
   z-index: 999;
   animation: fadeIn 0.3s ease;
 }
@@ -242,13 +247,15 @@
   right: 0;
   min-height: calc(50vh + 10px);
   max-height: 70vh;
-  background: linear-gradient(135deg, rgba(26, 26, 26, 0.98) 0%, rgba(40, 40, 40, 0.98) 100%);
-  border-radius: 24px 24px 0 0;
+  background: var(--glass-gradient);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--glass-radius-lg) var(--glass-radius-lg) 0 0;
   z-index: 1000;
   animation: slideUpSheet 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--glass-shadow);
 }
 
 @keyframes slideUpSheet {
@@ -264,7 +271,8 @@
 .sheet-handle {
   width: 40px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--text-secondary);
+  opacity: 0.3;
   border-radius: 2px;
   margin: 12px auto 24px;
 }
@@ -292,7 +300,7 @@
   margin: 0 0 12px 0;
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
@@ -300,14 +308,15 @@
   margin: 0 0 16px 0;
   font-size: 16px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .warning-block {
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px solid rgba(255, 100, 100, 0.5);
-  border-radius: 12px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--accent-red);
+  opacity: 0.5;
+  border-radius: var(--glass-radius);
   padding: 16px;
   display: flex;
   align-items: flex-start;
@@ -326,33 +335,35 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
+  opacity: 0.85;
 }
 
 .overlay-button {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  border: none;
-  border-radius: 16px;
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent-red), var(--accent-yellow));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(250, 112, 154, 0.3);
+  box-shadow: var(--glass-shadow);
   margin-top: auto;
   margin-bottom: 5px;
   flex-shrink: 0;
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 .overlay-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(250, 112, 154, 0.4);
+  transform: scale(1.02);
+  filter: brightness(1.1);
 }
 
 .overlay-button:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
 
 /* Старые стили удалены - используются новые стили выше */
@@ -368,19 +379,20 @@
 
 .error-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 8px;
   font-weight: 500;
 }
 
 .error-value {
   font-size: 14px;
-  color: #FF6B6B;
+  color: var(--accent-red);
   font-weight: 500;
-  background: rgba(255, 107, 107, 0.1);
-  border: 1px solid rgba(255, 107, 107, 0.2);
+  background: var(--glass-bg);
+  border: 1px solid var(--accent-red);
+  opacity: 0.2;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--glass-radius);
   word-break: break-word;
 }
 
@@ -392,25 +404,26 @@
 .error-instruction p {
   margin: 0 0 12px 0;
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
+  opacity: 0.8;
 }
 
 .bot-link {
   font-size: 16px;
-  color: #0FBCE0;
+  color: var(--accent-blue);
   font-weight: 600;
   text-decoration: none;
   display: inline-block;
   padding: 8px 16px;
-  background: rgba(15, 188, 224, 0.1);
-  border: 1px solid rgba(15, 188, 224, 0.3);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   transition: all 0.3s ease;
 }
 
 .bot-link:hover {
-  background: rgba(15, 188, 224, 0.2);
-  border-color: rgba(15, 188, 224, 0.5);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border-hover);
 }
 
 .error-buttons {
@@ -431,33 +444,33 @@
 }
 
 .retry-btn {
-  background: #0FBCE0;
-  color: #ffffff;
+  background: var(--accent-blue);
+  color: var(--text-primary);
 }
 
 .retry-btn:hover {
-  background: #0da8c9;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(15, 188, 224, 0.3);
+  filter: brightness(1.1);
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(15, 188, 224, 0.3);
 }
 
 .retry-btn:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
 
 .help-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
 }
 
 .help-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border-hover);
 }
 
 .help-btn:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
 
 /* Для десктопов - больше колонок */
