@@ -4,7 +4,7 @@
   align-items: center;
   width: 100%;
   height: 100vh;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 .loader-wrapper {
@@ -60,7 +60,7 @@
 }
 
 .loader-text {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
   text-align: center;
@@ -73,11 +73,11 @@
   width: 100%;
   height: 100vh;
   padding: 20px;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 .error-message {
-  color: #ff4444;
+  color: var(--accent-red);
   font-size: 16px;
   text-align: center;
   max-width: 90%;
@@ -86,21 +86,21 @@
 .app-container {
   width: 100%;
   min-height: 100vh;
-  background: #1a1a1a;
+  background: var(--bg-primary);
   position: relative;
   transition: background 0.6s ease;
 }
 
 .app-container.tab-home {
-  background: #1a1a1a;
+  background: var(--bg-primary);
 }
 
 .app-container.tab-inventory {
-  background: #1a1a1a;
+  background: var(--bg-primary);
 }
 
 .app-container.tab-profile {
-  background: #1a1a1a;
+  background: var(--bg-primary);
 }
 
 /* ========== ГЛОБАЛЬНЫЕ ПЛАВНЫЕ АНИМАЦИИ ========== */

@@ -352,7 +352,7 @@ function Inventory({ onNavigateToTopUp }) {
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
       <BonusBalanceBar />
 
-      <div className="inventory-content" style={{ paddingTop: `${topPadding} px` }}>
+      <div className="inventory-content" style={{ paddingTop: `${topPadding}px` }}>
         {loading ? (
           <div className="loading-spinner"></div>
         ) : inventory.length === 0 ? (
