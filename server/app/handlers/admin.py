@@ -1,10 +1,73 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.filters import Command
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 import asyncio
 from app.config import ADMIN_IDS
 from app.utils.error_logger import send_error_log
 
 router = Router()
+
+APP_URL = "https://proxmox-bubuntu1.tailcfe40a.ts.net"
+
+
+@router.message(Command("admin"))
+async def cmd_admin(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("⛔ Доступ запрещен")
+        return
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📊 Открыть панель", web_app=WebAppInfo(url=APP_URL))],
+        [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
+        [InlineKeyboardButton(text="🚧 Перезапустить сервер", callback_data="admin_restart")],
+        [InlineKeyboardButton(text="⏻ Вкл/Выкл тех.работы", callback_data="admin_toggle_maintenance")],
+    ])
+
+    await message.answer(
+        "👋 <b>Панель администратора</b>\n\n"
+        "Выберите действие:",
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+
+
+@router.callback_query(F.data == "admin_restart")
+async def admin_restart_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    await callback.answer("🔄 Перезапуск...", show_alert=False)
+    await callback.message.edit_text("🔄 <b>Перезапуск сервера...</b>", parse_mode="HTML")
+
+    from app.restart_monitor import handle_restart_command
+    from app.bot import bot
+    asyncio.create_task(handle_restart_command(None, bot))
+
+
+@router.callback_query(F.data == "admin_toggle_maintenance")
+async def admin_toggle_maintenance_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    from app.utils.database import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_mode'")
+    result = cursor.fetchone()
+    current = result[0] if result else '0'
+    new_value = '0' if current == '1' else '1'
+    cursor.execute("UPDATE settings SET value = ? WHERE key = 'maintenance_mode'", (new_value,))
+    conn.commit()
+    conn.close()
+
+    status = "включен" if new_value == '1' else "выключен"
+    await callback.answer(f"✅ Режим техработ {status}", show_alert=True)
+    await callback.message.edit_text(
+        f"{callback.message.text}\n\n✅ Режим технических работ <b>{status}</b>",
+        parse_mode="HTML"
+    )
 
 @router.callback_query(F.data.startswith("download_models:"))
 async def download_models_handler(callback: CallbackQuery):

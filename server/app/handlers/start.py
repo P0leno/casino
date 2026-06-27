@@ -4,6 +4,8 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, W
 from app.config import ADMIN_IDS
 from app.utils.rate_limit import start_command_rate_limiter
 
+APP_URL = "https://proxmox-bubuntu1.tailcfe40a.ts.net"
+
 router = Router()
 
 @router.message(CommandStart())
@@ -23,7 +25,7 @@ async def cmd_start(message: Message):
                 [
                     InlineKeyboardButton(
                         text="Открыть",
-                        web_app=WebAppInfo(url="https://shelloch.xyz")
+                        web_app=WebAppInfo(url=APP_URL)
                     )
                 ]
             ]
