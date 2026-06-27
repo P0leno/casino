@@ -53,7 +53,7 @@ function Inventory({ onNavigateToTopUp }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const cacheBuster = Date.now()
       console.log('Fetching inventory from:', `${apiUrl} /api/inventory / get`)
 
@@ -84,7 +84,7 @@ function Inventory({ onNavigateToTopUp }) {
   const handleWithdrawRegular = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 
+    const apiUrl = import.meta.env.VITE_API_URL || ''
 
     // Confirmation
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram ? `
@@ -134,7 +134,7 @@ function Inventory({ onNavigateToTopUp }) {
   const handleWithdrawNFT = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 
+    const apiUrl = import.meta.env.VITE_API_URL || ''
 
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram ? `
     const confirmed = tg?.showConfirm
@@ -213,7 +213,7 @@ function Inventory({ onNavigateToTopUp }) {
   const handleManualAdminWithdraw = async () => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 
+    const apiUrl = import.meta.env.VITE_API_URL || ''
 
     if (!errorData || !errorData.gift) return
 
@@ -268,7 +268,7 @@ function Inventory({ onNavigateToTopUp }) {
   const handleSellRegular = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 
+    const apiUrl = import.meta.env.VITE_API_URL || ''
 
     // Confirmation
     const price = gift.sell_price || '?'
@@ -310,7 +310,7 @@ function Inventory({ onNavigateToTopUp }) {
   const handleSellNFT = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 
+    const apiUrl = import.meta.env.VITE_API_URL || ''
     // Confirmation for sell? Usually yes but let's skipping for brevity if not strict
     // Adding confirmation to be safe
     const confirmMessage = `Продать ${gift.title} за ${gift.sell_price || '?'} ⭐?`

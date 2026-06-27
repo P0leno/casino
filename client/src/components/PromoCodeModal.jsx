@@ -32,7 +32,7 @@ function PromoCodeModal({ isOpen, onClose }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       
       const response = await fetch(`${apiUrl}/api/promocode/my-code`, {
         method: 'POST',
@@ -61,7 +61,7 @@ function PromoCodeModal({ isOpen, onClose }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       
       const response = await fetch(`${apiUrl}/api/promocode/activate`, {
         method: 'POST',
@@ -91,7 +91,7 @@ function PromoCodeModal({ isOpen, onClose }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       
       const response = await fetch(`${apiUrl}/api/promocode/generate`, {
         method: 'POST',
@@ -127,7 +127,7 @@ function PromoCodeModal({ isOpen, onClose }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       
       const response = await fetch(`${apiUrl}/api/promocode/history`, {
         method: 'POST',
@@ -176,7 +176,7 @@ function PromoCodeModal({ isOpen, onClose }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       
       const response = await fetch(`${apiUrl}/api/promocode/rename`, {
         method: 'POST',

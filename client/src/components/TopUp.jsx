@@ -71,7 +71,7 @@ function TopUp({ onNavigateBack }) {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiUrl}/api/ton/get-wallet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +93,7 @@ function TopUp({ onNavigateBack }) {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiUrl}/api/ton/connect-wallet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +123,7 @@ function TopUp({ onNavigateBack }) {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
       if (initData) {
-        const apiUrl = import.meta.env.VITE_API_URL || 
+        const apiUrl = import.meta.env.VITE_API_URL || ''
         await fetch(`${apiUrl}/api/ton/connect-wallet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -198,7 +198,7 @@ function TopUp({ onNavigateBack }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiUrl}/api/create-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -250,7 +250,7 @@ function TopUp({ onNavigateBack }) {
       }
 
       // Создаем платеж на сервере (сервер генерирует код)
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const paymentResponse = await fetch(`${apiUrl}/api/ton/create-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

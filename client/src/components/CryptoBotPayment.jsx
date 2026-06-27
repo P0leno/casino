@@ -62,7 +62,7 @@ function CryptoBotPayment({ onNavigateBack, isEmbedded = false }) {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiUrl}/api/cryptobot/calculate-stars`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,7 +96,7 @@ function CryptoBotPayment({ onNavigateBack, isEmbedded = false }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiUrl}/api/cryptobot/create-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

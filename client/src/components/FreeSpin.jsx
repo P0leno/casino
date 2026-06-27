@@ -209,7 +209,7 @@ function FreeSpin({ onNavigateToTopUp }) {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiUrl}/api/check-spin-available`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -320,7 +320,7 @@ function FreeSpin({ onNavigateToTopUp }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 
+      const apiUrl = import.meta.env.VITE_API_URL || ''
 
       const response = await fetch(`${apiUrl}/api/spin`, {
         method: 'POST',
