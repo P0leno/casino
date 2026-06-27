@@ -3,6 +3,9 @@ services:
     build: ./server
     container_name: casino-server
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     ports:
       - "3779:3779"
     env_file:
@@ -16,6 +19,9 @@ services:
     build: ./client
     container_name: casino-client
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     ports:
       - "80:80"
     depends_on:
