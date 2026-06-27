@@ -1,0 +1,22 @@
+services:
+  server:
+    build: ./server
+    container_name: casino-server
+    restart: unless-stopped
+    ports:
+      - "3779:3779"
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server/users.db:/app/users.db
+      - ./server/database.db:/app/database.db
+      - ./server/support.db:/app/support.db
+
+  client:
+    build: ./client
+    container_name: casino-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
