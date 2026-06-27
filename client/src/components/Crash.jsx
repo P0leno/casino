@@ -59,20 +59,39 @@ function Crash({ onNavigateToTopUp }) {
     let shouldReconnect = true
     let reconnectTimeout = null
     
-    const connectWebSocket = () => {
+    const connectWebSocket = async () => {
       if (!shouldReconnect) return
       
       try {
-        // Добавляем initData как query параметр для авторизации
+        // Получаем токен для WebSocket через REST (избегаем длинной initData в URL)
         const initData = window.Telegram?.WebApp?.initData || ''
-        const wsUrlWithAuth = `${wsUrl}/api/crash/ws?initData=${encodeURIComponent(initData)}`
+        let wsToken = ''
+        try {
+          const authRes = await fetch(`${apiUrl}/api/crash/auth-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData })
+          })
+          if (authRes.ok) {
+            const authData = await authRes.json()
+            wsToken = authData.token || ''
+          }
+        } catch (e) {
+          console.warn('Failed to get WS token, falling back to initData', e)
+        }
+
+        // Используем токен или initData для WebSocket
+        const wsUrlWithAuth = wsToken
+          ? `${wsUrl}/api/crash/ws?token=${wsToken}`
+          : `${wsUrl}/api/crash/ws?initData=${encodeURIComponent(initData)}`
+
         const ws = new WebSocket(wsUrlWithAuth)
         wsRef.current = ws
 
         ws.onopen = () => {
           console.log('🔌 WebSocket connected to crash game')
           setIsConnected(true)
-          setWasConnected(true) // Помечаем что было подключение
+          setWasConnected(true)
         }
 
         ws.onmessage = (event) => {
@@ -92,14 +111,12 @@ function Crash({ onNavigateToTopUp }) {
         ws.onclose = () => {
           console.log('🔌 WebSocket disconnected')
           setIsConnected(false)
-          // Переподключение через 3 секунды только если не размонтирован
           if (shouldReconnect) {
             reconnectTimeout = setTimeout(connectWebSocket, 3000)
           }
         }
       } catch (error) {
         console.error('WebSocket creation error:', error)
-        // Переподключение через 3 секунды только если не размонтирован
         if (shouldReconnect) {
           reconnectTimeout = setTimeout(connectWebSocket, 3000)
         }

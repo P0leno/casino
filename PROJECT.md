@@ -211,6 +211,7 @@ antifraud_* (limits, violations), gift_models, gift_withdrawals
 | client/src/components/AdminPanel.jsx | Separate admin panel component (9 views: menu, search, user_detail, topup, givegift, adminmgmt, stats, settings) |
 | client/src/components/AdminPanel.css | Admin panel glassmorphism styles (overlay, sheet, cards, buttons, stats grid) |
 | client/src/components/Glass.jsx | Reusable Glass component (variant: default/sm/strong/gradient/liquid, hover, as) |
+| server/app/utils/db_backup.py | Automatic SQLite backup (every 6h, retention 7d) |
 | client/src/components/Crash.jsx | Crash game UI |
 | client/src/components/Inventory.jsx | Gift inventory |
 | docker-compose.yml | Docker compose config |
@@ -221,6 +222,20 @@ Global CSS variables in `src/index.css` (glass tokens: `--glass-*`, accent: `--a
 Glass utility classes in `src/index.css`: `.glass`, `.glass-sm`, `.glass-strong`, `.glass-gradient`, `.glass-liquid` (with animated radial gradient)
 Safe area via variables `--safe-top`/`--safe-bottom` + utility classes `.safe-top`/`.safe-bottom`
 AdminPanel.css: 250+ lines of glassmorphism design — overlay backdrop-filter blur, slide-up sheet animation, menu hover translate, stat cards grid, responsive inputs.
+
+## Crash Game Architecture
+- Game loop: `start_crash_game_loop()` → `start_round()` → `end_round()` → next `start_round()` (chain)
+- ✅ Wrapped in `while True` with try/except + 2s auto-restart on error
+- WebSocket auth: token-based via `POST /api/crash/auth-token` → `wss://.../ws?token=...`
+- Fallback: `initData` query param (legacy)
+- Config: maxMultiplier, alwaysProfit, maxDebt, bigBetThreshold, bigBetLoseChance via `/api/crash/get-settings` (admin)
+
+## DB Backup
+- Interval: every 6 hours (4x daily), plus initial backup at startup
+- Files: `users.db`, `database.db`, `support.db`
+- Retention: 7 days (configurable via `BACKUP_RETENTION_DAYS` env)
+- Docker volume: `./server/backups:/app/backups`
+- Script: `server/app/utils/db_backup.py`
 
 ## Known Issues
 - **Support DB**: `no such table: users` (support.db missing users table)

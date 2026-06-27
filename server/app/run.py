@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
 from app.routers import auth, admin, payments, crash, tasks, shop, inventory, promocode, ban, cryptobot_payments, spins, nft
+from app.routers.spins import legacy_router
 from app.bot import start_bot, stop_bot
 from app.log_bot import start_log_bot, stop_log_bot
 from app.pyrogram_client import start_pyrogram, stop_pyrogram
@@ -63,6 +64,7 @@ cryptobot_checker_task = None
 redis_sync_task = None
 restart_monitor_task = None
 gift_ingestion_task = None
+backup_task = None
 
 app = FastAPI(title="Shelloch API", docs_url=None, redoc_url=None)
 
@@ -81,6 +83,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Include routers
 app.include_router(auth.router)
 app.include_router(spins.router) # Replaces game
+app.include_router(legacy_router)  # Backward-compat: /api/spin, /api/check-spin-available
 app.include_router(nft.router)
 app.include_router(admin.router)
 app.include_router(payments.router)
@@ -94,7 +97,7 @@ app.include_router(cryptobot_payments.router)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global bot_task, log_bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, ton_price_task, gift_models_task, support_bot_task, cryptobot_checker_task, redis_sync_task, restart_monitor_task, gift_ingestion_task
+    global bot_task, log_bot_task, pyrogram_task, notification_task, crash_task, ton_checker_task, gift_parser_task, ton_price_task, gift_models_task, support_bot_task, cryptobot_checker_task, redis_sync_task, restart_monitor_task, gift_ingestion_task, backup_task
     
     # Инициализация БД
     init_db()
@@ -185,6 +188,11 @@ async def lifespan(app: FastAPI):
     # НЕ запускаем синхронизацию при старте - слишком долго (20 минут)
     # Будет выполнена автоматически фоновой задачей
     
+    # Первичный бекап БД при старте
+    from app.utils.db_backup import backup_db as run_initial_backup
+    run_initial_backup()
+    print("✅ Первичный бекап БД создан")
+
     print()
     print("=" * 80)
     print("✅ ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА ЗАВЕРШЕНА")
@@ -220,6 +228,11 @@ async def lifespan(app: FastAPI):
     antifraud_check_task = asyncio.create_task(antifraud_task())
     print("✅ Запущена антифрод система (каждые 5 минут)")
     
+    # Запуск авто-бекапа БД (каждые 6 часов)
+    from app.utils.db_backup import backup_loop as start_backup_loop
+    backup_task = asyncio.create_task(start_backup_loop())
+    print("✅ Запущен авто-бекап БД (каждые 6 часов)")
+
     # Запуск Redis синхронизации
     if cache.is_available():
         # Загружаем settings в Redis при старте

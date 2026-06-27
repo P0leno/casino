@@ -9,11 +9,28 @@ from urllib.parse import parse_qs
 import json
 import sqlite3
 import asyncio
+import secrets
 from typing import List
 from app.utils.error_logger import send_error_log
 from app.utils.limiter import limiter
 
 router = APIRouter(prefix="/api/crash", tags=["crash"])
+
+# Хранилище токенов для WebSocket аутентификации {token: user_id}
+_ws_tokens: dict[str, int] = {}
+_ws_tokens_by_user: dict[int, str] = {}
+
+
+def _generate_ws_token(user_id: int) -> str:
+    """Генерирует одноразовый токен для WebSocket подключения"""
+    # Удаляем старый токен пользователя если есть
+    if user_id in _ws_tokens_by_user:
+        old_token = _ws_tokens_by_user[user_id]
+        _ws_tokens.pop(old_token, None)
+    token = secrets.token_hex(16)
+    _ws_tokens[token] = user_id
+    _ws_tokens_by_user[user_id] = token
+    return token
 
 # WebSocket Connection Manager
 class ConnectionManager:
@@ -246,14 +263,48 @@ async def cashout(cashout_request: CashoutRequest, request: Request):
 
 
 
+class AuthTokenRequest(BaseModel):
+    initData: str
+
+class AuthTokenResponse(BaseModel):
+    token: str
+
+
+@router.post("/auth-token")
+@limiter.limit("20/1minute")
+async def get_ws_auth_token(req: AuthTokenRequest, request: Request):
+    """Получить токен для WebSocket подключения к краш-игре"""
+    is_valid = validate_init_data(req.initData, BOT_TOKEN)
+    if not is_valid:
+        raise HTTPException(status_code=403, detail="Invalid init data")
+
+    try:
+        parsed = parse_qs(req.initData)
+        user_data = parsed.get('user', [''])[0]
+        user = json.loads(user_data)
+        user_id = user.get('id')
+    except Exception as e:
+        await send_error_log(e, "crash.py: auth-token (user data)")
+        raise HTTPException(status_code=403, detail="Invalid user data")
+
+    token = _generate_ws_token(user_id)
+    return {"token": token, "userId": user_id}
+
+
 @router.websocket("/ws")
-async def websocket_crash(websocket: WebSocket, initData: str = None):
-    """WebSocket endpoint для краш игры"""
-    # initData передается как query параметр для авторизации
-    
-    # Извлекаем user_id из initData
+async def websocket_crash(websocket: WebSocket, token: str = None, initData: str = None):
+    """WebSocket endpoint для краш игры.
+    Аутентификация через query param token (предпочтительно) или initData (legacy).
+    """
     user_id = None
-    if initData:
+    
+    # Приоритет 1: токен
+    if token and token in _ws_tokens:
+        user_id = _ws_tokens.pop(token)  # одноразовый токен
+        _ws_tokens_by_user.pop(user_id, None)
+    
+    # Приоритет 2: initData (legacy)
+    if not user_id and initData:
         from app.routers.auth import verify_init_data
         user_data = verify_init_data(initData)
         if user_data:
@@ -261,7 +312,6 @@ async def websocket_crash(websocket: WebSocket, initData: str = None):
     
     # Если не удалось получить user_id - используем анонимный ID
     if not user_id:
-        # Для анонимных пользователей генерируем ID на основе websocket
         user_id = id(websocket)
         print(f"⚠️ Анонимное подключение, используется ID: {user_id}")
     

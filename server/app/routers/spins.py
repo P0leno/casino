@@ -380,3 +380,92 @@ async def bazmin_spin_wrapper(request: ValidateRequest):
 async def lapik_spin_wrapper(request: ValidateRequest):
     """Legacy wrapper for lapik"""
     return await case_spin(CaseSpinRequest(initData=request.initData, slug='lapik'))
+
+
+# ============================================================
+# Backward-compatible routes (used by FreeSpin.jsx, Spin.jsx, SpinOptimized.jsx)
+# ============================================================
+
+legacy_router = APIRouter(prefix="/api", tags=["spins-legacy"])
+
+
+class SpinRequest(BaseModel):
+    initData: str
+
+
+@legacy_router.post("/check-spin-available")
+async def check_spin_available(request: SpinRequest):
+    """Проверить доступность бесплатного спина (аналог /api/game/case-info для free_spin)"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"valid": False, "available": False, "timeLeft": 0}
+
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = json.loads(parsed.get('user', [''])[0])
+        user_id = user_data.get('id')
+    except Exception:
+        return {"valid": False, "available": False, "timeLeft": 0}
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT last_spin_date FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or not row[0]:
+        return {"valid": True, "available": True, "timeLeft": 0}
+
+    last_spin = datetime.fromisoformat(row[0])
+    now = datetime.now()
+    elapsed = (now - last_spin).total_seconds()
+    cooldown = 24 * 3600
+
+    if elapsed >= cooldown:
+        return {"valid": True, "available": True, "timeLeft": 0}
+    else:
+        return {"valid": True, "available": False, "timeLeft": int(cooldown - elapsed)}
+
+
+@legacy_router.post("/spin")
+async def free_spin(request: SpinRequest):
+    """Бесплатный спин (обёртка над case_spin для free_spin)"""
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    try:
+        parsed = parse_qs(request.initData)
+        user_data = json.loads(parsed.get('user', [''])[0])
+        user_id = user_data.get('id')
+    except Exception:
+        return {"success": False, "message": "Invalid user data"}
+
+    # Проверка доступности
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT last_spin_date FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+
+    now = datetime.now()
+    if row and row[0]:
+        last_spin = datetime.fromisoformat(row[0])
+        elapsed = (now - last_spin).total_seconds()
+        if elapsed < 24 * 3600:
+            conn.close()
+            return {"success": False, "message": "Спин ещё недоступен"}
+
+    # Выполняем бесплатный спин (slug='free_spin')
+    result = await process_paid_spin(user_id, 'free_spin')
+
+    if result.get("success"):
+        cursor.execute("UPDATE users SET last_spin_date = ? WHERE id = ?",
+                       (now.isoformat(), user_id))
+        conn.commit()
+
+    conn.close()
+    return result
+
+
+

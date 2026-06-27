@@ -504,6 +504,19 @@ class CrashGame:
 crash_game = CrashGame()
 
 async def start_crash_game_loop():
-    """Запускает бесконечный цикл краш-игры"""
+    """Запускает бесконечный цикл краш-игры с авто-восстановлением"""
     print("🚀 Запуск краш-игры...")
-    await crash_game.start_round()
+    while True:
+        try:
+            await crash_game.start_round()
+        except asyncio.CancelledError:
+            print("🛑 Краш-игра остановлена (CancelledError)")
+            break
+        except Exception as e:
+            print(f"❌ Краш-игра упала с ошибкой: {e}")
+            import traceback
+            traceback.print_exc()
+            crash_game.is_running = False
+            crash_game.is_countdown = False
+            print("🔄 Перезапуск краш-игры через 2 секунды...")
+            await asyncio.sleep(2)
