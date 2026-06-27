@@ -6,7 +6,6 @@ from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKe
 from app.config import ADMIN_IDS
 from app.utils.error_logger import send_error_log
 from app.utils.database import get_db_connection
-from app.utils.redis_models import RedisSettings
 
 router = Router()
 
@@ -35,6 +34,7 @@ async def cmd_admin(message: Message):
         [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
         [InlineKeyboardButton(text="👥 Админы", callback_data="admin_list_admins")],
         [InlineKeyboardButton(text="💰 Баланс", callback_data="admin_balance_menu")],
+        [InlineKeyboardButton(text="📝 Причина закрытия", callback_data="admin_maintenance_reason")],
         [InlineKeyboardButton(text="🚧 Перезапустить сервер", callback_data="admin_restart")],
         [InlineKeyboardButton(text="⏻ Тех.работы", callback_data="admin_toggle_maintenance")],
     ])
@@ -45,213 +45,6 @@ async def cmd_admin(message: Message):
         parse_mode="HTML",
         reply_markup=keyboard
     )
-
-
-@router.message(Command("addadmin"))
-async def cmd_addadmin(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    args = message.text.split()
-    if len(args) < 2 or not args[1].isdigit():
-        await message.answer("Формат: /addadmin <user_id>")
-        return
-
-    new_id = int(args[1])
-    if new_id in ADMIN_IDS:
-        await message.answer(f"⚠️ {new_id} уже является админом")
-        return
-
-    ADMIN_IDS.append(new_id)
-    save_admins_to_db(ADMIN_IDS)
-
-    await message.answer(f"✅ Админ <code>{new_id}</code> добавлен", parse_mode="HTML")
-
-
-@router.message(Command("removeadmin"))
-async def cmd_removeadmin(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    args = message.text.split()
-    if len(args) < 2 or not args[1].isdigit():
-        await message.answer("Формат: /removeadmin <user_id>")
-        return
-
-    remove_id = int(args[1])
-    if remove_id not in ADMIN_IDS:
-        await message.answer(f"⚠️ {remove_id} не в списке админов")
-        return
-
-    ADMIN_IDS.remove(remove_id)
-    save_admins_to_db(ADMIN_IDS)
-
-    await message.answer(f"✅ Админ <code>{remove_id}</code> удалён", parse_mode="HTML")
-
-
-@router.message(Command("listadmins"))
-async def cmd_listadmins(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    lines = [f"👥 <b>Администраторы ({len(ADMIN_IDS)})</b>:\n"]
-    for uid in ADMIN_IDS:
-        lines.append(f"  • <code>{uid}</code>")
-
-    await message.answer("\n".join(lines), parse_mode="HTML")
-
-
-@router.message(Command("top"))
-async def cmd_top(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    args = message.text.split()
-    if len(args) < 3 or not args[1].isdigit() or not args[2].lstrip('-').isdigit():
-        await message.answer("Формат: /top <user_id> <сумма>\nОтрицательная сумма — списание")
-        return
-
-    user_id = int(args[1])
-    amount = int(args[2])
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
-    if not cursor.fetchone():
-        conn.close()
-        await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден", parse_mode="HTML")
-        return
-
-    cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
-    conn.commit()
-    cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
-    new_balance = cursor.fetchone()[0]
-    conn.close()
-
-    action = "начислено" if amount >= 0 else "списано"
-    await message.answer(
-        f"✅ Пользователю <code>{user_id}</code> {action} <b>{abs(amount)}</b> ⭐\n"
-        f"💰 Новый баланс: <b>{new_balance}</b> ⭐",
-        parse_mode="HTML"
-    )
-
-
-@router.message(Command("give"))
-async def cmd_give(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    parts = message.text.split(maxsplit=2)
-    if len(parts) < 3 or not parts[1].isdigit():
-        await message.answer("Формат: /give <user_id> <название_подарка>")
-        return
-
-    user_id = int(parts[1])
-    gift_name = parts[2].strip()
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
-    if not cursor.fetchone():
-        conn.close()
-        await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден", parse_mode="HTML")
-        return
-
-    cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
-    result = cursor.fetchone()
-    inventory = json.loads(result[0]) if result[0] else []
-
-    inventory.append(gift_name)
-    cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory), user_id))
-    conn.commit()
-    conn.close()
-
-    await message.answer(
-        f"✅ Подарок <b>{gift_name}</b> выдан пользователю <code>{user_id}</code>",
-        parse_mode="HTML"
-    )
-
-
-@router.message(Command("userinfo"))
-async def cmd_userinfo(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    args = message.text.split()
-    if len(args) < 2 or not args[1].isdigit():
-        await message.answer("Формат: /userinfo <user_id>")
-        return
-
-    user_id = int(args[1])
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-
-    if not row:
-        conn.close()
-        await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден", parse_mode="HTML")
-        return
-
-    columns = [d[0] for d in cursor.description]
-    user_data = dict(zip(columns, row))
-    conn.close()
-
-    text = (
-        f"📋 <b>Информация о пользователе</b>\n"
-        f"ID: <code>{user_data.get('id')}</code>\n"
-        f"Username: @{user_data.get('username', '—')}\n"
-        f"💰 Баланс: <b>{user_data.get('balance', 0)}</b> ⭐\n"
-        f"🎁 Инвентарь: <b>{len(json.loads(user_data.get('inventory', '[]')))}</b> предметов\n"
-        f"🚫 Бан: {'Да' if user_data.get('is_banned') else 'Нет'}\n"
-        f"📅 Создан: {user_data.get('creation_date', '—')}"
-    )
-    await message.answer(text, parse_mode="HTML")
-
-
-@router.message(Command("stats"))
-async def cmd_stats(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔ Доступ запрещен")
-        return
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM users")
-    total_users = cursor.fetchone()[0]
-
-    cursor.execute("SELECT COUNT(*) FROM users WHERE is_banned = 1")
-    banned_users = cursor.fetchone()[0]
-
-    cursor.execute("SELECT COUNT(*) FROM cases")
-    total_cases = cursor.fetchone()[0]
-
-    cursor.execute("SELECT COUNT(*) FROM shop_gifts")
-    total_gifts = cursor.fetchone()[0]
-
-    cursor.execute("SELECT SUM(balance) FROM users")
-    total_balance = cursor.fetchone()[0] or 0
-
-    conn.close()
-
-    text = (
-        f"📊 <b>Статистика сервера</b>\n\n"
-        f"👥 Пользователей: <b>{total_users}</b>\n"
-        f"🚫 Забанено: <b>{banned_users}</b>\n"
-        f"⭐ Всего звёзд: <b>{total_balance}</b>\n"
-        f"📦 Кейсов: <b>{total_cases}</b>\n"
-        f"🎁 Подарков в магазине: <b>{total_gifts}</b>\n"
-    )
-    await message.answer(text, parse_mode="HTML")
 
 
 @router.callback_query(F.data == "admin_list_admins")
@@ -280,11 +73,11 @@ async def admin_balance_menu_callback(callback: CallbackQuery):
 
     await callback.message.edit_text(
         "💰 <b>Управление балансом</b>\n\n"
-        "Команды:\n"
-        "/top &lt;user_id&gt; &lt;сумма&gt; — начислить/списать\n"
-        "/give &lt;user_id&gt; &lt;подарок&gt; — выдать подарок\n"
-        "/userinfo &lt;user_id&gt; — информация\n\n"
-        "Отрицательная сумма в /top — списание.",
+        "Используйте веб-панель для управления.\n"
+        "В админке веб-панели доступны:\n"
+        "• Пополнение / списание баланса\n"
+        "• Выдача подарков\n"
+        "• Информация о пользователе",
         parse_mode="HTML",
         reply_markup=keyboard
     )
@@ -302,6 +95,7 @@ async def admin_back_callback(callback: CallbackQuery):
         [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
         [InlineKeyboardButton(text="👥 Админы", callback_data="admin_list_admins")],
         [InlineKeyboardButton(text="💰 Баланс", callback_data="admin_balance_menu")],
+        [InlineKeyboardButton(text="📝 Причина закрытия", callback_data="admin_maintenance_reason")],
         [InlineKeyboardButton(text="🚧 Перезапустить сервер", callback_data="admin_restart")],
         [InlineKeyboardButton(text="⏻ Тех.работы", callback_data="admin_toggle_maintenance")],
     ])
@@ -309,6 +103,34 @@ async def admin_back_callback(callback: CallbackQuery):
     await callback.message.edit_text(
         "👋 <b>Панель администратора</b>\n\n"
         "Выберите действие:",
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_maintenance_reason")
+async def admin_maintenance_reason_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM settings WHERE key = 'maintenance_reason'")
+    row = cursor.fetchone()
+    current_reason = row[0] if row else "Сервер временно недоступен"
+    conn.close()
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_back")],
+    ])
+
+    await callback.message.edit_text(
+        "📝 <b>Причина закрытия</b>\n\n"
+        "Текущая причина:\n"
+        f"<i>{current_reason}</i>\n\n"
+        "Изменить — используйте веб-панель.",
         parse_mode="HTML",
         reply_markup=keyboard
     )
