@@ -171,7 +171,7 @@ function LapikSpin({ onNavigateToTopUp }) {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/game/lapik-spin`, {
         method: 'POST',

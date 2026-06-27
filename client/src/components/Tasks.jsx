@@ -39,7 +39,7 @@ function Tasks({ onNavigateToTopUp }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const cacheBuster = Date.now()
       const response = await fetch(`${apiUrl}/api/tasks/list?_=${cacheBuster}`, {
         method: 'POST',
@@ -98,7 +98,7 @@ function Tasks({ onNavigateToTopUp }) {
       // Для частного канала получаем invite link с сервера
       try {
         const initData = tg?.initData
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+        const apiUrl = import.meta.env.VITE_API_URL || 
         const response = await fetch(`${apiUrl}/api/tasks/get-invite-link`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -143,7 +143,7 @@ function Tasks({ onNavigateToTopUp }) {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/tasks/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

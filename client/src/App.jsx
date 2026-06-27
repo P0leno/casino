@@ -92,7 +92,7 @@ function AppContent() {
       return
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
 
     // Один запрос validate - проверяет всё: валидность, бан, тех.работы, админ
     fetch(`${apiUrl}/api/validate`, {

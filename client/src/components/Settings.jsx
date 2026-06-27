@@ -25,7 +25,7 @@ const Settings = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек таймаут
 
-      const response = await fetch('https://api.shelloch.xyz/api/get-settings', {
+      const response = await fetch('/api/get-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData }),
@@ -83,7 +83,7 @@ const Settings = () => {
       // Используем update-setting вместо toggle-maintenance
       const newValue = maintenanceMode ? '0' : '1';
 
-      const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
+      const response = await fetch('/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,7 +138,7 @@ const Settings = () => {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
 
-      const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
+      const response = await fetch('/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +186,7 @@ const Settings = () => {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
 
-      const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
+      const response = await fetch('/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -233,7 +233,7 @@ const Settings = () => {
       const tg = window.Telegram.WebApp;
       const initData = tg.initData;
 
-      const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
+      const response = await fetch('/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -277,7 +277,7 @@ const Settings = () => {
       // Переключаем значение
       const newValue = currentValue === 'true' ? 'false' : 'true';
 
-      const response = await fetch('https://api.shelloch.xyz/api/update-setting', {
+      const response = await fetch('/api/update-setting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -328,7 +328,7 @@ const Settings = () => {
     try {
       const initData = tg.initData;
 
-      const response = await fetch('https://api.shelloch.xyz/api/restart-server', {
+      const response = await fetch('/api/restart-server', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
@@ -445,7 +445,7 @@ const Settings = () => {
 
                     // Helper to update
                     const update = async (key, val) => {
-                      await fetch('https://api.shelloch.xyz/api/update-setting', {
+                      await fetch('/api/update-setting', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ initData, key, value: val })

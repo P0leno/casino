@@ -27,7 +27,7 @@ function TopUpModal({ isOpen, onClose, onPaymentSuccess }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/create-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

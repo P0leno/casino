@@ -9,7 +9,7 @@ import ShopFilterModal from './ShopFilterModal'
 import { useBalance } from '../contexts/BalanceContext'
 import starStaticBlackIcon from '../assets/starstatic_black.svg'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+const API_URL = import.meta.env.VITE_API_URL || 
 const MODELS_LIST_URL = 'https://shelloch.xyz/gifts/models_list.json'
 
 const hexToRgba = (hex, alpha) => {

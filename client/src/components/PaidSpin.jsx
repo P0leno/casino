@@ -69,7 +69,7 @@ function PaidSpin({ onNavigateToTopUp }) {
       try {
         const tg = window.Telegram?.WebApp
         const initData = tg?.initData || ''
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+        const apiUrl = import.meta.env.VITE_API_URL || 
 
         const res = await fetch(`${apiUrl}/api/game/case-info`, {
           method: 'POST',

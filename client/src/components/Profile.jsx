@@ -150,7 +150,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/ban-user`, {
         method: 'POST',
@@ -176,7 +176,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/get-chances`, {
         method: 'POST',
@@ -198,7 +198,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/update-chances`, {
         method: 'POST',
@@ -231,7 +231,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/unban-user`, {
         method: 'POST',
@@ -257,7 +257,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/crash/get-settings`, {
         method: 'POST',
@@ -282,7 +282,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/cases`, {
         method: 'POST',
@@ -304,7 +304,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/cases/update`, {
         method: 'POST',
@@ -335,7 +335,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const formData = new FormData()
       formData.append('initData', initData)
@@ -381,7 +381,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/cases/delete`, {
         method: 'POST',
@@ -411,7 +411,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/cases/update`, {
         method: 'POST',
@@ -443,7 +443,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/cases/gifts`, {
         method: 'POST',
@@ -465,7 +465,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/cases/toggle-gift`, {
         method: 'POST',
@@ -494,7 +494,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/crash/update-settings`, {
         method: 'POST',
@@ -534,7 +534,7 @@ function Profile() {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/admin/crash/explode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -570,7 +570,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/refund-payment`, {
         method: 'POST',
@@ -611,7 +611,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/tasks/list`, {
         method: 'POST',
@@ -643,7 +643,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/tasks/check-bot-permissions`, {
         method: 'POST',
@@ -694,7 +694,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/tasks/create`, {
         method: 'POST',
@@ -736,7 +736,7 @@ function Profile() {
     try {
       const tg = window.Telegram?.WebApp
       const initData = tg?.initData
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
 
       const response = await fetch(`${apiUrl}/api/admin/tasks/delete`, {
         method: 'POST',
@@ -777,7 +777,7 @@ function Profile() {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/inventory/get`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -803,7 +803,7 @@ function Profile() {
   const handleWithdrawRegular = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
 
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
     const confirmed = tg?.showConfirm
@@ -849,7 +849,7 @@ function Profile() {
   const handleWithdrawNFT = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
 
     const confirmMessage = `Вывести ${gift.title} на ваш аккаунт Telegram?`
     const confirmed = tg?.showConfirm
@@ -920,7 +920,7 @@ function Profile() {
   const handleManualAdminWithdraw = async () => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
 
     if (!errorData || !errorData.gift) return
 
@@ -974,7 +974,7 @@ function Profile() {
   const handleSellRegular = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
 
     try {
       // sell_price уже есть в gift из inventory
@@ -1015,7 +1015,7 @@ function Profile() {
   const handleSellNFT = async (gift) => {
     const tg = window.Telegram?.WebApp
     const initData = tg?.initData
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
 
     // Confirmation
     const price = gift.sell_price || '?'

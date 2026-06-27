@@ -54,7 +54,7 @@ function Crash({ onNavigateToTopUp }) {
 
   // WebSocket подключение (без polling fallback)
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+    const apiUrl = import.meta.env.VITE_API_URL || 
     const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://')
     let shouldReconnect = true
     let reconnectTimeout = null
@@ -191,7 +191,7 @@ function Crash({ onNavigateToTopUp }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/crash/bet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -230,7 +230,7 @@ function Crash({ onNavigateToTopUp }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/crash/cashout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -261,7 +261,7 @@ function Crash({ onNavigateToTopUp }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/crash/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,7 +290,7 @@ function Crash({ onNavigateToTopUp }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/admin/crash/explode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

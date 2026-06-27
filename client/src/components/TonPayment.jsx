@@ -59,7 +59,7 @@ function TonPayment({ onNavigateBack }) {
       const initData = tg?.initData
       if (!initData) return
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/ton/calculate-stars`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +93,7 @@ function TonPayment({ onNavigateBack }) {
         return
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/ton/create-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

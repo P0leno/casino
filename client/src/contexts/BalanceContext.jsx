@@ -25,7 +25,7 @@ export function BalanceProvider({ children }) {
       const initData = tg?.initData
       if (!initData) return
       
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.shelloch.xyz'
+      const apiUrl = import.meta.env.VITE_API_URL || 
       const response = await fetch(`${apiUrl}/api/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
