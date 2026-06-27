@@ -458,6 +458,22 @@
   line-height: 1;
 }
 
+.ap-theme-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.ap-theme-swatch svg {
+  color: rgba(255,255,255,0.9);
+  stroke-width: 2;
+}
+
 .ap-theme-label {
   font-size: 13px;
   font-weight: 600;
@@ -528,4 +544,85 @@
   color: rgba(255,255,255,0.3);
   line-height: 1.2;
   font-family: var(--font-family, 'Montserrat', sans-serif);
+}
+
+/* Слайдеры тонкой настройки */
+.ap-slider-group {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ap-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ap-slider-header label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+.ap-slider-range {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  font-family: monospace;
+}
+
+.ap-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  cursor: pointer;
+}
+
+.ap-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent, #6c5ce7);
+  border: 2px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.ap-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.ap-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent, #6c5ce7);
+  border: 2px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+}
+
+/* Иконки SVG в админке */
+.ap-menu-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.ap-header-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.ap-view-title svg {
+  vertical-align: middle;
+  margin-right: 8px;
 }

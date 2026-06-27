@@ -14,15 +14,24 @@
 }
 
 .td-slow {
-  animation: tdFallSlow linear infinite;
+  animation-name: tdFallSlow;
+  animation-duration: calc(22s * var(--user-animate-speed, 1));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 
 .td-normal {
-  animation: tdFallNormal linear infinite;
+  animation-name: tdFallNormal;
+  animation-duration: calc(16s * var(--user-animate-speed, 1));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 
 .td-fast {
-  animation: tdFallFast linear infinite;
+  animation-name: tdFallFast;
+  animation-duration: calc(10s * var(--user-animate-speed, 1));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 
 @keyframes tdFallSlow {

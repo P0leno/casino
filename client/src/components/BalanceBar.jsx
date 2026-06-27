@@ -1,6 +1,5 @@
 import './BalanceBar.css'
-import LottieAnimation from './LottieAnimation'
-import starAnimation from '../assets/star.json'
+import Icon from './Icons'
 import { useBalance } from '../contexts/BalanceContext'
 
 function BalanceBar({ onNavigateToTopUp }) {
@@ -15,12 +14,10 @@ function BalanceBar({ onNavigateToTopUp }) {
   }
 
   return (
-    <div className="balance-bar" onClick={handleBalanceClick}>
+    <div className="balance-bar glass-sm" onClick={handleBalanceClick}>
       <div className="balance-content">
         <span className="balance-value">{balance}</span>
-        <div className="balance-icon">
-          <LottieAnimation animationData={starAnimation} width={20} height={20} />
-        </div>
+        <Icon name="star" size="md" className="balance-star-icon" />
       </div>
     </div>
   )

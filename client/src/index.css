@@ -331,6 +331,96 @@ body {
   100% { transform: translate(30px, -20px) rotate(8deg); }
 }
 
+/* Glass utility classes — карточки, секции, модалки */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  padding: 16px;
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-hover);
+}
+
+.glass-section {
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.glass-button {
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.glass-button:hover {
+  background: var(--glass-border);
+  border-color: var(--glass-border-hover);
+}
+
+.glass-button:active {
+  transform: scale(0.97);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.glass-input:focus {
+  border-color: var(--accent);
+}
+
+/* Кастомизация — пользовательские настройки */
+:root {
+  --user-blur: 1;
+  --user-opacity: 1;
+  --user-animate-speed: 1;
+  --user-accent: var(--accent);
+}
+
+.glass,
+.glass-sm,
+.glass-strong,
+.glass-gradient,
+.glass-liquid,
+.glass-card,
+.glass-section {
+  backdrop-filter: calc(var(--glass-blur) * var(--user-blur));
+  -webkit-backdrop-filter: calc(var(--glass-blur) * var(--user-blur));
+  background: rgba(255, 255, 255, calc(0.06 * var(--user-opacity)));
+}
+
+.glass-strong,
+.glass-card,
+.glass-section {
+  background: rgba(255, 255, 255, calc(0.1 * var(--user-opacity)));
+}
+
 /* Safe area padding utility */
 .safe-top {
   padding-top: var(--safe-top);

@@ -34,12 +34,12 @@ function Home({ onNavigateToTopUp }) {
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
       <BonusBalanceBar />
       <div className="home-content" style={{ paddingTop: `${contentPadding}px` }}>
-        <div className="welcome-card">
-          <h2>Добро пожаловать! 👋</h2>
+        <div className="welcome-card glass">
+          <h2>Добро пожаловать!</h2>
           <p>Это главная страница приложения</p>
         </div>
 
-        <div className="crash-dynamic-banner" onClick={handleNavigateToCrash}>
+        <div className="crash-dynamic-banner glass gradient glass-hover" onClick={handleNavigateToCrash}>
           <div className="crash-banner-line"></div>
           <div className="crash-banner-content">
             <div className="crash-banner-text">
@@ -57,7 +57,7 @@ function Home({ onNavigateToTopUp }) {
           </div>
         </div>
 
-        <div className="crash-dynamic-banner spins-banner" onClick={handleNavigateToSpins}>
+        <div className="crash-dynamic-banner spins-banner glass-hover" onClick={handleNavigateToSpins}>
           <div className="crash-banner-line"></div>
           <div className="crash-banner-content">
             <div className="crash-banner-text">

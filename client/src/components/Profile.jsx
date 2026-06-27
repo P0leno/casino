@@ -14,6 +14,7 @@ import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
 import secretIcon from '../assets/secret.svg'
 import { useBalance } from '../contexts/BalanceContext'
+import Icon from './Icons'
 
 const giftAnimations = {
   bear: '/gifts/bear.json',
@@ -1335,12 +1336,12 @@ Username: @${u.username || '—'}
         {/* Прочее */}
         <div className="profile-other-section" style={{ display: activeProfileTab === 'admin' ? 'block' : 'none' }}>
           <div className="profile-actions">
-            <button className="action-button" onClick={() => setShowPromoCodeModal(true)}>
-              <img src={giftIcon} alt="promo" className="button-icon-img" />
+            <button className="action-button glass-button" onClick={() => setShowPromoCodeModal(true)}>
+              <Icon name="gift" size="md" />
               <span className="button-text">Промокод</span>
             </button>
 
-            <button className="action-button" onClick={() => {
+            <button className="action-button glass-button" onClick={() => {
               const tg = window.Telegram?.WebApp
               if (tg && tg.openTelegramLink) {
                 tg.openTelegramLink('https://t.me/helpshellbot')
@@ -1348,18 +1349,18 @@ Username: @${u.username || '—'}
                 window.open('https://t.me/helpshellbot', '_blank')
               }
             }}>
-              <img src={supIcon} alt="support" className="button-icon-img" />
+              <Icon name="support" size="md" />
               <span className="button-text">Поддержка</span>
             </button>
 
             {!loading && isAdmin && (
               <>
-                <button className="action-button admin-button" onClick={() => setShowAdminPanel(true)}>
-                  <span className="button-icon">👑</span>
+                <button className="action-button glass-button admin-button" onClick={() => setShowAdminPanel(true)}>
+                  <Icon name="admin" size="md" />
                   <span className="button-text">Админ панель</span>
                 </button>
-                <button className="action-button admin-button" onClick={() => setShowSafeArea(!showSafeArea)}>
-                  <span className="button-icon">📐</span>
+                <button className="action-button glass-button" onClick={() => setShowSafeArea(!showSafeArea)}>
+                  <Icon name="warning" size="md" />
                   <span className="button-text">{showSafeArea ? 'Скрыть' : 'Показать'} Safe Area</span>
                 </button>
               </>

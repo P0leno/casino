@@ -3,21 +3,14 @@
   top: calc(var(--safe-area-top, 10px) + 0px);
   right: 15px;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
-
 
 .balance-bar:hover {
   background: rgba(255, 255, 255, 0.15);
@@ -43,12 +36,9 @@
   text-align: right;
 }
 
-.balance-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
+.balance-star-icon {
+  color: var(--accent, #fbbf24);
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
 }
 
 .platform-mobile .balance-bar {

@@ -75,6 +75,18 @@ function AppContent() {
     if (savedFont) {
       document.documentElement.setAttribute('data-font', savedFont)
     }
+    const savedBlur = localStorage.getItem('userBlur')
+    if (savedBlur) {
+      document.documentElement.style.setProperty('--user-blur', savedBlur)
+    }
+    const savedOpacity = localStorage.getItem('userOpacity')
+    if (savedOpacity) {
+      document.documentElement.style.setProperty('--user-opacity', savedOpacity)
+    }
+    const savedSpeed = localStorage.getItem('userSpeed')
+    if (savedSpeed) {
+      document.documentElement.style.setProperty('--user-animate-speed', savedSpeed)
+    }
 
     tg.ready()
     tg.setHeaderColor('#1a1a1a')
