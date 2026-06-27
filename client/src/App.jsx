@@ -20,6 +20,7 @@ import BannedScreen from './components/BannedScreen'
 import Maintenance from './components/Maintenance'
 import { BalanceProvider, useBalance } from './contexts/BalanceContext'
 import { ErrorProvider } from './components/ErrorContext'
+import ThemeDecorations from './components/ThemeDecorations'
 
 function AppContent() {
   const { updateBalance } = useBalance()
@@ -188,6 +189,7 @@ function AppContent() {
     return (
       <BalanceProvider>
         <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <ThemeDecorations />
           <SpinSelection onNavigateToTopUp={setActiveTab} />
         </div>
       </BalanceProvider>
@@ -199,6 +201,7 @@ function AppContent() {
     return (
       <BalanceProvider>
         <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <ThemeDecorations />
           <FreeSpin onNavigateToTopUp={setActiveTab} />
         </div>
       </BalanceProvider>
@@ -210,6 +213,7 @@ function AppContent() {
     return (
       <BalanceProvider>
         <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <ThemeDecorations />
           <PaidSpin onNavigateToTopUp={setActiveTab} />
         </div>
       </BalanceProvider>
@@ -221,6 +225,7 @@ function AppContent() {
     return (
       <BalanceProvider>
         <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <ThemeDecorations />
           <LapikSpin onNavigateToTopUp={setActiveTab} />
         </div>
       </BalanceProvider>
@@ -232,6 +237,7 @@ function AppContent() {
     return (
       <BalanceProvider>
         <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+          <ThemeDecorations />
           <Crash onNavigateToTopUp={setActiveTab} />
         </div>
       </BalanceProvider>
@@ -242,6 +248,7 @@ function AppContent() {
   if (currentPath === '/spin') {
     return (
       <div className={`app-container ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`} style={{ '--safe-area-top': `${safeAreaTop}px` }}>
+        <ThemeDecorations />
         <Spin onNavigateToTopUp={setActiveTab} />
       </div>
     )
@@ -252,6 +259,7 @@ function AppContent() {
       className={`app-container tab-${activeTab} ${isMobile ? 'platform-mobile' : 'platform-desktop'} ${isAndroid ? 'platform-android' : ''}`}
       style={{ '--safe-area-top': `${safeAreaTop}px` }}
     >
+      <ThemeDecorations />
       {activeTab === 'home' && <Home onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'shop' && <Shop onNavigateToTopUp={setActiveTab} />}
       {activeTab === 'inventory' && <Inventory onNavigateToTopUp={setActiveTab} />}

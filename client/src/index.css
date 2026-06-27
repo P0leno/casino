@@ -355,6 +355,133 @@ body {
   -ms-overflow-style: none;
 }
 
+/* ============================================
+   Theme-aware component overrides
+   ============================================ */
+
+/* TabBar — each theme gets its own glass tint */
+:root[data-theme="halloween"] .tab-bar {
+  background: rgba(255, 107, 53, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+:root[data-theme="halloween"] .tab-indicator {
+  background: linear-gradient(135deg, #ff6b35, #ff4500);
+}
+
+:root[data-theme="halloween"] .tab-icon.active-tab {
+  color: #ff6b35;
+}
+
+:root[data-theme="newyear"] .tab-bar {
+  background: rgba(212, 175, 55, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+:root[data-theme="newyear"] .tab-indicator {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+}
+
+:root[data-theme="newyear"] .tab-icon.active-tab {
+  color: #ffd700;
+}
+
+:root[data-theme="easter"] .tab-bar {
+  background: rgba(244, 114, 182, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+:root[data-theme="easter"] .tab-indicator {
+  background: linear-gradient(135deg, #f472b6, #e879f9);
+}
+
+:root[data-theme="easter"] .tab-icon.active-tab {
+  color: #f472b6;
+}
+
+:root[data-theme="cny"] .tab-bar {
+  background: rgba(220, 38, 38, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+:root[data-theme="cny"] .tab-indicator {
+  background: linear-gradient(135deg, #dc2626, #ffd700);
+}
+
+:root[data-theme="cny"] .tab-icon.active-tab {
+  color: #dc2626;
+}
+
+:root[data-theme="minimalism"] .tab-bar {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="minimalism"] .tab-indicator {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+:root[data-theme="maximalism"] .tab-bar {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(32px);
+  box-shadow: 0 -4px 40px rgba(108, 92, 231, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+:root[data-theme="maximalism"] .tab-indicator {
+  background: linear-gradient(135deg, #6c5ce7, #a855f7, #3b82f6);
+}
+
+/* BalanceBar */
+:root[data-theme="halloween"] .balance-bar {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.06), rgba(255, 69, 0, 0.04));
+}
+
+:root[data-theme="newyear"] .balance-bar {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(255, 215, 0, 0.04));
+}
+
+:root[data-theme="easter"] .balance-bar {
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.06), rgba(232, 121, 249, 0.04));
+}
+
+:root[data-theme="cny"] .balance-bar {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.06), rgba(255, 215, 0, 0.04));
+}
+
+/* Home welcome card */
+:root[data-theme="halloween"] .welcome-card {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.06), rgba(255, 69, 0, 0.03));
+  border-color: rgba(255, 107, 53, 0.15);
+}
+
+:root[data-theme="newyear"] .welcome-card {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(255, 215, 0, 0.03));
+  border-color: rgba(212, 175, 55, 0.15);
+}
+
+:root[data-theme="easter"] .welcome-card {
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.06), rgba(232, 121, 249, 0.03));
+  border-color: rgba(244, 114, 182, 0.15);
+}
+
+:root[data-theme="cny"] .welcome-card {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.06), rgba(255, 215, 0, 0.03));
+  border-color: rgba(220, 38, 38, 0.15);
+}
+
+:root[data-theme="minimalism"] .welcome-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+:root[data-theme="maximalism"] .welcome-card {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.08), rgba(59, 130, 246, 0.04));
+  border-color: rgba(108, 92, 231, 0.2);
+  box-shadow: 0 8px 32px rgba(108, 92, 231, 0.1);
+}
+
 /* Page transitions */
 .page-enter {
   opacity: 0;
