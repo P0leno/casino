@@ -210,6 +210,7 @@ antifraud_* (limits, violations), gift_models, gift_withdrawals
 | client/src/components/Profile.jsx | Profile page, imports AdminPanel |
 | client/src/components/AdminPanel.jsx | Separate admin panel component (9 views: menu, search, user_detail, topup, givegift, adminmgmt, stats, settings) |
 | client/src/components/AdminPanel.css | Admin panel glassmorphism styles (overlay, sheet, cards, buttons, stats grid) |
+| client/src/components/Glass.jsx | Reusable Glass component (variant: default/sm/strong/gradient/liquid, hover, as) |
 | client/src/components/Crash.jsx | Crash game UI |
 | client/src/components/Inventory.jsx | Gift inventory |
 | docker-compose.yml | Docker compose config |
@@ -228,13 +229,16 @@ AdminPanel.css: 250+ lines of glassmorphism design — overlay backdrop-filter b
 - **game.py router**: not included in FastAPI app (superseded by spins.py)
 
 ## Design System Status
-- ✅ Glass tokens + utility classes in `index.css`
-- ✅ `.glass-liquid` animated gradient component
-- ✅ Safe area variables + utilities
-- ✅ AdminPanel.jsx — standalone component with own CSS
-- ✅ AdminPanel.css — full glassmorphism overlay design
-- ⬜ Theme preset switching (`data-theme` blocks)
-- ⬜ User customization sliders (blur, opacity, accent)
-- ⬜ Glass component with props (blur, opacity, border, radius)
-- ⬜ Page transitions (framer-motion or CSS)
+- ✅ Glass tokens + utility classes in `index.css` (`.glass`, `.glass-sm`, `.glass-strong`, `.glass-gradient`, `.glass-liquid`)
+- ✅ `.glass-liquid` animated radial gradient (12s shift)
+- ✅ 7 theme presets (default, minimalism, halloween, newyear, easter, cny, maximalism) via `:root[data-theme="<name>"]`
+- ✅ Theme switcher in AdminPanel (settings view, saves to localStorage)
+- ✅ Theme persistence — applied on app load in App.jsx
+- ✅ Glass component `Glass.jsx` (props: variant, hover, as, className, style)
+- ✅ Page transitions CSS (`.page-enter`, `.page-enter-active`)
+- ✅ Animation speed preset via `data-animation` attribute
+- ✅ Safe area variables + utilities (`.safe-top`, `.safe-bottom`)
+- ✅ AdminPanel.jsx — standalone component with own CSS (9 views, glassmorphism)
+- ⬜ User customization sliders (blur, opacity, accent color picker)
 - ⬜ Lazy loading for AdminPanel (React.lazy)
+- ⬜ Export/import theme as JSON

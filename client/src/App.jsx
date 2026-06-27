@@ -65,6 +65,11 @@ function AppContent() {
       return
     }
 
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme)
+    }
+
     tg.ready()
     tg.setHeaderColor('#1a1a1a')
     tg.setBackgroundColor('#1a1a1a')

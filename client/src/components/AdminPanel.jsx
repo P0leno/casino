@@ -26,6 +26,31 @@ function AdminPanel({ onClose }) {
   const [userInfo, setUserInfo] = useState(null)
   const [userInfoId, setUserInfoId] = useState(null)
 
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'default'
+  })
+
+  const switchTheme = (name) => {
+    setCurrentTheme(name)
+    if (name === 'default') {
+      document.documentElement.removeAttribute('data-theme')
+      localStorage.removeItem('theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', name)
+      localStorage.setItem('theme', name)
+    }
+  }
+
+  const PRESETS = [
+    { id: 'default', label: 'Стандарт', icon: '💜', desc: 'Фиолетовый акцент, blur 16px' },
+    { id: 'minimalism', label: 'Минимализм', icon: '⬜', desc: 'Белый акцент, blur 8px, острые углы' },
+    { id: 'halloween', label: 'Хэллоуин', icon: '🎃', desc: 'Оранжевый, тёмный фон' },
+    { id: 'newyear', label: 'Новый год', icon: '🎄', desc: 'Золотой акцент, праздничный' },
+    { id: 'easter', label: 'Пасха', icon: '🐰', desc: 'Розовый, пастельные тона' },
+    { id: 'cny', label: 'Китайский НГ', icon: '🧧', desc: 'Красный, золотой' },
+    { id: 'maximalism', label: 'Максимализм', icon: '✨', desc: 'Максимум стекла, blur 24px' },
+  ]
+
   const callApi = async (endpoint, body) => {
     setLoading(true)
     setError('')
@@ -326,7 +351,20 @@ function AdminPanel({ onClose }) {
       <div className="ap-view">
         <button className="ap-back" onClick={() => setView('menu')}>← Назад</button>
         <h3 className="ap-view-title">🎨 Тема оформления</h3>
-        <p className="ap-hint">Скоро — кастомные пресеты, цвета, анимации</p>
+        <p className="ap-hint">Выберите пресет. Сохраняется в localStorage.</p>
+        <div className="ap-theme-grid">
+          {PRESETS.map(p => (
+            <button
+              key={p.id}
+              className={`ap-theme-card ${currentTheme === p.id ? 'active' : ''}`}
+              onClick={() => switchTheme(p.id)}
+            >
+              <span className="ap-theme-icon">{p.icon}</span>
+              <span className="ap-theme-label">{p.label}</span>
+              <span className="ap-theme-desc">{p.desc}</span>
+            </button>
+          ))}
+        </div>
       </div>
     ),
   }

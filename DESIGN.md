@@ -39,17 +39,26 @@ All defined in `src/index.css`
 Переменные `--safe-top` и `--safe-bottom` используют `env(safe-area-inset-*)`.
 Утилитарные классы: `.safe-top`, `.safe-bottom`.
 
-### Preset Switching (TODO — следующая итерация)
-Каждый preset — блок `:root[data-theme="<name>"]` с переопределением токенов.
+### Preset Switching (реализовано)
+Каждый preset — блок `:root[data-theme="<name>"]` с переопределением токенов в `index.css`.
 Переключение через JS: `document.documentElement.setAttribute('data-theme', 'halloween')`
+Сохранение в `localStorage` — применяется при загрузке App.jsx.
 
-Пресеты (запланированы):
-- `minimalism` — белый акцент, blur 8px, radius 4px
-- `halloween` — #ff6b35, оранжевый glass
-- `newyear` — #ffd700, золотой glass
-- `easter` — #f472b6, розовый glass
-- `cny` — #dc2626, красный glass
-- `maximalism` — макс blur 24px, сильная тень
+Пресеты:
+| ID | Icon | Акцент | Glass | Фон |
+|----|------|--------|-------|-----|
+| `default` | 💜 | #6c5ce7 | blur 16px | #0e0e0e |
+| `minimalism` | ⬜ | #ffffff | blur 8px, radius 4px | #0a0a0a |
+| `halloween` | 🎃 | #ff6b35 | оранжевый glass | #0d0d0d |
+| `newyear` | 🎄 | #ffd700 | золотой glass | #0f0d08 |
+| `easter` | 🐰 | #f472b6 | розовый glass | #1a0f14 |
+| `cny` | 🧧 | #dc2626 | красный glass | #0d0808 |
+| `maximalism` | ✨ | #6c5ce7 | blur 24px, max прозрачность | #0e0e0e |
+
+### User Customization (TODO)
+В настройках админки («Тема оформления») — выбор пресета с превью.
+Сохранение в `localStorage`.
+Будущие слайдеры: blur, opacity, border, accent color, animation speed.
 
 ### User Customization (TODO)
 В настройках админки — слайдеры для blur, opacity, border, radius, accent color, animation speed, background.
@@ -114,23 +123,40 @@ All defined in `src/index.css`
 
 ## Component Architecture
 
-### Glass Component (TODO — следующая итерация)
+### Glass Component (реализовано)
 ```jsx
-<Glass blur="16" opacity="0.06" border>
+import Glass from './Glass'
+
+<Glass variant="default" hover>
   <content />
 </Glass>
 ```
 
-Пропсы: `blur`, `opacity`, `border`, `radius`, `hover`, `as`
+Пропсы:
+- `as`: 'div' | 'button' | 'a' (default: 'div')
+- `variant`: 'default' | 'sm' | 'strong' | 'gradient' | 'liquid'
+- `hover`: boolean — добавляет `.glass-hover` (lift + brightness on hover)
+- `className`: string — дополнительные классы
+- `style`: object — inline стили
 
-### Page Transition (TODO)
+### Page Transition (реализовано)
 ```css
 .page-enter { opacity: 0; transform: translateY(8px); }
-.page-enter-active { opacity: 1; transform: translateY(0); transition: 0.25s ease; }
+.page-enter-active { opacity: 1; transform: translateY(0); transition: var(--anim-speed, 0.25s) ease; }
 ```
 
-### Animation Presets (TODO)
-Управляются через `data-animation`: `default`, `fade`, `scale`, `none`
+Переменная `--anim-speed` управляет скоростью. По умолчанию 0.25s.
+
+### Animation Presets (реализовано)
+Управляются через `data-animation` на корневом элементе:
+- `default` — 0.25s, translateY
+- `fade` — 0.3s, только opacity
+- `scale` — 0.2s, scale(0.97) → 1
+- `none` — без анимаций
+
+### Micro-interactions
+`.glass-hover` — CSS класс для hover-эффектов на карточках (lift, яркость).
+Определён в `index.css` с медиа-запросом `@media (hover: hover)` для мобил.
 
 ## Future Plan
 1. Выделить админку в отдельный бандл (lazy load через React.lazy)
