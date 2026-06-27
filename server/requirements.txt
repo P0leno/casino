@@ -15,3 +15,4 @@ hiredis>=2.3.2
 curl_cffi>=0.5.0,<0.8.0
 aiosqlite>=0.19.0
 slowapi>=0.1.9
+python-multipart>=0.0.9
