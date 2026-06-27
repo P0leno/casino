@@ -33,7 +33,7 @@ function ErrorModal({ isOpen, title, message, details, onClose }) {
     <div className="errm-overlay" onClick={onClose}>
       <div className="errm-sheet glass" onClick={e => e.stopPropagation()}>
         <div className="errm-header">
-          <span className="errm-icon}>⚠️</span>
+          <span className="errm-icon">⚠️</span>
           <h3 className="errm-title">{title || 'Ошибка'}</h3>
           <button className="errm-close" onClick={onClose}>✕</button>
         </div>
