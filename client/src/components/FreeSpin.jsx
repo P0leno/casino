@@ -7,6 +7,7 @@ import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
 import secretIcon from '../assets/secret.svg'
 import { useBalance } from '../contexts/BalanceContext'
+import { useError } from './ErrorContext'
 
 const gifts = [
   { name: 'bear', animation: '/gifts/bear.json' },
@@ -101,6 +102,7 @@ import DemoSpinMenu from './DemoSpinMenu'
 
 function FreeSpin({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
+  const { showError } = useError()
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
 
@@ -345,7 +347,7 @@ function FreeSpin({ onNavigateToTopUp }) {
         const winIndex = gifts.findIndex(g => g.name === data.gift)
 
         if (winIndex === -1) {
-          alert('Ошибка: подарок не найден')
+          showError('Ошибка', 'Подарок не найден', `Получен подарок: ${data.gift}\nОтвет: ${JSON.stringify(data)}`)
           setSpinning(false)
           setIsProcessing(false)
           return
@@ -431,12 +433,12 @@ function FreeSpin({ onNavigateToTopUp }) {
         animationFrameRef.current = requestAnimationFrame(animate)
 
       } else {
-        alert(data.message)
+        showError('Ошибка спина', data.message || 'Неизвестная ошибка', `Ответ сервера: ${JSON.stringify(data)}`)
         setSpinning(false)
         setIsProcessing(false)
       }
     } catch (error) {
-      alert('Ошибка соединения с сервером')
+      showError('Ошибка сети', 'Ошибка соединения с сервером', error.stack || error.message || '')
       setSpinning(false)
       setIsProcessing(false)
     }

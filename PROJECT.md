@@ -217,11 +217,12 @@ antifraud_* (limits, violations), gift_models, gift_withdrawals
 | docker-compose.yml | Docker compose config |
 
 ## CSS Architecture
-26 CSS files across components, ~7350 lines total.
-Global CSS variables in `src/index.css` (glass tokens: `--glass-*`, accent: `--accent`, bg/text: `--bg-*`/`--text-*`, safe area: `--safe-*`, radius: `--glass-radius-*`)
+27 CSS files across components, ~7900 lines total.
+Global CSS variables in `src/index.css` (glass tokens: `--glass-*`, accent: `--accent`, bg/text: `--bg-*`/`--text-*`, safe area: `--safe-*`, radius: `--glass-radius-*`, font: `--font-family`, `--font-weight`, `--font-letter-spacing`)
 Glass utility classes in `src/index.css`: `.glass`, `.glass-sm`, `.glass-strong`, `.glass-gradient`, `.glass-liquid` (with animated radial gradient)
 Safe area via variables `--safe-top`/`--safe-bottom` + utility classes `.safe-top`/`.safe-bottom`
-AdminPanel.css: 250+ lines of glassmorphism design — overlay backdrop-filter blur, slide-up sheet animation, menu hover translate, stat cards grid, responsive inputs.
+AdminPanel.css: 300+ lines of glassmorphism design — overlay backdrop-filter blur, slide-up sheet animation, menu hover translate, stat cards grid, responsive inputs.
+20 font presets via `:root[data-font="<name>"]` blocks in index.css
 
 ## Crash Game Architecture
 - Game loop: `start_crash_game_loop()` → `start_round()` → `end_round()` → next `start_round()` (chain)

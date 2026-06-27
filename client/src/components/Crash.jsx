@@ -4,11 +4,13 @@ import LottieAnimation from './LottieAnimation'
 import BalanceBar from './BalanceBar'
 import BonusBalanceBar from './BonusBalanceBar'
 import { useBalance } from '../contexts/BalanceContext'
+import { useError } from './ErrorContext'
 import crashAnim from '../assets/crash.json'
 import starAnim from '../assets/star.json'
 
 function Crash({ onNavigateToTopUp }) {
   const { updateBalance, isAdmin } = useBalance()
+  const { showError } = useError()
   const [multiplier, setMultiplier] = useState(1.00)
   const [isRunning, setIsRunning] = useState(false)
   const [history, setHistory] = useState([])
@@ -223,17 +225,14 @@ function Crash({ onNavigateToTopUp }) {
       if (response.ok) {
         updateBalance(data)
         setShowBetModal(false)
-        // nextBet придет от сервера через WebSocket
       } else {
-        if (tg) {
-          tg.showAlert(data.detail || 'Ошибка при размещении ставки')
-        }
+        const detail = data.detail || data.error || 'Ошибка при размещении ставки'
+        showError('Ставка не принята', detail,
+          `POST /api/crash/bet\nStatus: ${response.status}\n${JSON.stringify(data, null, 2)}`)
       }
     } catch (error) {
-      console.error('Error placing bet:', error)
-      if (tg) {
-        tg.showAlert('Ошибка соединения')
-      }
+      showError('Ошибка соединения', 'Не удалось разместить ставку',
+        `${error.message}\n\n${error.stack || ''}`)
     }
   }
 
@@ -243,7 +242,7 @@ function Crash({ onNavigateToTopUp }) {
     try {
       const initData = tg?.initData
       if (!initData) {
-        if (tg) tg.showAlert('Ошибка авторизации')
+        showError('Ошибка авторизации', 'initData не найден', '')
         return
       }
 
@@ -257,14 +256,14 @@ function Crash({ onNavigateToTopUp }) {
       const data = await response.json()
       
       if (!response.ok || !data.success) {
-        if (tg) {
-          tg.showAlert(data.error || 'Ошибка')
-        }
+        showError('Кэшаут не удался', data.error || data.detail || 'Ошибка',
+          `POST /api/crash/cashout\nStatus: ${response.status}\n${JSON.stringify(data, null, 2)}`)
       } else {
         updateBalance(data)
       }
     } catch (error) {
-      console.error('Error cashing out:', error)
+      showError('Ошибка соединения', 'Не удалось выполнить кэшаут',
+        `${error.message}\n\n${error.stack || ''}`)
     }
   }
 
@@ -274,7 +273,7 @@ function Crash({ onNavigateToTopUp }) {
     try {
       const initData = tg?.initData
       if (!initData) {
-        if (tg) tg.showAlert('Ошибка авторизации')
+        showError('Ошибка авторизации', 'initData не найден', '')
         return
       }
 
@@ -288,12 +287,12 @@ function Crash({ onNavigateToTopUp }) {
       const data = await response.json()
       
       if (!response.ok || !data.success) {
-        if (tg) {
-          tg.showAlert(data.error || 'Ошибка отмены ставки')
-        }
+        showError('Отмена не удалась', data.error || data.detail || 'Ошибка',
+          `POST /api/crash/cancel\nStatus: ${response.status}\n${JSON.stringify(data, null, 2)}`)
       }
     } catch (error) {
-      console.error('Error canceling bet:', error)
+      showError('Ошибка соединения', 'Не удалось отменить ставку',
+        `${error.message}\n\n${error.stack || ''}`)
     }
   }
 
@@ -303,7 +302,7 @@ function Crash({ onNavigateToTopUp }) {
     try {
       const initData = tg?.initData
       if (!initData) {
-        if (tg) tg.showAlert('Ошибка авторизации')
+        showError('Ошибка авторизации', 'initData не найден', '')
         return
       }
 
@@ -317,19 +316,14 @@ function Crash({ onNavigateToTopUp }) {
       const data = await response.json()
       
       if (!response.ok || !data.success) {
-        if (tg) {
-          tg.showAlert(data.message || 'Ошибка взрыва')
-        }
+        showError('Взрыв не удался', data.message || 'Ошибка',
+          `POST /api/admin/crash/explode\nStatus: ${response.status}\n${JSON.stringify(data, null, 2)}`)
       } else {
-        if (tg) {
-          tg.HapticFeedback.notificationOccurred('success')
-        }
+        if (tg) tg.HapticFeedback.notificationOccurred('success')
       }
     } catch (error) {
-      console.error('Error exploding crash:', error)
-      if (tg) {
-        tg.showAlert('Ошибка соединения')
-      }
+      showError('Ошибка соединения', 'Не удалось взорвать ракету',
+        `${error.message}\n\n${error.stack || ''}`)
     }
   }
 

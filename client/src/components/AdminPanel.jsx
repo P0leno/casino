@@ -41,6 +41,21 @@ function AdminPanel({ onClose }) {
     }
   }
 
+  const switchFont = (name) => {
+    setCurrentFont(name)
+    if (name === 'montserrat') {
+      document.documentElement.removeAttribute('data-font')
+      localStorage.removeItem('font')
+    } else {
+      document.documentElement.setAttribute('data-font', name)
+      localStorage.setItem('font', name)
+    }
+  }
+
+  const [currentFont, setCurrentFont] = useState(() => {
+    return localStorage.getItem('font') || 'montserrat'
+  })
+
   const PRESETS = [
     { id: 'default', label: 'Стандарт', icon: '💜', desc: 'Фиолетовый акцент, blur 16px' },
     { id: 'minimalism', label: 'Минимализм', icon: '⬜', desc: 'Белый акцент, blur 8px, острые углы' },
@@ -49,6 +64,29 @@ function AdminPanel({ onClose }) {
     { id: 'easter', label: 'Пасха', icon: '🐰', desc: 'Розовый, пастельные тона' },
     { id: 'cny', label: 'Китайский НГ', icon: '🧧', desc: 'Красный, золотой' },
     { id: 'maximalism', label: 'Максимализм', icon: '✨', desc: 'Максимум стекла, blur 24px' },
+  ]
+
+  const FONTS = [
+    { id: 'montserrat', label: 'Montserrat', icon: '𝐌', desc: 'Геометричный гротеск' },
+    { id: 'inter', label: 'Inter', icon: '𝐈', desc: 'Чистый, разреженный' },
+    { id: 'sf-pro', label: 'SF Pro', icon: '𝐒', desc: 'Системный Apple' },
+    { id: 'helvetica', label: 'Helvetica', icon: '𝐇', desc: 'Классическая гарнитура' },
+    { id: 'georgia', label: 'Georgia', icon: '𝐆', desc: 'Элегантный сериф' },
+    { id: 'playfair', label: 'Playfair', icon: '𝐏', desc: 'Высокий контраст' },
+    { id: 'courier', label: 'Courier', icon: '𝐂', desc: 'Моноширинный терминал' },
+    { id: 'system-ui', label: 'System UI', icon: '𝐔', desc: 'Нативная система' },
+    { id: 'rounded', label: 'Rounded', icon: '𝐑', desc: 'Мягкие скругления' },
+    { id: 'avenir', label: 'Avenir', icon: '𝐀', desc: 'Геометричный гуманист' },
+    { id: 'futura', label: 'Futura', icon: '𝐅', desc: 'Конструктив 20-х' },
+    { id: 'gill-sans', label: 'Gill Sans', icon: '𝐆', desc: 'Британский классик' },
+    { id: 'din-pro', label: 'Din Pro', icon: '𝐃', desc: 'Технический гротеск' },
+    { id: 'acumin', label: 'Acumin', icon: '𝐀', desc: 'Универсальный sans' },
+    { id: 'proxima', label: 'Proxima', icon: '𝐏', desc: 'Современный гротеск' },
+    { id: 'charter', label: 'Charter', icon: '𝐂', desc: 'Тёплый сериф' },
+    { id: 'montserrat-thin', label: 'Montserrat Thin', icon: '𝐌', desc: 'Тонкий, воздушный' },
+    { id: 'montserrat-black', label: 'Montserrat Black', icon: '𝐌', desc: 'Жирный, мощный' },
+    { id: 'typewriter', label: 'Typewriter', icon: '𝐓', desc: 'Печатная машинка' },
+    { id: 'thin-sans', label: 'Thin Sans', icon: '𝐓', desc: 'Максимально тонкий' },
   ]
 
   const callApi = async (endpoint, body) => {
@@ -350,8 +388,8 @@ function AdminPanel({ onClose }) {
     settings: (
       <div className="ap-view">
         <button className="ap-back" onClick={() => setView('menu')}>← Назад</button>
-        <h3 className="ap-view-title">🎨 Тема оформления</h3>
-        <p className="ap-hint">Выберите пресет. Сохраняется в localStorage.</p>
+        <h3 className="ap-view-title">🎨 Цветовая тема</h3>
+        <p className="ap-hint">Выберите пресет оформления.</p>
         <div className="ap-theme-grid">
           {PRESETS.map(p => (
             <button
@@ -362,6 +400,24 @@ function AdminPanel({ onClose }) {
               <span className="ap-theme-icon">{p.icon}</span>
               <span className="ap-theme-label">{p.label}</span>
               <span className="ap-theme-desc">{p.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="ap-section-divider" />
+
+        <h3 className="ap-view-title">🔤 Шрифт</h3>
+        <p className="ap-hint">20 вариантов на любой вкус.</p>
+        <div className="ap-font-grid">
+          {FONTS.map(f => (
+            <button
+              key={f.id}
+              className={`ap-font-card ${currentFont === f.id ? 'active' : ''}`}
+              onClick={() => switchFont(f.id)}
+            >
+              <span className="ap-font-icon">{f.icon}</span>
+              <span className="ap-font-label">{f.label}</span>
+              <span className="ap-font-desc">{f.desc}</span>
             </button>
           ))}
         </div>

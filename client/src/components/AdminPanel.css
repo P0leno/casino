@@ -469,3 +469,63 @@
   color: rgba(255,255,255,0.3);
   line-height: 1.3;
 }
+
+.ap-section-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 20px 0 16px;
+}
+
+.ap-font-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ap-font-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.ap-font-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.ap-font-card.active {
+  border-color: var(--accent, #6c5ce7);
+  background: rgba(108, 92, 231, 0.1);
+  color: #fff;
+}
+
+.ap-font-icon {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: var(--font-family, 'Montserrat', sans-serif);
+}
+
+.ap-font-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+  font-family: var(--font-family, 'Montserrat', sans-serif);
+}
+
+.ap-font-desc {
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  line-height: 1.2;
+  font-family: var(--font-family, 'Montserrat', sans-serif);
+}

@@ -357,7 +357,7 @@
   transition: all 0.2s;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-family, 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
 .crash-button:active {
@@ -440,7 +440,7 @@
   font-size: 56px;
   font-weight: 900;
   color: #ffffff;
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-family, 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif);
   width: 100%;
   max-width: 300px;
   -webkit-appearance: none;

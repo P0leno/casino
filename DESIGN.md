@@ -55,10 +55,40 @@ All defined in `src/index.css`
 | `cny` | 🧧 | #dc2626 | красный glass | #0d0808 |
 | `maximalism` | ✨ | #6c5ce7 | blur 24px, max прозрачность | #0e0e0e |
 
-### User Customization (TODO)
-В настройках админки («Тема оформления») — выбор пресета с превью.
-Сохранение в `localStorage`.
-Будущие слайдеры: blur, opacity, border, accent color, animation speed.
+### Font Presets (20 штук)
+Управляются через `data-font` на `<html>`. Переменные:
+- `--font-family` — основной шрифт
+- `--font-weight` — насыщенность
+- `--font-letter-spacing` — межбуквенный интервал
+
+| data-font | Стек | Вес | Характер |
+|-----------|------|-----|----------|
+| montserrat | Montserrat | 580 | Геометричный гротеск (дефолт) |
+| inter | Inter | 500 | Чистый, разреженный |
+| sf-pro | SF Pro / -apple-system | 500 | Системный Apple |
+| helvetica | Helvetica Neue | 500 | Классика |
+| georgia | Georgia | 450 | Элегантный сериф |
+| playfair | Playfair Display | 500 | Высокий контраст |
+| courier | Courier New / Menlo | 500 | Моноширинный |
+| system-ui | system-ui / Segoe UI | 450 | Нативная система |
+| rounded | SF Pro Rounded | 550 | Мягкие скругления |
+| avenir | Avenir / Avenir Next | 500 | Геометричный гуманист |
+| futura | Futura / Trebuchet MS | 500 | Конструктив 20-х |
+| gill-sans | Gill Sans | 480 | Британский классик |
+| din-pro | Din Pro / DIN | 500 | Технический гротеск |
+| acumin | Acumin Pro | 500 | Универсальный sans |
+| proxima | Proxima Nova | 500 | Современный гротеск |
+| charter | Charter / Georgia | 500 | Тёплый сериф |
+| montserrat-thin | Montserrat | 300 | Тонкий, воздушный |
+| montserrat-black | Montserrat | 900 | Жирный, мощный |
+| typewriter | American Typewriter | 500 | Печатная машинка |
+| thin-sans | Helvetica Neue | 300 | Максимально тонкий |
+
+### User Customization (реализовано частично)
+В настройках админки:
+- 🎨 Цветовая тема — 7 пресетов (default, minimalism, halloween, newyear, easter, cny, maximalism)
+- 🔤 Шрифт — 20 пресетов (montserrat, inter, sf-pro, helvetica, georgia, playfair, courier, system-ui, rounded, avenir, futura, gill-sans, din-pro, acumin, proxima, charter, montserrat-thin, montserrat-black, typewriter, thin-sans)
+- Всё сохраняется в `localStorage`, применяется при загрузке в App.jsx
 
 ### User Customization (TODO)
 В настройках админки — слайдеры для blur, opacity, border, radius, accent color, animation speed, background.

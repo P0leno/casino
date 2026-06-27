@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import './Spin.css'
 import LottieAnimation from './LottieAnimation'
 import { preloadGiftAnimations } from '../utils/giftLoader'
+import { useError } from './ErrorContext'
 
 const gifts = [
   { name: 'bear', animation: '/gifts/bear.json' },
@@ -17,6 +18,7 @@ const gifts = [
 ]
 
 function Spin() {
+  const { showError } = useError()
   const [spinning, setSpinning] = useState(false)
   const [available, setAvailable] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -117,11 +119,11 @@ function Spin() {
           setTimeLeft(86400) // 24 часа
         }, 5000)
       } else {
-        alert(data.message)
+        showError('Ошибка спина', data.message || 'Неизвестная ошибка', `Ответ сервера: ${JSON.stringify(data)}`)
         setSpinning(false)
       }
     } catch (error) {
-      alert('Ошибка при выполнении спина')
+      showError('Ошибка сети', 'Ошибка при выполнении спина', error.stack || error.message || '')
       setSpinning(false)
     }
   }

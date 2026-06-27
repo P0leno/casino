@@ -7,6 +7,7 @@ import GiftDetailsModal from './GiftDetailsModal'
 import ShopSortModal from './ShopSortModal'
 import ShopFilterModal from './ShopFilterModal'
 import { useBalance } from '../contexts/BalanceContext'
+import { useError } from './ErrorContext'
 import starStaticBlackIcon from '../assets/starstatic_black.svg'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -29,6 +30,7 @@ const hexToRgba = (hex, alpha) => {
 
 function Shop({ onNavigateToTopUp }) {
   const { updateBalance } = useBalance()
+  const { showError } = useError()
   const [activeCategory, setActiveCategory] = useState('gift')
   const [gifts, setGifts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -150,13 +152,8 @@ function Shop({ onNavigateToTopUp }) {
       const data = await response.json()
 
       if (!response.ok) {
-        // Показываем ошибку (FastAPI возвращает detail)
         const errorMsg = data.detail || data.error || 'Ошибка покупки'
-        if (tg?.showAlert) {
-          tg.showAlert(errorMsg)
-        } else {
-          alert(errorMsg)
-        }
+        showError('Ошибка покупки', errorMsg, `Статус: ${response.status}\nОтвет: ${JSON.stringify(data)}`)
         return
       }
 
@@ -180,12 +177,7 @@ function Shop({ onNavigateToTopUp }) {
 
     } catch (error) {
       console.error('Purchase error:', error)
-      const errorMsg = 'Ошибка сети'
-      if (tg?.showAlert) {
-        tg.showAlert(errorMsg)
-      } else {
-        alert(errorMsg)
-      }
+      showError('Ошибка сети', error.message || 'Ошибка сети', error.stack || '')
     }
   }
 

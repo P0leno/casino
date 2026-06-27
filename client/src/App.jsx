@@ -19,6 +19,7 @@ import TabBar from './components/TabBar'
 import BannedScreen from './components/BannedScreen'
 import Maintenance from './components/Maintenance'
 import { BalanceProvider, useBalance } from './contexts/BalanceContext'
+import { ErrorProvider } from './components/ErrorContext'
 
 function AppContent() {
   const { updateBalance } = useBalance()
@@ -68,6 +69,10 @@ function AppContent() {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
       document.documentElement.setAttribute('data-theme', savedTheme)
+    }
+    const savedFont = localStorage.getItem('font')
+    if (savedFont) {
+      document.documentElement.setAttribute('data-font', savedFont)
     }
 
     tg.ready()
@@ -260,9 +265,11 @@ function AppContent() {
 
 function App() {
   return (
-    <BalanceProvider>
-      <AppContent />
-    </BalanceProvider>
+    <ErrorProvider>
+      <BalanceProvider>
+        <AppContent />
+      </BalanceProvider>
+    </ErrorProvider>
   )
 }
 
