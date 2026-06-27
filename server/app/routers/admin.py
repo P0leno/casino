@@ -1233,3 +1233,48 @@ async def admin_remove_admin(request: AdminActionRequest):
         return {"success": False, "message": str(e)}
 
 
+class StatsRequest(BaseModel):
+    initData: str
+
+
+@router.post("/admin/stats")
+async def admin_stats(request: StatsRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM users WHERE is_banned = 1")
+        banned_users = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM cases")
+        total_cases = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM shop_gifts")
+        total_gifts = cursor.fetchone()[0]
+        cursor.execute("SELECT SUM(balance) FROM users")
+        total_balance = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT value FROM settings WHERE key = 'admins'")
+        row = cursor.fetchone()
+        admins = json.loads(row[0]) if row and row[0] else []
+        conn.close()
+
+        return {
+            "success": True,
+            "users": total_users,
+            "banned": banned_users,
+            "cases": total_cases,
+            "gifts": total_gifts,
+            "totalBalance": total_balance,
+            "admins": len(admins),
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+

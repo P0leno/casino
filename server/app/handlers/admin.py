@@ -11,6 +11,9 @@ router = Router()
 
 APP_URL = "https://proxmox-bubuntu1.tailcfe40a.ts.net"
 
+admin_states: dict[int, str] = {}
+admin_temp: dict[int, dict] = {}
+
 
 def save_admins_to_db(admin_ids: list[int]):
     conn = get_db_connection()
@@ -31,9 +34,9 @@ async def cmd_admin(message: Message):
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📊 Открыть панель", web_app=WebAppInfo(url=APP_URL))],
-        [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
+        [InlineKeyboardButton(text="💰 Управление", callback_data="admin_balance_menu")],
         [InlineKeyboardButton(text="👥 Админы", callback_data="admin_list_admins")],
-        [InlineKeyboardButton(text="💰 Баланс", callback_data="admin_balance_menu")],
+        [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
         [InlineKeyboardButton(text="📝 Причина закрытия", callback_data="admin_maintenance_reason")],
         [InlineKeyboardButton(text="🚧 Перезапустить сервер", callback_data="admin_restart")],
         [InlineKeyboardButton(text="⏻ Тех.работы", callback_data="admin_toggle_maintenance")],
@@ -68,20 +71,209 @@ async def admin_balance_menu_callback(callback: CallbackQuery):
         return
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="👤 Инфо о пользователе", callback_data="admin_ask_userinfo")],
+        [InlineKeyboardButton(text="💰 Пополнить баланс", callback_data="admin_ask_topup")],
+        [InlineKeyboardButton(text="🎁 Выдать подарок", callback_data="admin_ask_give")],
+        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_back")],
     ])
 
     await callback.message.edit_text(
-        "💰 <b>Управление балансом</b>\n\n"
-        "Используйте веб-панель для управления.\n"
-        "В админке веб-панели доступны:\n"
-        "• Пополнение / списание баланса\n"
-        "• Выдача подарков\n"
-        "• Информация о пользователе",
+        "💰 <b>Управление</b>\n\n"
+        "Выберите действие:",
         parse_mode="HTML",
         reply_markup=keyboard
     )
     await callback.answer()
+
+
+@router.callback_query(F.data == "admin_stats")
+async def admin_stats_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM users WHERE is_banned = 1")
+        banned_users = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM cases")
+        total_cases = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM shop_gifts")
+        total_gifts = cursor.fetchone()[0]
+        cursor.execute("SELECT SUM(balance) FROM users")
+        total_balance = cursor.fetchone()[0] or 0
+    finally:
+        conn.close()
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_balance_menu")],
+    ])
+
+    await callback.message.edit_text(
+        f"📊 <b>Статистика сервера</b>\n\n"
+        f"👥 Пользователей: <b>{total_users}</b>\n"
+        f"🚫 Забанено: <b>{banned_users}</b>\n"
+        f"⭐ Всего звёзд: <b>{total_balance}</b>\n"
+        f"📦 Кейсов: <b>{total_cases}</b>\n"
+        f"🎁 Подарков в магазине: <b>{total_gifts}</b>\n"
+        f"👑 Админов: <b>{len(ADMIN_IDS)}</b>",
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_ask_userinfo")
+async def admin_ask_userinfo_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    admin_states[callback.from_user.id] = "awaiting_userinfo"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Отмена", callback_data="admin_balance_menu")],
+    ])
+    await callback.message.edit_text(
+        "👤 <b>Информация о пользователе</b>\n\n"
+        "Отправьте ID пользователя:",
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_ask_topup")
+async def admin_ask_topup_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    admin_states[callback.from_user.id] = "awaiting_topup"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Отмена", callback_data="admin_balance_menu")],
+    ])
+    await callback.message.edit_text(
+        "💰 <b>Пополнение баланса</b>\n\n"
+        "Отправьте ID пользователя и сумму через пробел:\n"
+        "Пример: <code>12345 1000</code>\n"
+        "(отрицательная сумма — списание)",
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_ask_give")
+async def admin_ask_give_callback(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Доступ запрещен", show_alert=True)
+        return
+
+    admin_states[callback.from_user.id] = "awaiting_give"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Отмена", callback_data="admin_balance_menu")],
+    ])
+    await callback.message.edit_text(
+        "🎁 <b>Выдача подарка</b>\n\n"
+        "Отправьте ID пользователя и название подарка через пробел:\n"
+        "Пример: <code>12345 flowers</code>",
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.message(F.text)
+async def handle_admin_input(message: Message):
+    user_id = message.from_user.id
+    if user_id not in ADMIN_IDS or user_id not in admin_states:
+        return
+
+    state = admin_states.pop(user_id)
+    text = message.text.strip()
+    parts = text.split(maxsplit=1)
+
+    if state == "awaiting_userinfo":
+        if not parts[0].isdigit():
+            await message.answer("❌ Некорректный ID. Попробуйте снова /admin")
+            return
+        uid = int(parts[0])
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (uid,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            await message.answer(f"❌ Пользователь <code>{uid}</code> не найден", parse_mode="HTML")
+            return
+        columns = [d[0] for d in cursor.description]
+        user_data = dict(zip(columns, row))
+        conn.close()
+        inventory = json.loads(user_data.get('inventory', '[]')) if user_data.get('inventory') else []
+        text = (
+            f"📋 <b>Информация о пользователе</b>\n"
+            f"ID: <code>{user_data.get('id')}</code>\n"
+            f"Username: @{user_data.get('username', '—')}\n"
+            f"💰 Баланс: <b>{user_data.get('balance', 0)}</b> ⭐\n"
+            f"🎁 Инвентарь: <b>{len(inventory)}</b> предметов\n"
+            f"🚫 Бан: {'Да' if user_data.get('is_banned') else 'Нет'}\n"
+            f"📅 Создан: {user_data.get('creation_date', '—')}"
+        )
+        await message.answer(text, parse_mode="HTML")
+
+    elif state == "awaiting_topup":
+        if len(parts) < 2 or not parts[0].isdigit() or not parts[1].lstrip('-').isdigit():
+            await message.answer("❌ Формат: <code>12345 1000</code>", parse_mode="HTML")
+            return
+        uid = int(parts[0])
+        amount = int(parts[1])
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE id = ?", (uid,))
+        if not cursor.fetchone():
+            conn.close()
+            await message.answer(f"❌ Пользователь <code>{uid}</code> не найден", parse_mode="HTML")
+            return
+        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, uid))
+        conn.commit()
+        cursor.execute("SELECT balance FROM users WHERE id = ?", (uid,))
+        new_balance = cursor.fetchone()[0]
+        conn.close()
+        action = "начислено" if amount >= 0 else "списано"
+        await message.answer(
+            f"✅ Пользователю <code>{uid}</code> {action} <b>{abs(amount)}</b> ⭐\n"
+            f"💰 Новый баланс: <b>{new_balance}</b> ⭐",
+            parse_mode="HTML"
+        )
+
+    elif state == "awaiting_give":
+        if len(parts) < 2 or not parts[0].isdigit() or not parts[1].strip():
+            await message.answer("❌ Формат: <code>12345 flowers</code>", parse_mode="HTML")
+            return
+        uid = int(parts[0])
+        gift_name = parts[1].strip()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE id = ?", (uid,))
+        if not cursor.fetchone():
+            conn.close()
+            await message.answer(f"❌ Пользователь <code>{uid}</code> не найден", parse_mode="HTML")
+            return
+        cursor.execute("SELECT inventory FROM users WHERE id = ?", (uid,))
+        result = cursor.fetchone()
+        inventory = json.loads(result[0]) if result[0] else []
+        inventory.append(gift_name)
+        cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory), uid))
+        conn.commit()
+        conn.close()
+        await message.answer(
+            f"✅ Подарок <b>{gift_name}</b> выдан пользователю <code>{uid}</code>",
+            parse_mode="HTML"
+        )
 
 
 @router.callback_query(F.data == "admin_back")
@@ -92,9 +284,9 @@ async def admin_back_callback(callback: CallbackQuery):
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📊 Открыть панель", web_app=WebAppInfo(url=APP_URL))],
-        [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
+        [InlineKeyboardButton(text="💰 Управление", callback_data="admin_balance_menu")],
         [InlineKeyboardButton(text="👥 Админы", callback_data="admin_list_admins")],
-        [InlineKeyboardButton(text="💰 Баланс", callback_data="admin_balance_menu")],
+        [InlineKeyboardButton(text="🔄 Парсинг подарков", callback_data="force_gift_parse")],
         [InlineKeyboardButton(text="📝 Причина закрытия", callback_data="admin_maintenance_reason")],
         [InlineKeyboardButton(text="🚧 Перезапустить сервер", callback_data="admin_restart")],
         [InlineKeyboardButton(text="⏻ Тех.работы", callback_data="admin_toggle_maintenance")],

@@ -7,6 +7,7 @@ from app.utils.balance import get_user_balance
 from app.utils.database import get_db_connection
 from urllib.parse import parse_qs
 import json
+import sqlite3
 import asyncio
 from typing import List
 from app.utils.error_logger import send_error_log
@@ -82,6 +83,43 @@ class CashoutRequest(BaseModel):
 class CancelBetRequest(BaseModel):
     initData: str
 
+
+@router.post("/cancel")
+@limiter.limit("10/1minute")
+async def cancel_bet(cancel_req: CancelBetRequest, request: Request):
+    """Отменяет ставку до начала раунда"""
+    is_valid = validate_init_data(cancel_req.initData, BOT_TOKEN)
+    if not is_valid:
+        raise HTTPException(status_code=403, detail="Invalid init data")
+
+    try:
+        parsed = parse_qs(cancel_req.initData)
+        user_data = parsed.get('user', [''])[0]
+        user = json.loads(user_data)
+        user_id = user.get('id')
+    except Exception as e:
+        await send_error_log(e, "crash.py: cancel_bet (user data)")
+        raise HTTPException(status_code=403, detail="Invalid user data")
+
+    result = crash_game.cancel_bet(user_id)
+
+    if result["success"]:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
+            current_balance = cursor.fetchone()[0]
+            new_balance = int(round(current_balance + result["amount"]))
+            cursor.execute("UPDATE users SET balance = ? WHERE id = ?", (new_balance, user_id))
+            conn.commit()
+            conn.close()
+            user_balance = get_user_balance(user_id)
+            result.update(user_balance)
+        except sqlite3.Error as e:
+            await send_error_log(e, "crash.py: cancel_bet (db)")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    return result
 
 
 @router.get("/history")

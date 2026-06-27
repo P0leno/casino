@@ -48,6 +48,11 @@ function Profile() {
   const [refundLoading, setRefundLoading] = useState(false)
   const [showRefundPanel, setShowRefundPanel] = useState(false)
   const [deductFromBalance, setDeductFromBalance] = useState(false)
+  const [topUpAmount, setTopUpAmount] = useState('')
+  const [giveGiftName, setGiveGiftName] = useState('')
+  const [showUserInfo, setShowUserInfo] = useState(null)
+  const [showStats, setShowStats] = useState(null)
+  const [adminMgmtUserId, setAdminMgmtUserId] = useState('')
   const [showCrashPanel, setShowCrashPanel] = useState(false)
   const [crashMaxMultiplier, setCrashMaxMultiplier] = useState(1000)
   const [crashAlwaysProfit, setCrashAlwaysProfit] = useState(false)
@@ -243,6 +248,189 @@ function Profile() {
       if (data.success) {
         alert('Пользователь разбанен')
         setTargetUserId('')
+      } else {
+        alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleTopUp = async () => {
+    if (!targetUserId.trim() || !topUpAmount.trim()) {
+      alert('Введите User ID и сумму')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/admin/top-up`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, userId: parseInt(targetUserId), amount: parseInt(topUpAmount) })
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert(`✅ Пополнено на ${data.amount} ⭐. Новый баланс: ${data.newBalance} ⭐`)
+        setTopUpAmount('')
+      } else {
+        alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleGiveGift = async () => {
+    if (!targetUserId.trim() || !giveGiftName.trim()) {
+      alert('Введите User ID и название подарка')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/admin/give-gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, userId: parseInt(targetUserId), giftName: giveGiftName })
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert(`✅ Подарок "${data.giftName}" выдан`)
+        setGiveGiftName('')
+      } else {
+        alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleGetUserInfo = async () => {
+    if (!targetUserId.trim()) {
+      alert('Введите User ID')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/admin/user-info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, userId: parseInt(targetUserId) })
+      })
+      const data = await response.json()
+      if (data.success) {
+        const u = data.user
+        setShowUserInfo(`📋 Информация о пользователе
+ID: ${u.id}
+Username: @${u.username || '—'}
+Баланс: ${u.balance} ⭐
+Бонус: ${u.bonusBalance} ⭐
+Инвентарь: ${u.inventory.length} предметов
+Бан: ${u.isBanned ? 'Да' : 'Нет'}
+Создан: ${u.creationDate || '—'}`)
+      } else {
+        alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleGetStats = async () => {
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/admin/stats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setShowStats(`📊 Статистика сервера
+
+👥 Пользователей: ${data.users}
+🚫 Забанено: ${data.banned}
+⭐ Всего звёзд: ${data.totalBalance}
+📦 Кейсов: ${data.cases}
+🎁 Подарков: ${data.gifts}
+👑 Админов: ${data.admins}`)
+      } else {
+        alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleAddAdmin = async () => {
+    if (!adminMgmtUserId.trim()) {
+      alert('Введите User ID')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/admin/add-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, adminId: parseInt(adminMgmtUserId) })
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert(`✅ Админ ${adminMgmtUserId} добавлен`)
+        setAdminMgmtUserId('')
+      } else {
+        alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleRemoveAdmin = async () => {
+    if (!adminMgmtUserId.trim()) {
+      alert('Введите User ID')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const tg = window.Telegram?.WebApp
+      const initData = tg?.initData
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/admin/remove-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, adminId: parseInt(adminMgmtUserId) })
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert(`✅ Админ ${adminMgmtUserId} удалён`)
+        setAdminMgmtUserId('')
       } else {
         alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'))
       }
@@ -1277,6 +1465,64 @@ function Profile() {
                   disabled={actionLoading}
                 >
                   {actionLoading ? 'Загрузка...' : 'Разбанить'}
+                </button>
+              </div>
+
+              <div className="admin-divider"></div>
+
+              <div className="admin-input-group">
+                <label className="admin-label">Сумма пополнения</label>
+                <input type="number" className="admin-input" placeholder="Например: 1000" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} disabled={actionLoading} />
+              </div>
+              <button className="admin-action-button topup-button" onClick={handleTopUp} disabled={actionLoading}>
+                {actionLoading ? 'Загрузка...' : 'Пополнить / Списать'}
+              </button>
+
+              <div className="admin-input-group" style={{ marginTop: '10px' }}>
+                <label className="admin-label">Название подарка</label>
+                <input type="text" className="admin-input" placeholder="Например: flowers" value={giveGiftName} onChange={(e) => setGiveGiftName(e.target.value)} disabled={actionLoading} />
+              </div>
+              <button className="admin-action-button givegift-button" onClick={handleGiveGift} disabled={actionLoading}>
+                {actionLoading ? 'Загрузка...' : 'Выдать подарок'}
+              </button>
+
+              <div className="admin-button-row" style={{ marginTop: '10px' }}>
+                <button className="admin-chances-button half-width" onClick={handleGetUserInfo} disabled={actionLoading}>
+                  <span className="button-icon">👤</span>
+                  <span className="button-text">Инфо</span>
+                </button>
+                <button className="admin-chances-button half-width" onClick={handleGetStats} disabled={actionLoading}>
+                  <span className="button-icon">📊</span>
+                  <span className="button-text">Статы</span>
+                </button>
+              </div>
+
+              {showUserInfo && (
+                <div className="admin-info-block">
+                  <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', color: '#ccc', margin: '5px 0' }}>{showUserInfo}</pre>
+                  <button className="admin-action-button small-btn" onClick={() => setShowUserInfo(null)}>✕</button>
+                </div>
+              )}
+
+              {showStats && (
+                <div className="admin-info-block">
+                  <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', color: '#ccc', margin: '5px 0' }}>{showStats}</pre>
+                  <button className="admin-action-button small-btn" onClick={() => setShowStats(null)}>✕</button>
+                </div>
+              )}
+
+              <div className="admin-divider"></div>
+
+              <div className="admin-input-group">
+                <label className="admin-label">Admin ID</label>
+                <input type="number" className="admin-input" placeholder="ID пользователя" value={adminMgmtUserId} onChange={(e) => setAdminMgmtUserId(e.target.value)} disabled={actionLoading} />
+              </div>
+              <div className="admin-buttons">
+                <button className="admin-action-button addadmin-button" onClick={handleAddAdmin} disabled={actionLoading}>
+                  {actionLoading ? 'Загрузка...' : '+ Админ'}
+                </button>
+                <button className="admin-action-button removeadmin-button" onClick={handleRemoveAdmin} disabled={actionLoading}>
+                  {actionLoading ? 'Загрузка...' : '- Админ'}
                 </button>
               </div>
 
