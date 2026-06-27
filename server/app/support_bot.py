@@ -200,7 +200,7 @@ def unban_user(user_id: int):
 # Состояние для вывода средств
 withdrawal_states = {}  # user_id -> {"amount": int, "step": "amount"|"method"}
 
-bot = Bot(token=SUPPORT_BOT_TOKEN)
+bot = Bot(token=SUPPORT_BOT_TOKEN) if SUPPORT_BOT_TOKEN else None
 main_bot = Bot(token=BOT_TOKEN)  # Основной бот для инвойсов
 dp = Dispatcher()
 

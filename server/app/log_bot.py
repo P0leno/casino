@@ -6,7 +6,10 @@ from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import CallbackQuery
 from app.config import LOG_BOT_TOKEN, ADMIN_IDS
 
-log_bot = Bot(token=LOG_BOT_TOKEN)
+if LOG_BOT_TOKEN:
+    log_bot = Bot(token=LOG_BOT_TOKEN)
+else:
+    log_bot = None
 log_dp = Dispatcher()
 
 # Создаем отдельный router для log_bot
@@ -366,27 +369,31 @@ log_dp.include_router(log_router)
 
 async def start_log_bot():
     """Запускает log_bot для обработки callback в канале логов"""
+    if not log_bot:
+        print("[LOG_BOT] LOG_BOT_TOKEN не задан, пропускаем")
+        return
     try:
         print("[LOG_BOT] Запуск бота логов для обработки callback...")
         await log_dp.start_polling(log_bot, allowed_updates=["callback_query"])
     except Exception as e:
         print(f"[LOG_BOT] Ошибка: {e}")
         import traceback
-        await send_message_to_logs(f"❌ Error in start_log_bot:\n<pre>{traceback.format_exc()}</pre>")
-        raise
+        traceback.print_exc()
 
 async def stop_log_bot():
     """Останавливает log_bot"""
+    if not log_bot:
+        return
     try:
         print("[LOG_BOT] Остановка бота логов...")
         await log_bot.session.close()
     except Exception as e:
         print(f"[LOG_BOT] Ошибка остановки: {e}")
-        import traceback
-        await send_message_to_logs(f"❌ Error in stop_log_bot:\n<pre>{traceback.format_exc()}</pre>")
 
 async def send_message_to_logs(text: str, parse_mode: str = "HTML", reply_markup=None):
     """Отправляет сообщение в канал логов"""
+    if not log_bot:
+        return None
     from app.config import LOGS_ID
     try:
         if reply_markup:
