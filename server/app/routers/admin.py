@@ -1031,8 +1031,205 @@ async def delete_case(request: DeleteCaseRequest):
         file_path = os.path.join(base_path, f"{request.slug}.svg")
         if os.path.exists(file_path):
             os.remove(file_path)
-            
         return {"success": True}
     except Exception as e:
         return {"success": False, "message": str(e)}
+
+
+class AdminActionRequest(BaseModel):
+    initData: str
+    userId: int
+    amount: int = 0
+    giftName: str = ""
+    adminId: int = 0
+
+
+def _get_admin_id(init_data: str) -> int | None:
+    parsed = parse_qs(init_data)
+    user_data = parsed.get('user', [''])[0]
+    if not user_data:
+        return None
+    user = json.loads(user_data)
+    return user.get('id')
+
+
+@router.post("/admin/user-info")
+async def admin_user_info(request: AdminActionRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (request.userId,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return {"success": False, "message": "User not found"}
+
+        columns = [d[0] for d in cursor.description]
+        user_data = dict(zip(columns, row))
+        conn.close()
+
+        import json
+        inventory = json.loads(user_data.get('inventory', '[]')) if user_data.get('inventory') else []
+
+        return {
+            "success": True,
+            "user": {
+                "id": user_data.get("id"),
+                "username": user_data.get("username"),
+                "balance": user_data.get("balance", 0),
+                "bonusBalance": user_data.get("bonus_balance", 0),
+                "inventory": inventory,
+                "isBanned": bool(user_data.get("is_banned")),
+                "creationDate": user_data.get("creation_date"),
+            }
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/admin/top-up")
+async def admin_top_up(request: AdminActionRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE id = ?", (request.userId,))
+        if not cursor.fetchone():
+            conn.close()
+            return {"success": False, "message": "User not found"}
+
+        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (request.amount, request.userId))
+        conn.commit()
+        cursor.execute("SELECT balance FROM users WHERE id = ?", (request.userId,))
+        new_balance = cursor.fetchone()[0]
+        conn.close()
+
+        return {"success": True, "newBalance": new_balance, "amount": request.amount}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/admin/give-gift")
+async def admin_give_gift(request: AdminActionRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM users WHERE id = ?", (request.userId,))
+        if not cursor.fetchone():
+            conn.close()
+            return {"success": False, "message": "User not found"}
+
+        cursor.execute("SELECT inventory FROM users WHERE id = ?", (request.userId,))
+        result = cursor.fetchone()
+        inventory = json.loads(result[0]) if result[0] else []
+
+        inventory.append(request.giftName)
+        cursor.execute("UPDATE users SET inventory = ? WHERE id = ?", (json.dumps(inventory), request.userId))
+        conn.commit()
+        conn.close()
+
+        return {"success": True, "giftName": request.giftName}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/admin/add-admin")
+async def admin_add_admin(request: AdminActionRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'admins'")
+        row = cursor.fetchone()
+        current_admins = json.loads(row[0]) if row and row[0] else []
+
+        if request.adminId in current_admins:
+            conn.close()
+            return {"success": False, "message": "Already an admin"}
+
+        current_admins.append(request.adminId)
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value, description, updated_at) VALUES ('admins', ?, 'Список ID администраторов', CURRENT_TIMESTAMP)",
+            (json.dumps(current_admins),)
+        )
+        conn.commit()
+        conn.close()
+
+        from app.config import ADMIN_IDS
+        if request.adminId not in ADMIN_IDS:
+            ADMIN_IDS.append(request.adminId)
+
+        return {"success": True, "admins": current_admins}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/admin/remove-admin")
+async def admin_remove_admin(request: AdminActionRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'admins'")
+        row = cursor.fetchone()
+        current_admins = json.loads(row[0]) if row and row[0] else []
+
+        if request.adminId not in current_admins:
+            conn.close()
+            return {"success": False, "message": "Not an admin"}
+
+        current_admins.remove(request.adminId)
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value, description, updated_at) VALUES ('admins', ?, 'Список ID администраторов', CURRENT_TIMESTAMP)",
+            (json.dumps(current_admins),)
+        )
+        conn.commit()
+        conn.close()
+
+        from app.config import ADMIN_IDS
+        if request.adminId in ADMIN_IDS:
+            ADMIN_IDS.remove(request.adminId)
+
+        return {"success": True, "admins": current_admins}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
 
