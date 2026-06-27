@@ -8,9 +8,9 @@
   --glass-blur-lg: blur(24px);
   --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
   --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --glass-radius: 16px;
-  --glass-radius-sm: 12px;
-  --glass-radius-lg: 24px;
+  --glass-radius: 30px;
+  --glass-radius-sm: 16px;
+  --glass-radius-lg: 40px;
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -41,9 +41,9 @@
   --glass-blur-lg: blur(12px);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  --glass-radius: 8px;
-  --glass-radius-sm: 4px;
-  --glass-radius-lg: 12px;
+  --glass-radius: 20px;
+  --glass-radius-sm: 12px;
+  --glass-radius-lg: 28px;
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
   --text-secondary: rgba(255, 255, 255, 0.5);
@@ -757,9 +757,9 @@ body::-webkit-scrollbar-thumb:hover {
   --glass-border-hover: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   --glass-inner-highlight: none;
-  --glass-radius: 8px;
-  --glass-radius-sm: 4px;
-  --glass-radius-lg: 12px;
+  --glass-radius: 20px;
+  --glass-radius-sm: 12px;
+  --glass-radius-lg: 28px;
 }
 
 :root[data-ui="minimal"] .glass,
@@ -785,9 +785,9 @@ body::-webkit-scrollbar-thumb:hover {
   --glass-border-hover: rgba(255, 255, 255, 0.25);
   --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.35), 0 0 60px rgba(108, 92, 231, 0.05);
   --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
-  --glass-radius: 20px;
-  --glass-radius-sm: 14px;
-  --glass-radius-lg: 28px;
+  --glass-radius: 36px;
+  --glass-radius-sm: 24px;
+  --glass-radius-lg: 48px;
 }
 
 :root[data-ui="maximal"] .tab-bar {

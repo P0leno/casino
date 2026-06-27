@@ -500,3 +500,63 @@
     width: 350px;
   }
 }
+
+.spin-back-btn {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  left: 16px;
+  z-index: 99;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--glass-shadow);
+  color: var(--text-primary);
+}
+
+.spin-back-btn:hover {
+  background: var(--glass-bg-strong);
+  border-color: var(--accent-blue);
+}
+
+.spin-back-btn:active {
+  transform: scale(0.95);
+}
+
+.spin-skip-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba(255, 200, 50, 0.15) 0%, rgba(255, 150, 0, 0.1) 100%);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255, 200, 50, 0.3);
+  border-radius: var(--glass-radius);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+}
+
+.spin-skip-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 200, 50, 0.25) 0%, rgba(255, 150, 0, 0.2) 100%);
+  border-color: rgba(255, 200, 50, 0.5);
+}
+
+.spin-skip-btn:active {
+  transform: scale(0.98);
+}

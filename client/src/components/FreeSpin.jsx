@@ -8,6 +8,7 @@ import starAnim from '../assets/star.json'
 import secretIcon from '../assets/secret.svg'
 import { useBalance } from '../contexts/BalanceContext'
 import { useError } from './ErrorContext'
+import Icon from './Icons'
 
 const gifts = [
   { name: 'bear', animation: '/gifts/bear.json' },
@@ -132,6 +133,7 @@ function FreeSpin({ onNavigateToTopUp }) {
   const startTimeRef = useRef(0)
   const durationRef = useRef(5000)
   const fastSpinRef = useRef(false)
+  const skipAnimationRef = useRef(false)
 
   // Настройка кнопки "Назад" в Telegram
   useEffect(() => {
@@ -229,6 +231,7 @@ function FreeSpin({ onNavigateToTopUp }) {
   }
 
   const handleSpin = async () => {
+    skipAnimationRef.current = false
     if (spinning) return
 
     // DEMO MODE CHECK
@@ -291,6 +294,7 @@ function FreeSpin({ onNavigateToTopUp }) {
       setResult(demoResult)
 
       const animate = (time) => {
+        if (skipAnimationRef.current) durationRef.current = 50
         if (!startTimeRef.current) startTimeRef.current = time
         const elapsed = time - startTimeRef.current
         const progress = Math.min(elapsed / durationRef.current, 1)
@@ -301,6 +305,7 @@ function FreeSpin({ onNavigateToTopUp }) {
           animationFrameRef.current = requestAnimationFrame(animate)
         } else {
           setSpinning(false)
+          skipAnimationRef.current = false
           if (demoResult.paw_count) setPawAmount(demoResult.paw_count)
         }
       }
@@ -379,6 +384,7 @@ function FreeSpin({ onNavigateToTopUp }) {
         durationRef.current = 5000
 
         const animate = () => {
+          if (skipAnimationRef.current) durationRef.current = 50
           // Проверяем, нужно ли прервать анимацию (двойной клик)
           if (fastSpinRef.current) {
             if (animationFrameRef.current) {
@@ -392,6 +398,7 @@ function FreeSpin({ onNavigateToTopUp }) {
             setTimeLeft(86400)
             setOffset(0)
             fastSpinRef.current = false
+            skipAnimationRef.current = false
             return
           }
 
@@ -411,6 +418,7 @@ function FreeSpin({ onNavigateToTopUp }) {
             setTimeout(() => {
               setResult(data.gift)
               setPawAmount(data.paw_count || 0)
+              skipAnimationRef.current = false
 
               // Handle Secret Result
               if (data.gift === 'secret' && data.secret_slug) {
@@ -471,6 +479,9 @@ function FreeSpin({ onNavigateToTopUp }) {
 
   return (
     <div className="spin-container">
+      <button className="spin-back-btn" onClick={() => window.history.back()}>
+        <Icon name="back" size="md" />
+      </button>
       <DemoSpinMenu
         isOpen={isDemoMenuOpen}
         onClose={() => setDemoMenuOpen(false)}
@@ -569,6 +580,12 @@ function FreeSpin({ onNavigateToTopUp }) {
             </>
           )}
         </button>
+
+        {spinning && (
+          <button className="spin-skip-btn" onClick={() => { skipAnimationRef.current = true }}>
+            <Icon name="bolt" size="sm" /> Показать результат
+          </button>
+        )}
 
         {available && !spinning && (
           <div className="fast-spin-toggle">

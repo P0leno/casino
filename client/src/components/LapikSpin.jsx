@@ -7,6 +7,7 @@ import BonusBalanceBar from './BonusBalanceBar'
 import { useBalance } from '../contexts/BalanceContext'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
+import Icon from './Icons'
 
 const gifts = [
   { name: 'bear', animation: '/gifts/bear.json' },
@@ -40,6 +41,7 @@ function LapikSpin({ onNavigateToTopUp }) {
   const startTimeRef = useRef(0)
   const durationRef = useRef(5000)
   const fastSpinRef = useRef(false)
+  const skipAnimationRef = useRef(false)
 
   // Настройка кнопки "Назад" в Telegram
   useEffect(() => {
@@ -101,6 +103,7 @@ function LapikSpin({ onNavigateToTopUp }) {
   }, [spinning])
 
   const handleSpin = async () => {
+    skipAnimationRef.current = false
     if (isProcessing) return
 
     // DEMO MODE CHECK
@@ -137,6 +140,7 @@ function LapikSpin({ onNavigateToTopUp }) {
       durationRef.current = 5000
 
       const animate = () => {
+        if (skipAnimationRef.current) durationRef.current = 50
         const now = Date.now()
         const elapsed = now - startTimeRef.current
         const progress = Math.min(elapsed / durationRef.current, 1)
@@ -151,6 +155,7 @@ function LapikSpin({ onNavigateToTopUp }) {
           setStarAmount(demoResult.star_count || 0)
           setSpinning(false)
           setIsProcessing(false)
+          skipAnimationRef.current = false
           setOffset(0)
         }
       }
@@ -215,6 +220,7 @@ function LapikSpin({ onNavigateToTopUp }) {
         durationRef.current = 5000
 
         const animate = () => {
+          if (skipAnimationRef.current) durationRef.current = 50
           // Проверяем, нужно ли прервать анимацию (двойной клик)
           if (fastSpinRef.current) {
             if (animationFrameRef.current) {
@@ -226,6 +232,7 @@ function LapikSpin({ onNavigateToTopUp }) {
             setIsProcessing(false)
             setOffset(0)
             fastSpinRef.current = false
+            skipAnimationRef.current = false
             return
           }
 
@@ -245,6 +252,7 @@ function LapikSpin({ onNavigateToTopUp }) {
             setTimeout(() => {
               setResult(data.gift)
               setStarAmount(data.star_count || 0)
+              skipAnimationRef.current = false
               setSpinning(false)
               setIsProcessing(false)
               setOffset(0)
@@ -286,6 +294,9 @@ function LapikSpin({ onNavigateToTopUp }) {
 
   return (
     <div className="spin-page">
+      <button className="spin-back-btn" onClick={() => window.history.back()}>
+        <Icon name="back" size="md" />
+      </button>
       <DemoSpinMenu
         isOpen={isDemoMenuOpen}
         onClose={() => setDemoMenuOpen(false)}
@@ -352,6 +363,12 @@ function LapikSpin({ onNavigateToTopUp }) {
             </div>
           )}
         </button>
+
+        {spinning && (
+          <button className="spin-skip-btn" onClick={() => { skipAnimationRef.current = true }}>
+            <Icon name="bolt" size="sm" /> Показать результат
+          </button>
+        )}
 
         {!spinning && (
           <div className="fast-spin-toggle">

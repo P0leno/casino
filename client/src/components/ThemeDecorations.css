@@ -6,6 +6,7 @@
   overflow: hidden;
 }
 
+/* Emoji particles */
 .td-particle {
   position: absolute;
   top: -10%;
@@ -51,56 +52,173 @@
 
 @keyframes tdFallFast {
   0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
-  5% { opacity: 0.9; }
-  50% { transform: translateY(50vh) translateX(50px) rotate(360deg); }
-  100% { transform: translateY(110vh) translateX(-30px) rotate(720deg); opacity: 0; }
+  5% { opacity: 0.6; }
+  50% { transform: translateY(70vh) translateX(50px) rotate(180deg); }
+  100% { transform: translateY(110vh) translateX(-30px) rotate(360deg); opacity: 0; }
 }
 
-/* Theme-specific background accents */
-:root[data-theme="halloween"] .app-container::before {
-  content: '';
+/* Snowflake white dots */
+.td-snowflake {
+  position: absolute;
+  top: -5px;
+  background: #ffffff;
+  border-radius: 50%;
+  will-change: transform;
+  animation-name: tdSnowFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+
+@keyframes tdSnowFall {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(50vh) translateX(var(--drift, 0px)); }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(105vh) translateX(calc(var(--drift, 0px) * -1)); opacity: 0; }
+}
+
+/* Corner decorations — positioned fixed, pointer-events none */
+.td-corner-newyear,
+.td-corner-halloween,
+.td-corner-cny,
+.td-corner-easter,
+.td-corner-valentine {
   position: fixed;
-  bottom: -60px;
-  right: -60px;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.08), transparent 70%);
+  inset: 0;
   pointer-events: none;
   z-index: 0;
 }
 
-:root[data-theme="newyear"] .app-container::before {
-  content: '';
+/* New Year — snow drifts + snowmen in corners */
+.td-corner-newyear::before,
+.td-corner-newyear::after {
+  content: '⛄';
   position: fixed;
-  top: 20%;
-  left: -80px;
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.06), transparent 60%);
-  pointer-events: none;
+  font-size: 48px;
+  opacity: 0.25;
   z-index: 0;
+  pointer-events: none;
 }
 
-:root[data-theme="cny"] .app-container::before {
-  content: '';
-  position: fixed;
-  top: 10%;
-  right: -40px;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(220, 38, 38, 0.08), transparent 60%);
-  pointer-events: none;
-  z-index: 0;
+.td-corner-newyear::before {
+  bottom: 10px;
+  left: 10px;
 }
 
-:root[data-theme="easter"] .app-container::before {
+.td-corner-newyear::after {
+  bottom: 10px;
+  right: 10px;
+}
+
+/* Snow drift at bottom */
+.td-corner-newyear {
+  background:
+    radial-gradient(ellipse 120% 40% at 0% 100%, rgba(255, 255, 255, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 120% 40% at 100% 100%, rgba(255, 255, 255, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+}
+
+/* Halloween — web in corners + pumpkins */
+.td-corner-halloween::before {
   content: '';
   position: fixed;
-  bottom: 10%;
-  left: -40px;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(244, 114, 182, 0.06), transparent 60%);
-  pointer-events: none;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  background:
+    radial-gradient(circle at 100% 0%, transparent 30px, rgba(255, 255, 255, 0.04) 30px, rgba(255, 255, 255, 0.02) 31px, transparent 31px),
+    radial-gradient(circle at 100% 0%, transparent 40px, rgba(255, 255, 255, 0.03) 40px, transparent 41px),
+    radial-gradient(circle at 100% 0%, transparent 50px, rgba(255, 255, 255, 0.02) 50px, transparent 51px);
   z-index: 0;
+  pointer-events: none;
+}
+
+.td-corner-halloween::after {
+  content: '🎃🕸️';
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  font-size: 36px;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+  letter-spacing: -4px;
+}
+
+/* CNY — lanterns at top */
+.td-corner-cny::before {
+  content: '🏮';
+  position: fixed;
+  top: 5px;
+  left: 15px;
+  font-size: 32px;
+  opacity: 0.25;
+  animation: tdCnySwing 3s ease-in-out infinite alternate;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.td-corner-cny::after {
+  content: '🏮';
+  position: fixed;
+  top: 5px;
+  right: 15px;
+  font-size: 32px;
+  opacity: 0.25;
+  animation: tdCnySwing 3s ease-in-out infinite alternate-reverse;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes tdCnySwing {
+  0% { transform: rotate(-5deg); }
+  100% { transform: rotate(5deg); }
+}
+
+/* Easter — bunnies + flowers bottom corners */
+.td-corner-easter::before {
+  content: '🐰';
+  position: fixed;
+  bottom: 8px;
+  left: 12px;
+  font-size: 40px;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.td-corner-easter::after {
+  content: '🌸';
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  font-size: 32px;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Valentine — roses bottom */
+.td-corner-valentine::before,
+.td-corner-valentine::after {
+  content: '🌹';
+  position: fixed;
+  font-size: 36px;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.td-corner-valentine::before {
+  bottom: 8px;
+  left: 12px;
+  transform: rotate(-15deg);
+}
+
+.td-corner-valentine::after {
+  bottom: 8px;
+  right: 12px;
+  transform: rotate(15deg);
 }

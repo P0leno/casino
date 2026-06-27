@@ -7,6 +7,7 @@ import { useBalance } from '../contexts/BalanceContext'
 import pawAnim from '../assets/paw.json'
 import starAnim from '../assets/star.json'
 import secretIcon from '../assets/secret.svg'
+import Icon from './Icons'
 
 const gifts = [
   { name: 'bear', animation: '/gifts/bear.json' },
@@ -57,6 +58,7 @@ function PaidSpin({ onNavigateToTopUp }) {
   const startTimeRef = useRef(0)
   const durationRef = useRef(5000)
   const fastSpinRef = useRef(false)
+  const skipAnimationRef = useRef(false)
 
   // Sync ref with state
   useEffect(() => {
@@ -187,6 +189,7 @@ function PaidSpin({ onNavigateToTopUp }) {
   }
 
   const startSpinAnimation = (data) => {
+    skipAnimationRef.current = false
     // Determine target gift index
     const targetGiftName = data.gift
     let targetIndex = gifts.findIndex(g => g.name === targetGiftName)
@@ -215,6 +218,7 @@ function PaidSpin({ onNavigateToTopUp }) {
 
     // Animation Loop
     const animate = (time) => {
+      if (skipAnimationRef.current) durationRef.current = 50
       if (!startTimeRef.current) startTimeRef.current = time
       const elapsed = time - startTimeRef.current
       const progress = Math.min(elapsed / durationRef.current, 1)
@@ -255,6 +259,7 @@ function PaidSpin({ onNavigateToTopUp }) {
 
         setSpinning(false)
         setIsProcessing(false)
+        skipAnimationRef.current = false
       }
     }
 
@@ -273,6 +278,9 @@ function PaidSpin({ onNavigateToTopUp }) {
 
   return (
     <div className="spin-container">
+      <button className="spin-back-btn" onClick={() => window.history.back()}>
+        <Icon name="back" size="md" />
+      </button>
       {/* RENDER DEMO MENU */}
       <DemoSpinMenu
         isOpen={isDemoMenuOpen}
@@ -377,6 +385,12 @@ function PaidSpin({ onNavigateToTopUp }) {
             </div>
           )}
         </button>
+
+        {spinning && (
+          <button className="spin-skip-btn" onClick={() => { skipAnimationRef.current = true }}>
+            <Icon name="bolt" size="sm" /> Показать результат
+          </button>
+        )}
 
         {!spinning && (
           <div className="fast-spin-toggle">
