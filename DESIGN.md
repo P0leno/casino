@@ -3,145 +3,134 @@
 ## Theme Engine
 
 ### CSS Variables (Tokens)
-Все стили управляются через CSS-переменные в `:root`.  
+Все стили управляются через CSS-переменные в `:root`.
 Переменные делятся на 4 категории:
 
 | Category | Prefix | Example |
 |----------|--------|---------|
 | Glass | `--glass-*` | `--glass-blur: blur(16px)` |
-| Color | `--clr-*` | `--clr-accent: #3b82f6` |
-| Spacing | `--sp-*` | `--sp-card-padding: 16px` |
-| Radius | `--rd-*` | `--rd-card: 16px` |
+| Accent | `--accent-*` | `--accent: #6c5ce7` |
+| Background | `--bg-*` | `--bg-primary: #0e0e0e` |
+| Text | `--text-*` | `--text-secondary: rgba(...)` |
+| Safe area | `--safe-*` | `--safe-top: env(...)` |
+| Radius | `--glass-radius-*` | `--glass-radius: 16px` |
 
-### Preset Switching
-Каждый preset — это блок `:root[data-theme="<name>"]` с переопределением токенов.
+### Glass Utility Classes
+| Class | Description |
+|-------|-------------|
+| `.glass` | Base glass — blur(16px), border, shadow, highlight |
+| `.glass-sm` | Light blur(8px), no shadow |
+| `.glass-strong` | Higher opacity background + full blur/shadow |
+| `.glass-gradient` | Purple-tinted gradient glass |
+| `.glass-liquid` | Animated radial gradient overlay shift |
 
+All defined in `src/index.css`
+
+### Glass Liquid Animation
 ```css
-:root[data-theme="minimalism"] {
-  --clr-accent: #ffffff;
-  --glass-bg: rgba(255,255,255,0.03);
-  --glass-blur: blur(8px);
-  --rd-card: 4px;
-}
-
-:root[data-theme="halloween"] {
-  --clr-accent: #ff6b35;
-  --glass-bg: rgba(255, 107, 53, 0.08);
-  --glass-border: rgba(255, 107, 53, 0.2);
-  --bg-primary: #0d0d0d;
-}
-
-:root[data-theme="newyear"] {
-  --clr-accent: #ffd700;
-  --glass-bg: rgba(212, 175, 55, 0.08);
-  --glass-border: rgba(212, 175, 55, 0.2);
-}
-
-:root[data-theme="easter"] {
-  --clr-accent: #f472b6;
-  --glass-bg: rgba(244, 114, 182, 0.06);
-  --glass-border: rgba(244, 114, 182, 0.15);
-}
-
-:root[data-theme="cny"] {
-  --clr-accent: #dc2626;
-  --glass-bg: rgba(220, 38, 38, 0.08);
-  --glass-border: rgba(220, 38, 38, 0.2);
-}
-
-:root[data-theme="maximalism"] {
-  --glass-bg: rgba(255,255,255,0.12);
-  --glass-blur: blur(24px);
-  --glass-shadow: 0 8px 48px rgba(0,0,0,0.4);
+.glass-liquid::before {
+  background: radial-gradient(circle at 30% 40%, rgba(108,92,231,0.06), transparent 50%),
+              radial-gradient(circle at 70% 60%, rgba(59,130,246,0.04), transparent 50%);
+  animation: glassLiquidShift 12s ease-in-out infinite alternate;
 }
 ```
 
+### Safe Area
+Переменные `--safe-top` и `--safe-bottom` используют `env(safe-area-inset-*)`.
+Утилитарные классы: `.safe-top`, `.safe-bottom`.
+
+### Preset Switching (TODO — следующая итерация)
+Каждый preset — блок `:root[data-theme="<name>"]` с переопределением токенов.
 Переключение через JS: `document.documentElement.setAttribute('data-theme', 'halloween')`
 
-### User Customization
-В настройках админки — слайдеры для:
-- **Blur** (4px–32px)
-- **Opacity** (0.03–0.20 для `--glass-bg`)
-- **Border opacity** (0.05–0.30)
-- **Radius** (0–32px)
-- **Accent color** (color picker)
-- **Animation speed** (0x–3x)
-- **Background** (light/dark/custom hex)
+Пресеты (запланированы):
+- `minimalism` — белый акцент, blur 8px, radius 4px
+- `halloween` — #ff6b35, оранжевый glass
+- `newyear` — #ffd700, золотой glass
+- `easter` — #f472b6, розовый glass
+- `cny` — #dc2626, красный glass
+- `maximalism` — макс blur 24px, сильная тень
 
-Все кастомные значения сохраняются в `localStorage`, при загрузке применяются поверх
-выбранного пресета.
+### User Customization (TODO)
+В настройках админки — слайдеры для blur, opacity, border, radius, accent color, animation speed, background.
+Сохранение в `localStorage`.
 
-## Admin Panel Design (отдельное приложение)
+## Admin Panel Design
 
 ### Architecture
-Отдельный React-компонент `AdminPanel.jsx` со своим роутингом, НЕ вложенный в Profile.
+Отдельный React-компонент `AdminPanel.jsx` со своим стейтом и CSS.
+Внедрён в Profile.jsx на замену старому inline-админ-блоку.
 
 ### Layout
 ```
 ┌──────────────────────────────┐
-│  👑 Админ панель     ✕       │  ← glass header с safe-area
+│  👑 Админ панель       ✕     │  ← glass header
 ├──────────────────────────────┤
-│  🔍  Поиск пользователя...   │  ← поиск по ID/username
-├──────────────────────────────┤
-│  📊 Статистика               │  ← карточка-превью
-│  ┌──────┬──────┬──────┐     │
-│  │ Юзеры│ Кейсы│ Звёзд│     │
-│  │ 1.2K │   12 │ 450K │     │
-│  └──────┴──────┴──────┘     │
-├──────────────────────────────┤
-│  Меню                        │
-│  ┌────────────────────────┐  │
-│  │ 💰 Баланс / Топ-ап     │  │
-│  │ 🎁 Выдача подарка      │  │
-│  │ 👥 Управление админами │  │
-│  │ 🚀 Краш                │  │
-│  │ 🎲 Кейсы               │  │
-│  │ 📋 Задания             │  │
-│  │ 🔧 Настройки           │  │
-│  │ 🎨 Тема оформления     │  │
-│  └────────────────────────┘  │
+│  🔍 Поиск пользователя       │  ← карточка с ID/username/balance/ban
+│  💰 Пополнение / Списание    │
+│  🎁 Выдача подарка           │
+│  👑 Управление админами      │
+│  📊 Статистика               │  ← 2×2 grid карточек
+│  🎨 Тема оформления          │  ← placeholder
 └──────────────────────────────┘
 ```
 
 ### Navigation
-- Боковое меню (на десктопе) или bottom sheet (на мобилке)
-- Каждый пункт открывает отдельный экран со своей формой
-- Все экраны — компоненты внутри AdminPanel (без внешнего роутера)
+- Bottom sheet overlay с safe-area
+- Меню → каждый пункт открывает отдельный экран
+- Кнопка «← Назад» на каждом подэкранe
+- Кнопка «✕» закрывает всю панель
 
-### User Search
-- Поле поиска в顶部
-- При вводе — автокомплит (поиск по ID/username через `/api/admin/search-users`)
-- Результат: карточка пользователя с кнопками (инфо, топ-ап, гивт, бан)
+### AdminPanel.jsx — Sections
+| View | Features |
+|------|----------|
+| `menu` | 6 кнопок-навигация |
+| `search` | Input ID → user info card + ban/unban |
+| `user_detail` | Полная карточка пользователя |
+| `topup` | ID + сумма (отрицательная = списание) |
+| `givegift` | ID + название подарка |
+| `adminmgmt` | ID пользователя → add/remove admin |
+| `stats` | 6 stat cards (users, banned, balance, cases, gifts, admins) |
+| `settings` | Placeholder для будущих тем |
+
+### API Endpoints Used
+| Endpoint | Method | Params |
+|----------|--------|--------|
+| `/api/admin/user-info` | POST | `{initData, userId}` |
+| `/api/admin/top-up` | POST | `{initData, userId, amount}` |
+| `/api/admin/give-gift` | POST | `{initData, userId, giftName}` |
+| `/api/admin/add-admin` | POST | `{initData, adminId}` |
+| `/api/admin/remove-admin` | POST | `{initData, adminId}` |
+| `/api/admin/stats` | POST | `{initData}` |
+| `/api/ban-user` | POST | `{initData, targetUserId}` |
+| `/api/unban-user` | POST | `{initData, targetUserId}` |
+
+### AdminPanel.css — Design Tokens
+- `--accent: #6c5ce7` — purple accent for buttons/focus
+- Glassmorphism background: `rgba(20, 22, 36, 0.92)` with `blur(20px)`
+- Animations: `apFadeIn` (0.25s overlay), `apSlideUp` (0.3s sheet)
+- Buttons: hover lift + brightness, active translateX(4px) on menu items
+- Stat cards: 28px bold white values, uppercase labels
 
 ## Component Architecture
 
-### Glass Component
+### Glass Component (TODO — следующая итерация)
 ```jsx
 <Glass blur="16" opacity="0.06" border>
   <content />
 </Glass>
 ```
 
-Пропсы:
-- `blur`: 4 | 8 | 12 | 16 | 24 | 32
-- `opacity`: 0.03–0.20
-- `border`: boolean
-- `radius`: 0–32
-- `hover`: boolean (подсветка при наведении)
-- `as`: 'div' | 'button' | 'a'
+Пропсы: `blur`, `opacity`, `border`, `radius`, `hover`, `as`
 
-### Page Transition
+### Page Transition (TODO)
 ```css
 .page-enter { opacity: 0; transform: translateY(8px); }
 .page-enter-active { opacity: 1; transform: translateY(0); transition: 0.25s ease; }
 ```
 
-### Animation Presets
-Управляются через `data-animation`:
-- `default` — 0.25s, translateY
-- `fade` — 0.3s, просто opacity
-- `scale` — 0.2s, scale(0.97) → 1
-- `none` — без анимаций
+### Animation Presets (TODO)
+Управляются через `data-animation`: `default`, `fade`, `scale`, `none`
 
 ## Future Plan
 1. Выделить админку в отдельный бандл (lazy load через React.lazy)
@@ -149,3 +138,6 @@
 3. Добавить кастомные анимации (Lottie для тем)
 4. Сделать экспорт/импорт темы в JSON
 5. Добавить A/B тестирование пресетов
+6. Glass-компонент с пропсами через styled-components
+7. Поиск пользователей по username (автокомплит)
+8. Анимации переходов между экранами админки

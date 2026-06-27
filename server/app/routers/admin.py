@@ -1237,6 +1237,62 @@ class StatsRequest(BaseModel):
     initData: str
 
 
+class SearchUsersRequest(BaseModel):
+    initData: str
+    query: str
+
+
+@router.post("/admin/search-users")
+async def admin_search_users(request: SearchUsersRequest):
+    is_valid = validate_init_data(request.initData, BOT_TOKEN)
+    if not is_valid:
+        return {"success": False, "message": "Invalid initData"}
+
+    admin_id = _get_admin_id(request.initData)
+    if not admin_id or not RedisSettings.is_admin(admin_id):
+        return {"success": False, "message": "Forbidden"}
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        query = request.query.strip()
+        if not query:
+            conn.close()
+            return {"success": True, "users": []}
+
+        results = []
+        if query.isdigit():
+            cursor.execute("SELECT id, username, balance, bonus_balance, is_banned FROM users WHERE id = ?", (int(query),))
+            row = cursor.fetchone()
+            if row:
+                results.append({
+                    "id": row[0],
+                    "username": row[1],
+                    "balance": row[2],
+                    "bonusBalance": row[3],
+                    "isBanned": bool(row[4]),
+                })
+        else:
+            cursor.execute(
+                "SELECT id, username, balance, bonus_balance, is_banned FROM users WHERE username LIKE ? LIMIT 20",
+                (f"%{query}%",)
+            )
+            for row in cursor.fetchall():
+                results.append({
+                    "id": row[0],
+                    "username": row[1],
+                    "balance": row[2],
+                    "bonusBalance": row[3],
+                    "isBanned": bool(row[4]),
+                })
+
+        conn.close()
+        return {"success": True, "users": results}
+    except Exception as e:
+        return {"success": False, "message": str(e), "users": []}
+
+
 @router.post("/admin/stats")
 async def admin_stats(request: StatsRequest):
     is_valid = validate_init_data(request.initData, BOT_TOKEN)

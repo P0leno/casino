@@ -206,20 +206,35 @@ antifraud_* (limits, violations), gift_models, gift_withdrawals
 | server/app/utils/database.py | DB init + helpers |
 | server/app/utils/redis_models.py | Redis settings model |
 | client/src/App.jsx | Root component, routing, safe area |
-| client/src/index.css | Global styles + CSS variables |
-| client/src/components/Profile.jsx | Profile page + admin panel overlay |
+| client/src/index.css | Global styles + glass tokens + liquid animation + safe area utilities |
+| client/src/components/Profile.jsx | Profile page, imports AdminPanel |
+| client/src/components/AdminPanel.jsx | Separate admin panel component (9 views: menu, search, user_detail, topup, givegift, adminmgmt, stats, settings) |
+| client/src/components/AdminPanel.css | Admin panel glassmorphism styles (overlay, sheet, cards, buttons, stats grid) |
 | client/src/components/Crash.jsx | Crash game UI |
 | client/src/components/Inventory.jsx | Gift inventory |
 | docker-compose.yml | Docker compose config |
 
 ## CSS Architecture
-25 CSS files across components, ~7200 lines total.
-No global CSS variables file — variables are component-scoped.
-Glass aesthetic used in ~20 components with backdrop-filter blur.
-Safe area handled via env(safe-area-inset-*) and JS `--safe-area-top` variable.
+26 CSS files across components, ~7350 lines total.
+Global CSS variables in `src/index.css` (glass tokens: `--glass-*`, accent: `--accent`, bg/text: `--bg-*`/`--text-*`, safe area: `--safe-*`, radius: `--glass-radius-*`)
+Glass utility classes in `src/index.css`: `.glass`, `.glass-sm`, `.glass-strong`, `.glass-gradient`, `.glass-liquid` (with animated radial gradient)
+Safe area via variables `--safe-top`/`--safe-bottom` + utility classes `.safe-top`/`.safe-bottom`
+AdminPanel.css: 250+ lines of glassmorphism design — overlay backdrop-filter blur, slide-up sheet animation, menu hover translate, stat cards grid, responsive inputs.
 
 ## Known Issues
 - **Support DB**: `no such table: users` (support.db missing users table)
 - **CryptoBot**: 401 UNAUTHORIZED (token not set in config)
 - **Admin WS tunnel**: created but not used by frontend
 - **game.py router**: not included in FastAPI app (superseded by spins.py)
+
+## Design System Status
+- ✅ Glass tokens + utility classes in `index.css`
+- ✅ `.glass-liquid` animated gradient component
+- ✅ Safe area variables + utilities
+- ✅ AdminPanel.jsx — standalone component with own CSS
+- ✅ AdminPanel.css — full glassmorphism overlay design
+- ⬜ Theme preset switching (`data-theme` blocks)
+- ⬜ User customization sliders (blur, opacity, accent)
+- ⬜ Glass component with props (blur, opacity, border, radius)
+- ⬜ Page transitions (framer-motion or CSS)
+- ⬜ Lazy loading for AdminPanel (React.lazy)

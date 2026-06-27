@@ -11,12 +11,15 @@
   --glass-radius: 16px;
   --glass-radius-sm: 12px;
   --glass-radius-lg: 24px;
+
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   --bg-primary: #0e0e0e;
   --bg-secondary: #141414;
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.65);
+  --accent: #6c5ce7;
   --accent-blue: #3b82f6;
   --accent-green: #22c55e;
   --accent-red: #ef4444;
@@ -74,6 +77,51 @@ body {
   box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
 }
 
+.glass-gradient {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.08), rgba(255, 255, 255, 0.04));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+}
+
+.glass-liquid {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-lg);
+  -webkit-backdrop-filter: var(--glass-blur-lg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  overflow: hidden;
+}
+
+.glass-liquid::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(108, 92, 231, 0.06), transparent 50%),
+              radial-gradient(circle at 70% 60%, rgba(59, 130, 246, 0.04), transparent 50%);
+  animation: glassLiquidShift 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes glassLiquidShift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(30px, -20px) rotate(8deg); }
+}
+
+/* Safe area padding utility */
+.safe-top {
+  padding-top: var(--safe-top);
+}
+
+.safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+
 /* Скрыть полосу прокрутки */
 ::-webkit-scrollbar {
   display: none;
@@ -81,12 +129,10 @@ body {
   height: 0;
 }
 
-/* Для Firefox */
 * {
   scrollbar-width: none;
 }
 
-/* Для IE и Edge */
 body {
   -ms-overflow-style: none;
 }
