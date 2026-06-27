@@ -94,6 +94,50 @@ function AdminPanel({ onClose }) {
     updateCSSVar('--user-animate-speed', val)
   }
 
+  const [iconFill, setIconFill] = useState(() => localStorage.getItem('iconFill') === 'true')
+  const [iconGlow, setIconGlow] = useState(() => localStorage.getItem('iconGlow') === 'true')
+  const [iconBold, setIconBold] = useState(() => localStorage.getItem('iconBold') !== 'false')
+  const [animMode, setAnimMode] = useState(() => localStorage.getItem('animMode') || 'default')
+  const [uiStyle, setUiStyle] = useState(() => localStorage.getItem('uiStyle') || 'glass')
+
+  const toggleIconFill = () => {
+    const v = !iconFill
+    setIconFill(v)
+    localStorage.setItem('iconFill', v)
+  }
+
+  const toggleIconGlow = () => {
+    const v = !iconGlow
+    setIconGlow(v)
+    localStorage.setItem('iconGlow', v)
+  }
+
+  const toggleIconBold = () => {
+    const v = !iconBold
+    setIconBold(v)
+    localStorage.setItem('iconBold', v)
+  }
+
+  const switchAnimMode = (mode) => {
+    setAnimMode(mode)
+    localStorage.setItem('animMode', mode)
+    if (mode === 'default') {
+      document.documentElement.removeAttribute('data-animation')
+    } else {
+      document.documentElement.setAttribute('data-animation', mode)
+    }
+  }
+
+  const switchUiStyle = (style) => {
+    setUiStyle(style)
+    localStorage.setItem('uiStyle', style)
+    if (style === 'glass') {
+      document.documentElement.removeAttribute('data-ui')
+    } else {
+      document.documentElement.setAttribute('data-ui', style)
+    }
+  }
+
   const THEME_PALETTE = {
     default: { bg: '#6c5ce7', fg: '#ffffff' },
     minimalism: { bg: '#ffffff', fg: '#0a0a0a' },
@@ -102,6 +146,7 @@ function AdminPanel({ onClose }) {
     easter: { bg: '#f472b6', fg: '#1a0f14' },
     cny: { bg: '#dc2626', fg: '#0d0808' },
     maximalism: { bg: 'linear-gradient(135deg, #6c5ce7, #a855f7, #3b82f6)', fg: '#0a0a0a' },
+    valentine: { bg: '#e11d48', fg: '#1a0a0f' },
   }
 
   const PRESETS = [
@@ -112,6 +157,7 @@ function AdminPanel({ onClose }) {
     { id: 'easter', label: 'Пасха', icon: 'gift', desc: 'Розовый, пастельные тона' },
     { id: 'cny', label: 'Китайский НГ', icon: 'fire', desc: 'Красный, золотой' },
     { id: 'maximalism', label: 'Максимализм', icon: 'bolt', desc: 'Максимум стекла, blur 24px' },
+    { id: 'valentine', label: 'Валентинки', icon: 'star', desc: 'Красный, розовый, сердца' },
   ]
 
   const FONTS = [
@@ -517,6 +563,71 @@ function AdminPanel({ onClose }) {
             onChange={e => handleSpeedChange(e.target.value)}
             className="ap-slider"
           />
+        </div>
+
+        <div className="ap-section-divider" />
+
+        <h3 className="ap-view-title"><Icon name="bolt" size="md" /> Стиль интерфейса</h3>
+        <p className="ap-hint">Общий стиль UI-элементов.</p>
+        <div className="ap-theme-grid">
+          {[
+            { id: 'glass', label: 'Glassmorphism', icon: 'star', desc: 'Стекло, blur, свечения' },
+            { id: 'minimal', label: 'Минимал', icon: 'home', desc: 'Тонкие границы, минимум эффектов' },
+            { id: 'maximal', label: 'Максимализм', icon: 'bolt', desc: 'Неон, жирные обводки, ярко' },
+          ].map(s => (
+            <button
+              key={s.id}
+              className={`ap-theme-card ${uiStyle === s.id ? 'active' : ''}`}
+              onClick={() => switchUiStyle(s.id)}
+            >
+              <span className="ap-theme-swatch" style={{ background: s.id === 'glass' ? '#6c5ce7' : s.id === 'minimal' ? '#ffffff' : 'linear-gradient(135deg, #6c5ce7, #a855f7, #3b82f6)' }}>
+                <Icon name={s.icon} size="sm" />
+              </span>
+              <span className="ap-theme-label">{s.label}</span>
+              <span className="ap-theme-desc">{s.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="ap-section-divider" />
+
+        <h3 className="ap-view-title"><Icon name="refresh" size="md" /> Анимации</h3>
+        <p className="ap-hint">Режим анимаций интерфейса.</p>
+        <div className="ap-theme-grid">
+          {[
+            { id: 'default', label: 'Стандарт', desc: 'Fade + slide' },
+            { id: 'fade', label: 'Fade', desc: 'Только плавное появление' },
+            { id: 'scale', label: 'Scale', desc: 'Масштабирование' },
+            { id: 'none', label: 'Без анимаций', desc: 'Всё мгновенно' },
+          ].map(a => (
+            <button
+              key={a.id}
+              className={`ap-theme-card ${animMode === a.id ? 'active' : ''}`}
+              onClick={() => switchAnimMode(a.id)}
+            >
+              <span className="ap-theme-label">{a.label}</span>
+              <span className="ap-theme-desc">{a.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="ap-section-divider" />
+
+        <h3 className="ap-view-title"><Icon name="star" size="md" /> Иконки</h3>
+        <p className="ap-hint">Настройка отображения иконок.</p>
+        <div className="ap-toggle-group">
+          <label className="ap-toggle-row" onClick={toggleIconBold}>
+            <span>Жирные иконки (stroke 2.5px)</span>
+            <span className={`ap-toggle-switch ${iconBold ? 'on' : ''}`} />
+          </label>
+          <label className="ap-toggle-row" onClick={toggleIconFill}>
+            <span>Активные — заливка</span>
+            <span className={`ap-toggle-switch ${iconFill ? 'on' : ''}`} />
+          </label>
+          <label className="ap-toggle-row" onClick={toggleIconGlow}>
+            <span>Активные — свечение</span>
+            <span className={`ap-toggle-switch ${iconGlow ? 'on' : ''}`} />
+          </label>
         </div>
       </div>
     ),

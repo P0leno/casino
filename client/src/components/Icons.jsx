@@ -39,24 +39,33 @@ const sizes = {
   '2xl': 40,
 }
 
-function Icon({ name, size = 'md', className = '', style = {} }) {
+function Icon({ name, size = 'md', className = '', style = {}, fill, glow, bold }) {
   const path = icons[name]
   if (!path) return null
 
   const px = sizes[size] || 20
+  const strokeW = bold ? 2.5 : 1.5
+
+  const combinedStyle = { flexShrink: 0, ...style }
+  if (fill) {
+    combinedStyle.fill = 'currentColor'
+  }
+  if (glow) {
+    combinedStyle.filter = 'drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor)'
+  }
 
   return (
     <svg
       width={px}
       height={px}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={fill ? 'currentColor' : 'none'}
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={strokeW}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      style={{ flexShrink: 0, ...style }}
+      style={combinedStyle}
       aria-hidden="true"
     >
       <path d={path} />

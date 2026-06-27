@@ -87,6 +87,14 @@ function AppContent() {
     if (savedSpeed) {
       document.documentElement.style.setProperty('--user-animate-speed', savedSpeed)
     }
+    const savedAnimMode = localStorage.getItem('animMode')
+    if (savedAnimMode && savedAnimMode !== 'default') {
+      document.documentElement.setAttribute('data-animation', savedAnimMode)
+    }
+    const savedUiStyle = localStorage.getItem('uiStyle')
+    if (savedUiStyle && savedUiStyle !== 'glass') {
+      document.documentElement.setAttribute('data-ui', savedUiStyle)
+    }
 
     tg.ready()
     tg.setHeaderColor('#1a1a1a')

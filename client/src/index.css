@@ -471,6 +471,20 @@ body::-webkit-scrollbar-thumb:hover {
   background: var(--glass-border-hover);
 }
 
+:root[data-theme="valentine"] {
+  --accent: #e11d48;
+  --accent-blue: #fb7185;
+  --accent-green: #fb7185;
+  --accent-red: #e11d48;
+  --accent-yellow: #fda4af;
+  --glass-bg: rgba(225, 29, 72, 0.08);
+  --glass-bg-strong: rgba(225, 29, 72, 0.14);
+  --glass-border: rgba(225, 29, 72, 0.2);
+  --glass-border-hover: rgba(225, 29, 72, 0.3);
+  --bg-primary: #1a0a0f;
+  --bg-secondary: #240a14;
+}
+
 /* ============================================
    Theme-aware component overrides
    ============================================ */
@@ -565,6 +579,10 @@ body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, rgba(220, 38, 38, 0.06), rgba(255, 215, 0, 0.04));
 }
 
+:root[data-theme="valentine"] .balance-bar {
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.06), rgba(251, 113, 133, 0.04));
+}
+
 /* Home welcome card */
 :root[data-theme="halloween"] .welcome-card {
   background: linear-gradient(135deg, rgba(255, 107, 53, 0.06), rgba(255, 69, 0, 0.03));
@@ -596,6 +614,11 @@ body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, rgba(108, 92, 231, 0.08), rgba(59, 130, 246, 0.04));
   border-color: rgba(108, 92, 231, 0.2);
   box-shadow: 0 8px 32px rgba(108, 92, 231, 0.1);
+}
+
+:root[data-theme="valentine"] .welcome-card {
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.06), rgba(251, 113, 133, 0.03));
+  border-color: rgba(225, 29, 72, 0.15);
 }
 
 /* Page transitions */
@@ -717,4 +740,61 @@ body::-webkit-scrollbar-thumb:hover {
 
 @keyframes glassSpin {
   to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   UI Style presets — переключаются в настройках
+   ============================================ */
+
+/* Minimal */
+:root[data-ui="minimal"] {
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-bg-strong: rgba(255, 255, 255, 0.04);
+  --glass-blur: blur(4px);
+  --glass-blur-sm: blur(2px);
+  --glass-blur-lg: blur(8px);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-border-hover: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  --glass-inner-highlight: none;
+  --glass-radius: 8px;
+  --glass-radius-sm: 4px;
+  --glass-radius-lg: 12px;
+}
+
+:root[data-ui="minimal"] .glass,
+:root[data-ui="minimal"] .glass-sm,
+:root[data-ui="minimal"] .glass-strong,
+:root[data-ui="minimal"] .glass-card,
+:root[data-ui="minimal"] .glass-section {
+  box-shadow: none;
+}
+
+:root[data-ui="minimal"] .tab-bar {
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Maximal */
+:root[data-ui="maximal"] {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-bg-strong: rgba(255, 255, 255, 0.16);
+  --glass-blur: blur(32px);
+  --glass-blur-sm: blur(16px);
+  --glass-blur-lg: blur(48px);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-hover: rgba(255, 255, 255, 0.25);
+  --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.35), 0 0 60px rgba(108, 92, 231, 0.05);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  --glass-radius: 20px;
+  --glass-radius-sm: 14px;
+  --glass-radius-lg: 28px;
+}
+
+:root[data-ui="maximal"] .tab-bar {
+  box-shadow: 0 -4px 40px rgba(108, 92, 231, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:root[data-ui="maximal"] .glass-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(108, 92, 231, 0.2);
 }

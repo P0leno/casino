@@ -27,6 +27,11 @@ const THEMES = {
     count: 18,
     speed: 'fast',
   },
+  valentine: {
+    elements: ['❤️', '💖', '💗', '💕', '💝', '🌹', '💘'],
+    count: 14,
+    speed: 'slow',
+  },
 }
 
 function ThemeDecorations() {
@@ -78,7 +83,6 @@ function ThemeDecorations() {
           style={{
             left: `${p.left}%`,
             animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
             fontSize: `${p.size}px`,
             opacity: p.opacity,
           }}

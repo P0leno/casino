@@ -7,6 +7,10 @@ function TabBar({ activeTab, onTabChange }) {
   const [indicatorStyle, setIndicatorStyle] = useState({})
   const tabsRef = useRef([])
 
+  const iconFill = localStorage.getItem('iconFill') === 'true'
+  const iconGlow = localStorage.getItem('iconGlow') === 'true'
+  const iconBold = localStorage.getItem('iconBold') !== 'false'
+
   useEffect(() => {
     const tg = window.Telegram?.WebApp
     if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -52,7 +56,7 @@ function TabBar({ activeTab, onTabChange }) {
             className={`tab-button ${activeTab === tab.id && activeTab !== 'profile' ? 'active' : ''}`}
             onClick={() => onTabChange(tab.id)}
           >
-            <Icon name={tab.icon} size="md" className={`tab-icon ${activeTab === tab.id ? 'active-tab' : ''}`} />
+            <Icon name={tab.icon} size="md" className={`tab-icon ${activeTab === tab.id ? 'active-tab' : ''}`} fill={iconFill && activeTab === tab.id} glow={iconGlow && activeTab === tab.id} bold={iconBold} />
             <span className="tab-label">{tab.label}</span>
           </button>
         ))}
