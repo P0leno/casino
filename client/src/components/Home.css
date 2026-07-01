@@ -94,14 +94,12 @@
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-radius: var(--glass-radius, 30px);
-  background: var(--glass-bg, rgba(255,255,255,0.06));
-  backdrop-filter: blur(var(--glass-blur, 16px));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.1));
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   cursor: pointer;
   transition: transform 0.15s ease, background 0.2s;
-  box-shadow: var(--glass-shadow, 0 4px 24px rgba(0,0,0,0.25)), var(--glass-inner-highlight, inset 0 1px 0 rgba(255,255,255,0.08));
+  box-shadow: var(--shadow-card);
 }
 
 .home-game-row:active {

@@ -3,7 +3,7 @@
   --avatar-size: 60px;
 }
 
-/* ─── TabBar Container (liquid glass) ─── */
+/* ─── TabBar Container (solid dark) ─── */
 .tab-bar {
   position: fixed;
   bottom: calc(10px + env(safe-area-inset-bottom));
@@ -13,17 +13,15 @@
   justify-content: space-around;
   align-items: center;
   height: var(--tab-bar-height);
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 3rem;
   padding: 0rem 0.2rem;
   gap: 0.15rem;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-card);
   isolation: isolate;
   z-index: 100;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ════════════════════════════════════════════════
@@ -33,9 +31,7 @@
 .tab-indicator {
   position: absolute;
   height: calc(100% - 4px);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--bg-card-elevated);
   border-radius: 3rem;
   transition:
     left 0.4s cubic-bezier(0.32, 0.72, 0, 1),
@@ -44,7 +40,7 @@
   top: 2px;
   z-index: 0;
   pointer-events: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
 }
 
 .tab-indicator.bounce {
