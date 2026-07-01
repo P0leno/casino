@@ -40,8 +40,8 @@ function Shop({ onNavigateToTopUp }) {
   const [showSortModal, setShowSortModal] = useState(false)
   const [sortOrder, setSortOrder] = useState('price_asc')
   const [appliedFilters, setAppliedFilters] = useState({ gifts: [], models: [], backdrops: [] })
-  // const [filterCategory, setFilterCategory] = useState(null) // Removed
   const [modelsList, setModelsList] = useState({})
+  const [searchQuery, setSearchQuery] = useState('')
 
 
   const isMobile = window.Telegram?.WebApp?.platform === 'android' ||
@@ -107,7 +107,22 @@ function Shop({ onNavigateToTopUp }) {
   const getDisplayedGifts = () => {
     let result = gifts
 
-    // 1. Фильтрация
+    // 1. Поиск по имени
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(gift => 
+        (gift.title || '').toLowerCase().includes(q)
+      )
+    }
+
+    // 2. Категория
+    if (activeCategory === 'gift') {
+      result = result.filter(gift => gift.type === 'gift' || !gift.type)
+    } else if (activeCategory === 'background') {
+      result = result.filter(gift => gift.type === 'background')
+    }
+
+    // 3. Расширенная фильтрация
     if (appliedFilters) {
       if (appliedFilters.gifts && appliedFilters.gifts.length > 0) {
         result = result.filter(gift => appliedFilters.gifts.includes(gift.title))
@@ -120,7 +135,7 @@ function Shop({ onNavigateToTopUp }) {
       }
     }
 
-    // 2. Сортировка
+    // 4. Сортировка
     if (sortOrder === 'price_asc') {
       result = [...result].sort((a, b) => a.price - b.price)
     } else if (sortOrder === 'price_desc') {
@@ -188,34 +203,65 @@ function Shop({ onNavigateToTopUp }) {
       <div className="shop-content" style={{ paddingTop: contentPadding }}>
 
 
-        {/* Панель управления (Фильтр и Сортировка) */}
-        <div className="shop-controls">
-          <button
-            className="shop-control-btn glass-button"
-            onClick={() => setShowFilterModal(true)}
-          >
-            <Icon name="search" size="sm" />
-            Фильтр
-          </button>
-          <button
-            className="shop-control-btn glass-button"
-            onClick={() => setShowSortModal(true)}
-          >
-            <Icon name="refresh" size="sm" />
-            Сортировка
-          </button>
-
-          {showSortModal && (
-            <ShopSortModal
-              currentSort={sortOrder}
-              onClose={() => setShowSortModal(false)}
-              onApplySort={(sort) => {
-                setSortOrder(sort)
-                setShowSortModal(false)
-              }}
-            />
-          )}
+        {/* Search & Filters */}
+        <div className="shop-search-sticky">
+          <div className="shop-search-wrapper">
+            <div className="shop-search-input-wrap">
+              <svg className="shop-search-icon" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              <input
+                className="shop-search-input"
+                type="text"
+                placeholder="Поиск подарков"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button className="shop-search-filter-btn" onClick={() => setShowFilterModal(true)} aria-label="Фильтр">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 4h12M5 8h6M8 12h0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <div className="shop-categories-scroll">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                className={`shop-category-pill ${activeCategory === cat.id ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat.id)}
+              >
+                <span>{cat.label}</span>
+                <svg className="pill-chevron" viewBox="0 0 14 14" fill="none">
+                  <path d="M4 5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Sort */}
+        <div className="shop-sort-row">
+          <button className="shop-sort-btn" onClick={() => setShowSortModal(true)}>
+            <span>Сортировка</span>
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+              <path d="M4 5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span className="shop-items-count">{getDisplayedGifts().length} шт.</span>
+        </div>
+
+        {showSortModal && (
+          <ShopSortModal
+            currentSort={sortOrder}
+            onClose={() => setShowSortModal(false)}
+            onApplySort={(sort) => {
+              setSortOrder(sort)
+              setShowSortModal(false)
+            }}
+          />
+        )}
 
         {/* Сетка товаров */}
         <div className="shop-grid">

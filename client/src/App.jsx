@@ -97,23 +97,24 @@ function AppContent() {
     }
 
     tg.ready()
+    tg.expand()
     tg.setHeaderColor('#1a1a1a')
     tg.setBackgroundColor('#1a1a1a')
 
+    try { tg.requestFullscreen() } catch {}
+
     if (tg.platform === 'android' || tg.platform === 'ios') {
-      tg.requestFullscreen()
       setIsMobile(true)
       if (tg.platform === 'android') {
         setIsAndroid(true)
       }
 
-      // Получаем safe area и добавляем 20px для баланс баров на мобиле
       const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0
-      setSafeAreaTop(topInset + 20)
+      setSafeAreaTop(topInset)
     } else {
       setIsMobile(false)
       setIsAndroid(false)
-      setSafeAreaTop(5) // На ПК просто 5px
+      setSafeAreaTop(5)
     }
 
     const initData = tg.initData

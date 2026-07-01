@@ -3,7 +3,7 @@
   --avatar-size: 60px;
 }
 
-/* ─── TabBar Container (glass) ─── */
+/* ─── TabBar Container (liquid glass) ─── */
 .tab-bar {
   position: fixed;
   bottom: calc(10px + env(safe-area-inset-bottom));
@@ -13,16 +13,14 @@
   justify-content: space-around;
   align-items: center;
   height: var(--tab-bar-height);
-  background: rgba(22, 22, 22, 0.85);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 3rem;
   padding: 0rem 0.2rem;
   gap: 0.15rem;
-  box-shadow: 0 -0.25rem 1.25rem rgba(0, 0, 0, 0.3), inset 0.0625rem 0.0625rem 0.03125rem rgba(255, 255, 255, 0.15);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   isolation: isolate;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0, 1);
-  transform-origin: center bottom;
   z-index: 100;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -35,20 +33,18 @@
 .tab-indicator {
   position: absolute;
   height: calc(100% - 4px);
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border-radius: 3rem;
   transition:
-    left var(--jelly-duration) cubic-bezier(var(--jelly-spring)),
-    width var(--jelly-duration) cubic-bezier(var(--jelly-spring)),
+    left 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.4s cubic-bezier(0.32, 0.72, 0, 1),
     opacity 0.2s ease;
   top: 2px;
   z-index: 0;
   pointer-events: none;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .tab-indicator.bounce {
@@ -84,7 +80,7 @@
 }
 
 .tab-button.active {
-  color: #fff;
+  color: #0FBCE0;
   background: transparent;
   box-shadow: none;
 }
@@ -99,7 +95,7 @@
 
 .tab-button.active .tab-icon {
   opacity: 1;
-  filter: brightness(1.2);
+  filter: brightness(0) saturate(100%) invert(66%) sepia(68%) saturate(3155%) hue-rotate(157deg) brightness(99%) contrast(91%);
 }
 
 /* ─── Tab Label ─── */
@@ -111,7 +107,7 @@
 
 .tab-button.active .tab-label {
   font-weight: 600;
-  color: #fff;
+  color: #0FBCE0;
 }
 
 @media (max-width: 768px) {

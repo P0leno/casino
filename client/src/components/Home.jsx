@@ -11,7 +11,6 @@ function Home({ onNavigateToTopUp }) {
   
   const tg = window.Telegram?.WebApp
   const safeAreaTop = tg?.safeAreaInset?.top || tg?.contentSafeAreaInset?.top || 0
-  // Отступ = safe area + 20px (отступ баланс баров) + 36px (высота баланс бара с padding) + 10px (gap)
   const contentPadding = isMobile ? (safeAreaTop + 66) : 50
 
   const handleNavigateToCrash = () => {
@@ -29,49 +28,68 @@ function Home({ onNavigateToTopUp }) {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
+  const handleNavigateToPromo = () => {
+    window.history.pushState({}, '', '/spins/promik')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
   return (
     <div className="home-page">
       <BalanceBar onNavigateToTopUp={onNavigateToTopUp} />
       <BonusBalanceBar />
       <div className="home-content" style={{ paddingTop: `${contentPadding}px` }}>
-        <div className="welcome-card glass">
-          <h2>Добро пожаловать!</h2>
-          <p>Это главная страница приложения</p>
+
+        {/* 777 Promo Banner */}
+        <div className="banner-777 glass-liquid glass-hover" onClick={handleNavigateToPromo}>
+          <div className="banner-777-glow" />
+          <div className="banner-777-content">
+            <span className="banner-777-title">777</span>
+            <span className="banner-777-sub">Крути слот и выигрывай!</span>
+          </div>
+          <div className="banner-777-sparkles" />
         </div>
 
-        <div className="crash-dynamic-banner glass gradient glass-hover" onClick={handleNavigateToCrash}>
-          <div className="crash-banner-line"></div>
-          <div className="crash-banner-content">
-            <div className="crash-banner-text">
-              <h2 className="crash-banner-title">Краш</h2>
-              <p className="crash-banner-subtitle">Следи за ракетой!</p>
+        {/* Games List */}
+        <div className="home-games-list">
+          <div className="home-game-row glass-hover" onClick={handleNavigateToCrash}>
+            <div className="home-game-icon">
+              <LottieAnimation animationData={crashAnim} width={40} height={40} rotation={2} />
             </div>
+            <div className="home-game-info">
+              <span className="home-game-name">Краш</span>
+              <span className="home-game-desc">Следи за ракетой!</span>
+            </div>
+            <svg className="home-game-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
-          <div className="crash-banner-rocket">
-            <LottieAnimation 
-              animationData={crashAnim} 
-              width={60} 
-              height={60}
-              rotation={2}
-            />
-          </div>
-        </div>
 
-        <div className="crash-dynamic-banner spins-banner glass-hover" onClick={handleNavigateToSpins}>
-          <div className="crash-banner-line"></div>
-          <div className="crash-banner-content">
-            <div className="crash-banner-text">
-              <h2 className="crash-banner-title">Спины</h2>
-              <p className="crash-banner-subtitle">Крути и выигрывай!</p>
+          <div className="home-game-row glass-hover" onClick={handleNavigateToSpins}>
+            <div className="home-game-icon">
+              <LottieAnimation animationData={spinsAnim} width={40} height={40} rotation={2} />
             </div>
+            <div className="home-game-info">
+              <span className="home-game-name">Кейсы</span>
+              <span className="home-game-desc">Выбирай и открывай!</span>
+            </div>
+            <svg className="home-game-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
-          <div className="crash-banner-rocket">
-            <LottieAnimation 
-              animationData={spinsAnim} 
-              width={60} 
-              height={60}
-              rotation={2}
-            />
+
+          <div className="home-game-row glass-hover" onClick={handleNavigateToFreeSpin}>
+            <div className="home-game-icon home-game-icon-gold">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#FFD700"/>
+              </svg>
+            </div>
+            <div className="home-game-info">
+              <span className="home-game-name">Бесплатный спин</span>
+              <span className="home-game-desc">Крути бесплатно каждый день!</span>
+            </div>
+            <svg className="home-game-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
         </div>
       </div>

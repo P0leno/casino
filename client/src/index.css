@@ -23,7 +23,6 @@
   --jelly-duration: 0.5s;
   --jelly-press-scale: 0.92;
   --jelly-glow: 0 0 18px rgba(59, 130, 246, 0.35);
-  --jelly-shimmer: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(255,255,255,0.08), rgba(59,130,246,0.15));
 
   accent-color: var(--accent, #6c5ce7);
   caret-color: var(--accent, #6c5ce7);
@@ -512,7 +511,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 :root[data-theme="halloween"] .tab-icon.active-tab {
-  color: #fff;
+  color: #ff6b35;
 }
 
 :root[data-theme="newyear"] .tab-bar {
@@ -525,7 +524,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 :root[data-theme="newyear"] .tab-icon.active-tab {
-  color: #fff;
+  color: #ffd700;
 }
 
 :root[data-theme="easter"] .tab-bar {
@@ -538,7 +537,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 :root[data-theme="easter"] .tab-icon.active-tab {
-  color: #fff;
+  color: #f472b6;
 }
 
 :root[data-theme="cny"] .tab-bar {
@@ -551,7 +550,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 :root[data-theme="cny"] .tab-icon.active-tab {
-  color: #fff;
+  color: #dc2626;
 }
 
 :root[data-theme="minimalism"] .tab-bar {
