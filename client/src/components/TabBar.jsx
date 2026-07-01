@@ -5,7 +5,9 @@ import Icon from './Icons'
 function TabBar({ activeTab, onTabChange }) {
   const [user, setUser] = useState(null)
   const [indicatorStyle, setIndicatorStyle] = useState({})
+  const [bounce, setBounce] = useState(false)
   const tabsRef = useRef([])
+  const bounceTimer = useRef(null)
 
   const iconFill = localStorage.getItem('iconFill') === 'true'
   const iconGlow = localStorage.getItem('iconGlow') === 'true'
@@ -25,9 +27,13 @@ function TabBar({ activeTab, onTabChange }) {
       const left = button.offsetLeft
       const width = button.offsetWidth
       setIndicatorStyle({ left: `${left}px`, width: `${width}px` })
+      setBounce(true)
+      clearTimeout(bounceTimer.current)
+      bounceTimer.current = setTimeout(() => setBounce(false), 600)
     } else if (activeTab === 'profile') {
       setIndicatorStyle({ opacity: 0 })
     }
+    return () => clearTimeout(bounceTimer.current)
   }, [activeTab])
 
   const tabs = [
@@ -48,7 +54,7 @@ function TabBar({ activeTab, onTabChange }) {
   return (
     <>
       <div className="tab-bar glass-strong">
-        <div className="tab-indicator" style={indicatorStyle} />
+        <div className={`tab-indicator${bounce ? ' bounce' : ''}`} style={indicatorStyle} />
         {tabs.map((tab, index) => (
           <button
             key={tab.id}

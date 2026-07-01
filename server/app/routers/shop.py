@@ -99,50 +99,45 @@ async def get_shop_gifts(request: GetShopGiftsRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 1. Get Inventory to exclude
         cursor.execute("SELECT inventory FROM users WHERE id = ?", (user_id,))
         user_result = cursor.fetchone()
         inventory_slugs = []
         if user_result and user_result[0]:
             try:
                 inventory_slugs = json.loads(user_result[0])
+                inventory_slugs = [s['slug'] if isinstance(s, dict) else s for s in inventory_slugs]
             except json.JSONDecodeError:
                 inventory_slugs = []
 
-        # 2. Get Sold Gifts (Global) to exclude if unique per user/global? 
-        # Actually, sold_gifts table tracks specific purchases. 
-        # If the gift is "unique" and sold to *anyone*, it might be removed from cache already.
-        # But if we want to be sure, check if we need to filter `sold_gifts`.
-        # For now, let's assume `all_gifts` (from cache) correctly reflects availability.
-        # However, we must filter items the USER already owns if "one per user".
-        # Assuming all items are one-per-user or we just hide what they have.
-        
-        # NOTE: logic below refers to `sold_slugs` but it's not defined in this snippet. 
-        # I need to check where `sold_slugs` comes from or if I should remove that check.
-        # Looking at subsequent lines (113), `sold_slugs` is used.
-        
         cursor.execute("SELECT slug FROM sold_gifts")
         sold_rows = cursor.fetchall()
         sold_slugs = {row[0] for row in sold_rows}
-
-        print(f"[DEBUG_SHOP] Global Sold: {len(sold_slugs)} items")
         
         for gift in all_gifts:
             slug = gift.get('slug')
-            # Debug why skipped
             if slug and slug in inventory_slugs:
-                print(f"[DEBUG_SHOP] Skipped {slug}: In user inventory")
                 continue
             if slug and slug in sold_slugs:
-                print(f"[DEBUG_SHOP] Skipped {slug}: In sold_gifts")
                 continue
-            # if gift['available_amount'] <= 0:
-            #     print(f"[DEBUG_SHOP] Skipped {slug}: Available amount {gift['available_amount']}")
-            #     continue
-                
+
+            if req.filter_model and gift.get('model_name') != req.filter_model:
+                continue
+            if req.filter_backdrop and gift.get('backdrop_name') != req.filter_backdrop:
+                continue
+
             gifts.append(ShopGift(**gift))
         
-        print(f"[DEBUG_SHOP] Returning {len(gifts)} gifts to user")
+        if req.sort_order == 'price_asc':
+            gifts.sort(key=lambda g: g.price or 0)
+        elif req.sort_order == 'price_desc':
+            gifts.sort(key=lambda g: g.price or 0, reverse=True)
+        elif req.sort_order == 'rarity':
+            gifts.sort(key=lambda g: (g.rarity_model or 0, g.rarity_symbol or 0, g.rarity_backdrop or 0))
+
+        start = req.offset
+        end = start + req.limit
+        gifts = gifts[start:end]
+
         return gifts
         
     except Exception as e:

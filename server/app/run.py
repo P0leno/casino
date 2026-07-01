@@ -27,7 +27,7 @@ apply_pyrogram_patches()
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
 from app.database.db import init_db
-from app.routers import auth, admin, payments, crash, tasks, shop, inventory, promocode, ban, cryptobot_payments, spins, nft
+from app.routers import auth, admin, payments, crash, tasks, shop, inventory, promocode, ban, cryptobot_payments, spins, nft, banners
 from app.routers.spins import legacy_router
 from app.bot import start_bot, stop_bot
 from app.log_bot import start_log_bot, stop_log_bot
@@ -94,6 +94,7 @@ app.include_router(inventory.router)
 app.include_router(promocode.router)
 app.include_router(ban.router)
 app.include_router(cryptobot_payments.router)
+app.include_router(banners.router)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -528,6 +529,7 @@ def create_app() -> FastAPI:
     app.include_router(promocode.router)
     app.include_router(ban.router)
     app.include_router(cryptobot_payments.router)
+    app.include_router(banners.router)
     
     return app
 

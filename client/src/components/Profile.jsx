@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import './Profile.css'
 import LottieAnimation from './LottieAnimation'
 import Settings from './Settings'
+import SettingsDrawer from './SettingsDrawer'
 import GiftDetailsModal from './GiftDetailsModal'
 import PromoCodeModal from './PromoCodeModal'
 import AdminPanel from './AdminPanel'
@@ -47,6 +48,7 @@ function Profile() {
   const [refundUserId, setRefundUserId] = useState('')
   const [refundTransactionId, setRefundTransactionId] = useState('')
   const [showSettingsPanel, setShowSettingsPanel] = useState(false)
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false)
   const [refundLoading, setRefundLoading] = useState(false)
   const [showRefundPanel, setShowRefundPanel] = useState(false)
   const [deductFromBalance, setDeductFromBalance] = useState(false)
@@ -86,6 +88,8 @@ function Profile() {
   const gridRef = useRef(null)
   const observerRef = useRef(null)
   const [activeProfileTab, setActiveProfileTab] = useState('inventory')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState('all')
   const [showPromoCodeModal, setShowPromoCodeModal] = useState(false)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorData, setErrorData] = useState(null)
@@ -1277,6 +1281,21 @@ Username: @${u.username || '—'}
     }
   }
 
+  const filteredInventory = inventory.filter(gift => {
+    const name = (gift.title || gift.name || '').toLowerCase()
+    const matchesSearch = !searchQuery || name.includes(searchQuery.toLowerCase())
+    if (activeCategory === 'all') return matchesSearch
+    if (activeCategory === 'regular') return matchesSearch && gift.is_regular_gift === true
+    if (activeCategory === 'nft') return matchesSearch && gift.collectible_id !== undefined
+    return matchesSearch
+  })
+
+  const categories = [
+    { key: 'all', label: 'Все' },
+    { key: 'regular', label: 'Обычные' },
+    { key: 'nft', label: 'NFT' },
+  ]
+
   return (
     <div className="profile-page">
       {/* Header Card */}
@@ -1296,39 +1315,37 @@ Username: @${u.username || '—'}
             ID: {user?.id || 'N/A'}
           </p>
         </div>
+        <button
+          className="sd-hamburger-btn"
+          onClick={() => setShowSettingsDrawer(true)}
+          aria-label="Настройки"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <g style={{ mixBlendMode: 'plus-lighter' }}>
+              <path d="M2 4h12M2 8h12M2 12h12" stroke="white" strokeOpacity="0.4" strokeWidth="1.3" strokeLinecap="round" style={{ mixBlendMode: 'plus-lighter' }} />
+            </g>
+          </svg>
+        </button>
       </div>
 
       {/* Profile Tabs */}
       <div className="profile-tabs-container">
-        <div className="profile-tabs">
-          <div
-            className="profile-tab-indicator"
-            style={{
-              left: activeProfileTab === 'inventory' ? '3px' : 'calc(50%)',
-              width: 'calc(50% - 3px)'
-            }}
-          />
-          <label className="profile-tab-label">
-            <input
-              type="radio"
-              name="profile-tab"
-              value="inventory"
-              checked={activeProfileTab === 'inventory'}
-              onChange={(e) => setActiveProfileTab(e.target.value)}
-            />
+        <div
+          className="profile-tabs"
+          style={{ '--tab-count': '2', '--active': String(activeProfileTab === 'inventory' ? 0 : 1) }}
+        >
+          <button
+            className={`profile-tab ${activeProfileTab === 'inventory' ? 'active' : ''}`}
+            onClick={() => setActiveProfileTab('inventory')}
+          >
             <span>Инвентарь</span>
-          </label>
-
-          <label className="profile-tab-label">
-            <input
-              type="radio"
-              name="profile-tab"
-              value="admin"
-              checked={activeProfileTab === 'admin'}
-              onChange={(e) => setActiveProfileTab(e.target.value)}
-            />
+          </button>
+          <button
+            className={`profile-tab ${activeProfileTab === 'admin' ? 'active' : ''}`}
+            onClick={() => setActiveProfileTab('admin')}
+          >
             <span>Прочее</span>
-          </label>
+          </button>
         </div>
       </div>
 
@@ -1354,29 +1371,73 @@ Username: @${u.username || '—'}
             </button>
 
             {!loading && isAdmin && (
-              <>
-                <button className="action-button glass-button admin-button" onClick={() => setShowAdminPanel(true)}>
-                  <Icon name="admin" size="md" />
-                  <span className="button-text">Админ панель</span>
-                </button>
-                <button className="action-button glass-button" onClick={() => setShowSafeArea(!showSafeArea)}>
-                  <Icon name="warning" size="md" />
-                  <span className="button-text">{showSafeArea ? 'Скрыть' : 'Показать'} Safe Area</span>
-                </button>
-              </>
+              <button className="action-button glass-button admin-button" onClick={() => setShowAdminPanel(true)}>
+                <Icon name="admin" size="md" />
+                <span className="button-text">Админ панель</span>
+              </button>
+            )}
+            {!loading && isAdmin && (
+              <button className="action-button glass-button" onClick={() => setShowSettingsPanel(true)}>
+                <Icon name="settings" size="md" />
+                <span className="button-text">Настройки (админ)</span>
+              </button>
             )}
           </div>
         </div>
 
         {/* Инвентарь */}
         <div className="profile-inventory-section" style={{ display: activeProfileTab === 'inventory' ? 'block' : 'none' }}>
+          {!inventoryLoading && (
+            <>
+              <div className="profile-search-sticky">
+                <div className="profile-search-wrapper">
+                  <div className="profile-search-input-wrap">
+                    <svg className="profile-search-icon" viewBox="0 0 16 16" fill="none">
+                      <g style={{ mixBlendMode: 'plus-lighter' }}>
+                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+                        <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                      </g>
+                    </svg>
+                    <input
+                      className="profile-search-input"
+                      type="text"
+                      placeholder="Быстрый поиск"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <button className="profile-search-filter-btn" aria-label="Фильтр">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <g style={{ mixBlendMode: 'plus-lighter' }}>
+                        <path d="M2 4h12M5 8h6M8 12h0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                      </g>
+                    </svg>
+                  </button>
+                </div>
+                <div className="profile-categories-scroll">
+                  {categories.map(cat => (
+                    <button
+                      key={cat.key}
+                      className={`profile-category-pill ${activeCategory === cat.key ? 'active' : ''}`}
+                      onClick={() => setActiveCategory(cat.key)}
+                    >
+                      <span>{cat.label}</span>
+                      <svg className="pill-chevron" viewBox="0 0 14 14" fill="none">
+                        <path d="M4 5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
           {inventoryLoading ? (
             <div className="inventory-loading">Загрузка...</div>
-          ) : inventory.length === 0 ? (
+          ) : filteredInventory.length === 0 ? (
             <div className="inventory-empty">Ваш инвентарь пуст</div>
           ) : (
             <div className="inventory-grid" ref={gridRef}>
-              {inventory.map((gift, index) => {
+              {filteredInventory.map((gift, index) => {
                 const isNFT = gift.collectible_id !== undefined
                 const isRegular = gift.is_regular_gift === true
 
@@ -2195,17 +2256,29 @@ Username: @${u.username || '—'}
         </>
       )}
 
-      {showSettingsPanel && isAdmin && (
-        <>
-          <div className="overlay-backdrop" onClick={() => setShowSettingsPanel(false)} />
-          <div className="overlay-sheet settings-panel-sheet">
-            <button className="close-panel-btn" onClick={() => setShowSettingsPanel(false)}>✕</button>
-
-            <div className="sheet-content">
+      {showSettingsPanel && (
+        <div className="ap-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSettingsPanel(false) }}>
+          <div className="ap-sheet ap-settings-sheet">
+            <div className="ap-header">
+              <div className="ap-header-left">
+                <div className="ap-header-icon-wrap">
+                  <Icon name="settings" size="md" />
+                </div>
+                <h2 className="ap-header-title">Настройки системы</h2>
+              </div>
+              <button className="ap-close-btn" onClick={() => setShowSettingsPanel(false)}>
+                <Icon name="close" size="lg" />
+              </button>
+            </div>
+            <div className="ap-body">
               <Settings />
             </div>
           </div>
-        </>
+        </div>
+      )}
+
+      {showSettingsDrawer && (
+        <SettingsDrawer onClose={() => setShowSettingsDrawer(false)} />
       )}
 
       {/* Safe Area Визуализация */}

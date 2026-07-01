@@ -12,7 +12,6 @@ services:
       - ./server/.env
     volumes:
       - ./server/users.db:/app/users.db
-      - ./server/database.db:/app/database.db
       - ./server/support.db:/app/support.db
       - ./server/backups:/app/backups
 

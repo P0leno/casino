@@ -1,7 +1,7 @@
 """
 Automatic SQLite database backup
-Creates daily backups in /app/backups/ directory
-Keeps last 7 days of backups
+Creates backups in /app/backups/ directory every 6 hours
+Keeps last 14 days of backups
 """
 import os
 import shutil
@@ -11,19 +11,18 @@ import glob
 from datetime import datetime
 
 BACKUP_DIR = os.environ.get('BACKUP_DIR', '/app/backups')
-RETENTION_DAYS = int(os.environ.get('BACKUP_RETENTION_DAYS', '7'))
+RETENTION_DAYS = int(os.environ.get('BACKUP_RETENTION_DAYS', '14'))
 
 DB_FILES = [
-    '/app/data/users.db',
-    '/app/data/database.db',
-    '/app/data/support.db',
+    '/app/users.db',
+    '/app/support.db',
 ]
 
 
 def backup_db():
     """Создаёт копию всех SQLite файлов"""
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    date_str = datetime.now().strftime('%Y-%m-%d')
+    timestamp_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
     count = 0
 
     for db_path in DB_FILES:
@@ -32,7 +31,7 @@ def backup_db():
             continue
 
         db_name = os.path.basename(db_path)
-        backup_name = f"{date_str}_{db_name}"
+        backup_name = f"{timestamp_str}_{db_name}"
         backup_path = os.path.join(BACKUP_DIR, backup_name)
 
         try:
@@ -66,4 +65,4 @@ async def backup_loop():
             print(f"❌ Backup error: {e}")
             import traceback
             traceback.print_exc()
-        await asyncio.sleep(6 * 3600)  # каждые 6 часов
+        await asyncio.sleep(6 * 3600)

@@ -147,6 +147,25 @@ def init_nft_cache_table(conn):
     except Exception as e:
         print(f"[DB] Error creating user_nft_cache table: {e}")
 
+def init_banners_table(conn):
+    """Создает таблицу баннеров для главного экрана"""
+    try:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS banners (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            subtitle TEXT,
+            bg_from TEXT DEFAULT '#0a2a4a',
+            bg_to TEXT,
+            image_url TEXT,
+            action TEXT,
+            active INTEGER DEFAULT 1,
+            sort_order INTEGER DEFAULT 0
+        )
+        """)
+    except Exception as e:
+        print(f"[DB] Error creating banners table: {e}")
+
 def get_db_connection(timeout: int = SQLITE_TIMEOUT) -> sqlite3.Connection:
     """
     Получить оптимизированное соединение с БД
@@ -159,19 +178,11 @@ def get_db_connection(timeout: int = SQLITE_TIMEOUT) -> sqlite3.Connection:
     """
     conn = sqlite3.connect(DB_PATH, timeout=timeout, check_same_thread=False)
     
-    # Применяем все PRAGMA настройки
     for pragma in SQLITE_PRAGMAS:
         try:
             conn.execute(pragma)
         except Exception as e:
             print(f"[DB] Warning: Failed to execute {pragma}: {e}")
-            
-    # HACK: Проверяем наличие таблиц (быстрый фикс для удаленных серверов)
-    init_sold_gifts_table(conn)
-    init_payments_table(conn)
-    init_cases_table(conn) # Auto-migrate cases
-    init_case_spins_table(conn)
-    init_nft_cache_table(conn)
     
     return conn
 
@@ -195,12 +206,18 @@ def db_connection(timeout: int = SQLITE_TIMEOUT):
 
 def init_database():
     """
-    Инициализация БД с оптимальными настройками.
-    Вызывать один раз при старте приложения.
+    Инициализация схемы БД (таблицы, миграции, сидинг).
+    Запускается один раз при старте приложения.
     """
     conn = get_db_connection()
     
-    # Выполняем VACUUM для оптимизации (только при старте)
+    init_sold_gifts_table(conn)
+    init_payments_table(conn)
+    init_cases_table(conn)
+    init_case_spins_table(conn)
+    init_nft_cache_table(conn)
+    init_banners_table(conn)
+    
     try:
         conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
         print("[DB] WAL checkpoint completed")
@@ -208,14 +225,7 @@ def init_database():
         print(f"[DB] WAL checkpoint warning: {e}")
     
     conn.close()
-    print("[DB] Database initialized with optimized settings")
+    print("[DB] Schema initialized")
 
-
-# Инициализация при импорте модуля
-_initialized = False
-
-def ensure_initialized():
-    global _initialized
-    if not _initialized:
-        init_database()
-        _initialized = True
+# Однократная инициализация схемы при импорте модуля (старт приложения)
+init_database()

@@ -11,7 +11,6 @@ from app.tasks.price_updater import search_tonnel_resale
 from app.utils.redis_models import RedisSettings, RedisUser
 from app.utils.redis_client import cache
 from app.utils.database import get_db_connection, DB_PATH
-from app.utils.database import get_db_connection, DB_PATH
 from app.utils.error_logger import send_error_log
 from app.utils.gift_sender import transfer_nft_gift_async
 
@@ -386,12 +385,13 @@ async def sell_gift(request: SellGiftRequest):
         
         conn = get_db_connection()
         cursor = conn.cursor()
+        cursor.execute("BEGIN IMMEDIATE")
         
-        # Получаем пользователя
         cursor.execute("SELECT inventory, balance FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
         
         if not result:
+            conn.rollback()
             conn.close()
             raise HTTPException(status_code=404, detail="Пользователь не найден")
         
@@ -411,6 +411,7 @@ async def sell_gift(request: SellGiftRequest):
                     break
         
         if not found_in_inventory:
+            conn.rollback()
             conn.close()
             raise HTTPException(status_code=400, detail="Подарок не найден в инвентаре")
         
@@ -435,6 +436,7 @@ async def sell_gift(request: SellGiftRequest):
             gift = cursor.fetchone()
         
         if not gift:
+            conn.rollback()
             conn.close()
             raise HTTPException(status_code=404, detail="Подарок не найден в базе")
         
@@ -447,6 +449,7 @@ async def sell_gift(request: SellGiftRequest):
             current_price = int(ton_price * ton_price_usd * stars_per_usd)
         
         if not current_price or current_price <= 0:
+            conn.rollback()
             conn.close()
             raise HTTPException(status_code=400, detail="Цена подарка не установлена")
         
